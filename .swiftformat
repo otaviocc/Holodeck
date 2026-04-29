@@ -1,0 +1,82 @@
+# MARK: - Indentation and Spacing
+--indent 4
+--tab-width 4
+--max-width 120
+--wrap-arguments before-first
+--wrap-parameters before-first
+--wrap-collections before-first
+--closing-paren balanced
+--wrap-return-type never
+
+# MARK: - Line Breaks and Spacing
+--linebreaks lf
+--trim-whitespace always
+--trailing-commas never
+--semicolons never
+--operator-func spaced
+--no-space-operators ...,..<
+--ranges spaced
+
+# MARK: - Braces and Brackets
+--allman false
+--else-position same-line
+--guard-else auto
+--ifdef indent
+--indent-case false
+--indent-strings false
+--xcode-indentation enabled
+
+# MARK: - Imports and Headers
+--import-grouping testable-last
+--mark-extensions always
+--mark-types always
+--extension-acl on-extension
+--property-types inferred
+--nil-init remove
+
+# MARK: - Function and Method Formatting
+--func-attributes preserve
+--type-attributes preserve
+--stored-var-attributes preserve
+--computed-var-attributes preserve
+--pattern-let hoist
+--strip-unused-args closure-only
+--self remove
+--self-required UIViewController,UIView,NSViewController,NSView
+
+# MARK: - Comments and Documentation
+--doc-comments before-declarations
+--header "MIT License\n\nCopyright (c) 2026 Otávio C.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+
+--ifdef indent
+
+# MARK: - SwiftUI and Modern Swift Features
+--swift-version 6.0
+--sort-swiftui-properties first-appearance-sort
+--some-any true
+--short-optionals except-properties
+
+# MARK: - Code Organization
+--organize-types class,actor,struct,enum,extension,protocol
+--organization-mode type
+--class-threshold 0
+--struct-threshold 0
+--enum-threshold 0
+--extension-threshold 0
+
+# MARK: - Blank Lines and Spacing
+# --disable blankLinesAtStartOfScope
+--enable blankLinesAtStartOfScope
+--disable blankLinesAtEndOfScope
+--type-blank-lines insert
+
+# MARK: - Exclusions
+--exclude "**/.build/**"
+--exclude "**/DerivedData/**"
+--exclude "**/Pods/**"
+--exclude "**/Carthage/**"
+--exclude "**/.git/**"
+--exclude "**/node_modules/**"
+
+# MARK: - File Patterns
+--symlinks ignore

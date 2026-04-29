@@ -1,0 +1,32 @@
+{
+  "devices" : {
+    "com.apple.CoreSimulator.SimRuntime.iOS-26-4" : [
+      {
+        "lastBootedAt" : "2026-05-13T12:19:04Z",
+        "dataPath" : "\/Users\/otaviocc\/Library\/Developer\/CoreSimulator\/Devices\/BDC528C2-6CEA-4520-871C-15A7B21F15AB\/data",
+        "dataPathSize" : 4943663104,
+        "logPath" : "\/Users\/otaviocc\/Library\/Logs\/CoreSimulator\/BDC528C2-6CEA-4520-871C-15A7B21F15AB",
+        "udid" : "BDC528C2-6CEA-4520-871C-15A7B21F15AB",
+        "isAvailable" : true,
+        "logPathSize" : 503808,
+        "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro",
+        "state" : "Shutdown",
+        "name" : "iPhone 17 Pro"
+      }
+    ],
+    "com.apple.CoreSimulator.SimRuntime.iOS-26-2" : [
+      {
+        "lastBootedAt" : "2026-05-12T13:30:28Z",
+        "dataPath" : "\/Users\/otaviocc\/Library\/Developer\/CoreSimulator\/Devices\/0B90A2C2-9495-4131-B659-B62C82D4B7C9\/data",
+        "dataPathSize" : 39999758336,
+        "logPath" : "\/Users\/otaviocc\/Library\/Logs\/CoreSimulator\/0B90A2C2-9495-4131-B659-B62C82D4B7C9",
+        "udid" : "0B90A2C2-9495-4131-B659-B62C82D4B7C9",
+        "isAvailable" : true,
+        "logPathSize" : 49152,
+        "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-12",
+        "state" : "Shutdown",
+        "name" : "iPhone 12"
+      }
+    ]
+  }
+}
