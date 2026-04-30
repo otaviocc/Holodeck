@@ -73,6 +73,33 @@ public actor SimctlClient {
         ])
     }
 
+    public func setAppearance(udid: UUID, appearance: Appearance) async throws {
+        try await runSimctl(["ui", udid.uuidString, "appearance", appearance.rawValue])
+    }
+
+    public func setStatusBar(udid: UUID, overrides: StatusBarOverrides) async throws {
+        guard !overrides.isEmpty else {
+            throw SimctlError.unsupportedOperation(reason: "no status bar overrides provided")
+        }
+        try await runSimctl(["status_bar", udid.uuidString, "override"] + overrides.simctlArguments)
+    }
+
+    public func clearStatusBar(udid: UUID) async throws {
+        try await runSimctl(["status_bar", udid.uuidString, "clear"])
+    }
+
+    public func setLocale(udid: UUID, bcp47: String) async throws {
+        let appleLocale = bcp47.replacingOccurrences(of: "-", with: "_")
+        try await runSimctl([
+            "spawn", udid.uuidString,
+            "defaults", "write", "-g", "AppleLanguages", "-array", bcp47
+        ])
+        try await runSimctl([
+            "spawn", udid.uuidString,
+            "defaults", "write", "-g", "AppleLocale", "-string", appleLocale
+        ])
+    }
+
     private func runSimctl(_ subcommand: [String]) async throws {
         let args = ["simctl"] + subcommand
         let result: ProcessResult

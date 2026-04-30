@@ -21,24 +21,35 @@
 // SOFTWARE.
 
 import ArgumentParser
+import Foundation
+import HolodeckCore
+import HolodeckServices
 
-@main
-struct Holodeck: AsyncParsableCommand {
+struct AppearanceCommand: AsyncParsableCommand {
 
     static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
+        commandName: "appearance",
+        abstract: "Set light or dark appearance on a booted simulator."
     )
+
+    @Argument(help: "Simulator name or UDID.")
+    var query: String
+
+    @Argument(help: "Appearance: light or dark.")
+    var appearance: String
+
+    func run() async throws {
+        guard let appearance = Appearance(rawValue: appearance.lowercased()) else {
+            throw ValidationError("Invalid appearance '\(appearance)'. Use light or dark.")
+        }
+        let service = SimulatorService()
+        let sim = try await service.resolve(query: query)
+        guard sim.state == .booted else {
+            throw ValidationError(
+                "\(sim.name) is \(sim.state.rawValue); appearance can only be set on booted simulators."
+            )
+        }
+        try await AppearanceService().set(udid: sim.id, appearance: appearance)
+        print("Set \(sim.name) appearance to \(appearance.rawValue).")
+    }
 }

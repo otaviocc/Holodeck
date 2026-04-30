@@ -37,6 +37,10 @@ public enum SimulatorListView {
             lines.append(recordingBanner(state: state, width: cols))
             bodyOffset = 1
         }
+        if let modal = state.modal {
+            lines.append(modalBanner(modal: modal, width: cols))
+            bodyOffset += 1
+        }
 
         let sorted = state.sortedSimulators
         let bodyHeight = rows - 4 - bodyOffset
@@ -74,9 +78,18 @@ public enum SimulatorListView {
 
     private static func header(width: Int) -> String {
         let title = " holodeck "
-        let hint = " ⏎ boot/shutdown  r record  p shot  R refresh  q quit "
+        let hint = " ⏎ boot/shutdown  r rec  p shot  a appearance  R refresh  q quit "
         let space = max(0, width - title.count - hint.count)
         return "\(ANSI.inverse)\(title)\(String(repeating: " ", count: space))\(hint)\(ANSI.reset)"
+    }
+
+    private static func modalBanner(modal: Modal, width: Int) -> String {
+        let text = switch modal {
+        case .appearance: "Appearance:  l = light    d = dark    Esc = cancel"
+        }
+        let truncated = text.count > width ? String(text.prefix(width)) : text
+        let space = max(0, width - truncated.count)
+        return "\(ANSI.cyan)\(ANSI.bold)\(truncated)\(ANSI.reset)\(String(repeating: " ", count: space))"
     }
 
     private static func recordingBanner(state: AppState, width: Int) -> String {

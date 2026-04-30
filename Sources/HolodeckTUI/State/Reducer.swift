@@ -37,6 +37,8 @@ public enum AppEvent: Sendable {
     case recordingFailed(String)
     case screenshotSaved(URL)
     case screenshotFailed(String)
+    case appearanceChanged(UUID, Appearance)
+    case appearanceFailed(String)
 }
 
 public struct ReducerOutput: Equatable, Sendable {
@@ -49,6 +51,7 @@ public struct ReducerOutput: Equatable, Sendable {
         case startRecording(UUID)
         case stopRecording
         case captureScreenshot(UUID)
+        case setAppearance(UUID, Appearance)
     }
 
     public let state: AppState
@@ -129,6 +132,14 @@ public enum Reducer {
         case let .screenshotFailed(message):
             next.lastError = message
             return ReducerOutput(state: next)
+
+        case let .appearanceChanged(_, appearance):
+            next.statusMessage = "Appearance set to \(appearance.rawValue)"
+            return ReducerOutput(state: next, effects: [.refresh])
+
+        case let .appearanceFailed(message):
+            next.lastError = message
+            return ReducerOutput(state: next)
         }
     }
 
@@ -136,6 +147,9 @@ public enum Reducer {
 
     // swiftlint:disable function_body_length
     private static func handleKey(state: AppState, key: Key) -> ReducerOutput {
+        if state.modal != nil {
+            return handleModalKey(state: state, key: key)
+        }
         var next = state
         let count = next.sortedSimulators.count
         switch key {
@@ -178,6 +192,15 @@ public enum Reducer {
             next.statusMessage = "Capturing screenshot…"
             return ReducerOutput(state: next, effects: [.captureScreenshot(sim.id)])
 
+        case .char("a"):
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "Cannot set appearance: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.modal = .appearance
+            return ReducerOutput(state: next)
+
         case .enter, .char(" "):
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
             guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
@@ -199,5 +222,38 @@ public enum Reducer {
             return ReducerOutput(state: next)
         }
     }
+
     // swiftlint:enable function_body_length
+
+    private static func handleModalKey(state: AppState, key: Key) -> ReducerOutput {
+        var next = state
+        switch state.modal {
+        case .appearance:
+            switch key {
+            case .char("l"):
+                guard let sim = next.selectedSimulator else {
+                    next.modal = nil
+                    return ReducerOutput(state: next)
+                }
+                next.modal = nil
+                next.statusMessage = "Setting appearance to light…"
+                return ReducerOutput(state: next, effects: [.setAppearance(sim.id, .light)])
+            case .char("d"):
+                guard let sim = next.selectedSimulator else {
+                    next.modal = nil
+                    return ReducerOutput(state: next)
+                }
+                next.modal = nil
+                next.statusMessage = "Setting appearance to dark…"
+                return ReducerOutput(state: next, effects: [.setAppearance(sim.id, .dark)])
+            case .escape, .char("q"):
+                next.modal = nil
+                return ReducerOutput(state: next)
+            default:
+                return ReducerOutput(state: next)
+            }
+        case .none:
+            return ReducerOutput(state: next)
+        }
+    }
 }

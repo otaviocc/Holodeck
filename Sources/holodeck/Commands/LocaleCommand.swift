@@ -21,24 +21,30 @@
 // SOFTWARE.
 
 import ArgumentParser
+import Foundation
+import HolodeckCore
+import HolodeckServices
 
-@main
-struct Holodeck: AsyncParsableCommand {
+struct LocaleCommand: AsyncParsableCommand {
 
     static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
+        commandName: "locale",
+        abstract: "Set the simulator locale and language (BCP-47 tag). Requires reboot to take effect."
     )
+
+    @Argument(help: "Simulator name or UDID.")
+    var query: String
+
+    @Argument(help: "BCP-47 tag, e.g. en, en-US, pt-BR.")
+    var tag: String
+
+    func run() async throws {
+        let service = SimulatorService()
+        let sim = try await service.resolve(query: query)
+        guard sim.state == .booted else {
+            throw ValidationError("\(sim.name) is \(sim.state.rawValue); locale can only be set on booted simulators.")
+        }
+        try await LocaleService().set(udid: sim.id, bcp47: tag)
+        print("Set \(sim.name) locale to \(tag). Reboot the simulator for changes to take effect.")
+    }
 }

@@ -20,25 +20,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import ArgumentParser
+import Foundation
+import HolodeckCore
 
-@main
-struct Holodeck: AsyncParsableCommand {
+public struct StatusBarService: Sendable {
 
-    static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
-    )
+    private let client: SimctlClient
+
+    public init(client: SimctlClient = SimctlClient()) {
+        self.client = client
+    }
+
+    public func override(udid: UUID, overrides: StatusBarOverrides) async throws {
+        try await client.setStatusBar(udid: udid, overrides: overrides)
+    }
+
+    public func clear(udid: UUID) async throws {
+        try await client.clearStatusBar(udid: udid)
+    }
 }

@@ -30,6 +30,7 @@ public final class HolodeckApp {
     private let service: SimulatorService
     private let recording: RecordingService
     private let screenshots: ScreenshotService
+    private let appearance: AppearanceService
     private let terminal = TerminalMode()
     private let parser = InputParser()
     private var state = AppState()
@@ -38,11 +39,13 @@ public final class HolodeckApp {
     public init(
         service: SimulatorService = SimulatorService(),
         recording: RecordingService = RecordingService(),
-        screenshots: ScreenshotService = ScreenshotService()
+        screenshots: ScreenshotService = ScreenshotService(),
+        appearance: AppearanceService = AppearanceService()
     ) {
         self.service = service
         self.recording = recording
         self.screenshots = screenshots
+        self.appearance = appearance
     }
 
     public func run() async {
@@ -104,6 +107,8 @@ public final class HolodeckApp {
             AppSpawn.stopRecording(recording: recording, continuation: continuation)
         case let .captureScreenshot(id):
             AppSpawn.screenshot(screenshots: screenshots, id: id, continuation: continuation)
+        case let .setAppearance(id, value):
+            AppSpawn.appearance(service: appearance, id: id, appearance: value, continuation: continuation)
         }
     }
 

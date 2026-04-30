@@ -106,6 +106,22 @@ enum AppSpawn {
         }
     }
 
+    static func appearance(
+        service: AppearanceService,
+        id: UUID,
+        appearance: Appearance,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        Task.detached {
+            do {
+                try await service.set(udid: id, appearance: appearance)
+                continuation.yield(.appearanceChanged(id, appearance))
+            } catch {
+                continuation.yield(.appearanceFailed(errorDescription(error)))
+            }
+        }
+    }
+
     static func screenshot(
         screenshots: ScreenshotService,
         id: UUID,

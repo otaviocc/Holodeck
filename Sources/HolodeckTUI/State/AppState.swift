@@ -23,6 +23,11 @@
 import Foundation
 import HolodeckCore
 
+public enum Modal: Equatable, Sendable {
+
+    case appearance
+}
+
 public struct AppState: Equatable, Sendable {
 
     public var simulators: [Simulator]
@@ -35,6 +40,7 @@ public struct AppState: Equatable, Sendable {
     public var cols: Int
     public var recordingDeviceID: UUID?
     public var recordingPath: URL?
+    public var modal: Modal?
 
     public var isRecording: Bool {
         recordingDeviceID != nil
@@ -50,7 +56,8 @@ public struct AppState: Equatable, Sendable {
         rows: Int = 24,
         cols: Int = 80,
         recordingDeviceID: UUID? = nil,
-        recordingPath: URL? = nil
+        recordingPath: URL? = nil,
+        modal: Modal? = nil
     ) {
         self.simulators = simulators
         self.selectedIndex = selectedIndex
@@ -62,6 +69,7 @@ public struct AppState: Equatable, Sendable {
         self.cols = cols
         self.recordingDeviceID = recordingDeviceID
         self.recordingPath = recordingPath
+        self.modal = modal
     }
 
     public var sortedSimulators: [Simulator] {
