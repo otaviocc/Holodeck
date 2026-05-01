@@ -20,28 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import ArgumentParser
+import Foundation
 
-@main
-struct Holodeck: AsyncParsableCommand {
+enum ConfirmPrompt {
 
-    static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            CreateCommand.self,
-            EraseCommand.self,
-            DeleteCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
-    )
+    static func confirm(_ message: String, skip: Bool) -> Bool {
+        if skip { return true }
+        FileHandle.standardError.write(Data("\(message) [y/N] ".utf8))
+        guard let line = readLine() else { return false }
+        let trimmed = line.trimmingCharacters(in: .whitespaces).lowercased()
+        return trimmed == "y" || trimmed == "yes"
+    }
 }

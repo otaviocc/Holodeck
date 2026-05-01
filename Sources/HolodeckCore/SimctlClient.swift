@@ -33,23 +33,7 @@ public actor SimctlClient {
     public func listDevices(includeUnavailable: Bool = false) async throws -> [Simulator] {
         var args = ["simctl", "list", "--json", "devices"]
         if !includeUnavailable { args.append("available") }
-        let result: ProcessResult
-        do {
-            result = try await runner.run("/usr/bin/xcrun", args)
-        } catch {
-            throw SimctlError.commandFailed(
-                command: "xcrun \(args.joined(separator: " "))",
-                exitCode: -1,
-                stderr: String(describing: error)
-            )
-        }
-        guard result.exitCode == 0 else {
-            throw SimctlError.commandFailed(
-                command: "xcrun \(args.joined(separator: " "))",
-                exitCode: result.exitCode,
-                stderr: String(data: result.stderr, encoding: .utf8) ?? ""
-            )
-        }
+        let result = try await invoke(args)
         do {
             return try DeviceListDecoder.decode(result.stdout)
         } catch {
@@ -100,8 +84,43 @@ public actor SimctlClient {
         ])
     }
 
+    public func listAvailableTargets() async throws -> AvailableTargets {
+        let args = ["simctl", "list", "--json", "devicetypes", "runtimes"]
+        let result = try await invoke(args)
+        do {
+            return try DeviceListDecoder.decodeAvailableTargets(result.stdout)
+        } catch {
+            throw SimctlError.decodingFailed(underlying: error)
+        }
+    }
+
+    public func create(name: String, deviceTypeIdentifier: String, runtimeIdentifier: String) async throws -> UUID {
+        let result = try await invoke(["simctl", "create", name, deviceTypeIdentifier, runtimeIdentifier])
+        let stdout = String(data: result.stdout, encoding: .utf8) ?? ""
+        let trimmed = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let udid = UUID(uuidString: trimmed) else {
+            throw SimctlError.unsupportedOperation(reason: "create returned unexpected output: \(trimmed)")
+        }
+        return udid
+    }
+
+    public func erase(_ udid: UUID) async throws {
+        try await runSimctl(["erase", udid.uuidString])
+    }
+
+    public func delete(_ udid: UUID) async throws {
+        try await runSimctl(["delete", udid.uuidString])
+    }
+
+    public func deleteUnavailable() async throws {
+        try await runSimctl(["delete", "unavailable"])
+    }
+
     private func runSimctl(_ subcommand: [String]) async throws {
-        let args = ["simctl"] + subcommand
+        _ = try await invoke(["simctl"] + subcommand)
+    }
+
+    private func invoke(_ args: [String]) async throws -> ProcessResult {
         let result: ProcessResult
         do {
             result = try await runner.run("/usr/bin/xcrun", args)
@@ -119,5 +138,6 @@ public actor SimctlClient {
                 stderr: String(data: result.stderr, encoding: .utf8) ?? ""
             )
         }
+        return result
     }
 }

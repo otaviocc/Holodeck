@@ -38,7 +38,7 @@ public enum SimulatorListView {
             bodyOffset = 1
         }
         if let modal = state.modal {
-            lines.append(modalBanner(modal: modal, width: cols))
+            lines.append(modalBanner(modal: modal, width: cols, state: state))
             bodyOffset += 1
         }
 
@@ -78,18 +78,46 @@ public enum SimulatorListView {
 
     private static func header(width: Int) -> String {
         let title = " holodeck "
-        let hint = " ⏎ boot/shutdown  r rec  p shot  a appearance  R refresh  q quit "
+        let hint = " ⏎ boot/shutdown  r rec  p shot  a appear  n new  e erase  d delete  q quit "
         let space = max(0, width - title.count - hint.count)
         return "\(ANSI.inverse)\(title)\(String(repeating: " ", count: space))\(hint)\(ANSI.reset)"
     }
 
-    private static func modalBanner(modal: Modal, width: Int) -> String {
-        let text = switch modal {
-        case .appearance: "Appearance:  l = light    d = dark    Esc = cancel"
+    private static func modalBanner(modal: Modal, width: Int, state: AppState) -> String {
+        let text: String
+        switch modal {
+        case .appearance:
+            text = "Appearance:  l = light    d = dark    Esc = cancel"
+        case let .confirmErase(id):
+            let name = state.simulators.first { $0.id == id }?.name ?? "?"
+            text = "Erase \(name)?  y = confirm    n / Esc = cancel"
+        case let .confirmDelete(id):
+            let name = state.simulators.first { $0.id == id }?.name ?? "?"
+            text = "Delete \(name)?  y = confirm    n / Esc = cancel"
+        case let .createWizard(wizard):
+            text = createWizardBanner(wizard: wizard)
         }
         let truncated = text.count > width ? String(text.prefix(width)) : text
         let space = max(0, width - truncated.count)
         return "\(ANSI.cyan)\(ANSI.bold)\(truncated)\(ANSI.reset)\(String(repeating: " ", count: space))"
+    }
+
+    private static func createWizardBanner(wizard: CreateWizard) -> String {
+        switch wizard.step {
+        case .loading:
+            return "Create simulator: loading device types and runtimes…"
+        case .pickDeviceType:
+            let current = wizard.selectedDeviceType?.name ?? "—"
+            return "Create — device type (\(wizard.deviceTypeIndex + 1)/\(wizard.deviceTypes.count))  ↑↓ navigate  ⏎ next  Esc cancel  →  \(current)"
+        case .pickRuntime:
+            let current = wizard.selectedRuntime?.displayName ?? "—"
+            return "Create — runtime (\(wizard.runtimeIndex + 1)/\(wizard.runtimes.count))  ↑↓ navigate  ⏎ next  b back  Esc cancel  →  \(current)"
+        case .confirm:
+            let suffix = wizard.error.map { "  ⚠ \($0)" } ?? ""
+            return "Confirm: create \"\(wizard.defaultName)\"?  y/⏎ create  b back  Esc cancel\(suffix)"
+        case .submitting:
+            return "Creating \(wizard.defaultName)…"
+        }
     }
 
     private static func recordingBanner(state: AppState, width: Int) -> String {

@@ -26,6 +26,61 @@ import HolodeckCore
 public enum Modal: Equatable, Sendable {
 
     case appearance
+    case confirmErase(UUID)
+    case confirmDelete(UUID)
+    case createWizard(CreateWizard)
+}
+
+public struct CreateWizard: Equatable, Sendable {
+
+    public enum Step: Equatable, Sendable {
+
+        case loading
+        case pickDeviceType
+        case pickRuntime
+        case confirm
+        case submitting
+    }
+
+    public var step: Step
+    public var deviceTypes: [DeviceType]
+    public var runtimes: [Runtime]
+    public var deviceTypeIndex: Int
+    public var runtimeIndex: Int
+    public var error: String?
+
+    public init(
+        step: Step = .loading,
+        deviceTypes: [DeviceType] = [],
+        runtimes: [Runtime] = [],
+        deviceTypeIndex: Int = 0,
+        runtimeIndex: Int = 0,
+        error: String? = nil
+    ) {
+        self.step = step
+        self.deviceTypes = deviceTypes
+        self.runtimes = runtimes
+        self.deviceTypeIndex = deviceTypeIndex
+        self.runtimeIndex = runtimeIndex
+        self.error = error
+    }
+
+    public var selectedDeviceType: DeviceType? {
+        guard !deviceTypes.isEmpty, deviceTypeIndex < deviceTypes.count else { return nil }
+        return deviceTypes[deviceTypeIndex]
+    }
+
+    public var selectedRuntime: Runtime? {
+        guard !runtimes.isEmpty, runtimeIndex < runtimes.count else { return nil }
+        return runtimes[runtimeIndex]
+    }
+
+    public var defaultName: String {
+        guard let deviceType = selectedDeviceType, let runtime = selectedRuntime else {
+            return "Simulator"
+        }
+        return "\(deviceType.name) (\(runtime.displayName))"
+    }
 }
 
 public struct AppState: Equatable, Sendable {

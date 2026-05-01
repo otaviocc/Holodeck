@@ -178,6 +178,67 @@ enum AppSpawn {
         }
     }
 
+    static func erase(
+        service: SimulatorService,
+        id: UUID,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        Task.detached {
+            do {
+                try await service.erase(id)
+                continuation.yield(.operationCompleted(id))
+            } catch {
+                continuation.yield(.operationFailed(id, errorDescription(error)))
+            }
+        }
+    }
+
+    static func delete(
+        service: SimulatorService,
+        id: UUID,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        Task.detached {
+            do {
+                try await service.delete(id)
+                continuation.yield(.operationCompleted(id))
+            } catch {
+                continuation.yield(.operationFailed(id, errorDescription(error)))
+            }
+        }
+    }
+
+    static func loadTargets(
+        service: SimulatorService,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        Task.detached {
+            do {
+                let targets = try await service.availableTargets()
+                continuation.yield(.targetsLoaded(targets))
+            } catch {
+                continuation.yield(.targetsFailed(errorDescription(error)))
+            }
+        }
+    }
+
+    static func create(
+        service: SimulatorService,
+        name: String,
+        deviceType: DeviceType,
+        runtime: Runtime,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        Task.detached {
+            do {
+                let udid = try await service.create(name: name, deviceType: deviceType, runtime: runtime)
+                continuation.yield(.simulatorCreated(udid, name))
+            } catch {
+                continuation.yield(.simulatorCreateFailed(errorDescription(error)))
+            }
+        }
+    }
+
     static func errorDescription(_ error: Error) -> String {
         if let simctl = error as? SimctlError {
             switch simctl {

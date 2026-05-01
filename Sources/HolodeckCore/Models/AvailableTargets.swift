@@ -20,28 +20,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import ArgumentParser
+import Foundation
 
-@main
-struct Holodeck: AsyncParsableCommand {
+public struct AvailableTargets: Sendable, Equatable {
 
-    static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            CreateCommand.self,
-            EraseCommand.self,
-            DeleteCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
-    )
+    public let deviceTypes: [DeviceType]
+    public let runtimes: [Runtime]
+
+    public init(deviceTypes: [DeviceType], runtimes: [Runtime]) {
+        self.deviceTypes = deviceTypes
+        self.runtimes = runtimes
+    }
 }

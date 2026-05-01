@@ -109,6 +109,20 @@ public final class HolodeckApp {
             AppSpawn.screenshot(screenshots: screenshots, id: id, continuation: continuation)
         case let .setAppearance(id, value):
             AppSpawn.appearance(service: appearance, id: id, appearance: value, continuation: continuation)
+        case let .eraseSimulator(id):
+            AppSpawn.erase(service: service, id: id, continuation: continuation)
+        case let .deleteSimulator(id):
+            AppSpawn.delete(service: service, id: id, continuation: continuation)
+        case .loadTargets:
+            AppSpawn.loadTargets(service: service, continuation: continuation)
+        case let .createSimulator(name, deviceType, runtime):
+            AppSpawn.create(
+                service: service,
+                name: name,
+                deviceType: deviceType,
+                runtime: runtime,
+                continuation: continuation
+            )
         }
     }
 

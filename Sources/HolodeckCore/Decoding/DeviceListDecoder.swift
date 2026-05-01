@@ -40,6 +40,35 @@ public enum DeviceListDecoder {
         let logPath: String?
     }
 
+    private struct RawTargets: Decodable {
+
+        let devicetypes: [RawDeviceType]?
+        let runtimes: [RawRuntime]?
+    }
+
+    private struct RawDeviceType: Decodable {
+
+        let identifier: String
+        let name: String
+    }
+
+    private struct RawRuntime: Decodable {
+
+        let identifier: String
+        let name: String
+        let isAvailable: Bool?
+    }
+
+    public static func decodeAvailableTargets(_ data: Data) throws -> AvailableTargets {
+        let raw = try JSONDecoder().decode(RawTargets.self, from: data)
+        let deviceTypes = (raw.devicetypes ?? []).map { DeviceType(identifier: $0.identifier, name: $0.name) }
+        let runtimes = (raw.runtimes ?? []).compactMap { rawRuntime -> Runtime? in
+            guard rawRuntime.isAvailable ?? true else { return nil }
+            return Runtime(identifier: rawRuntime.identifier)
+        }
+        return AvailableTargets(deviceTypes: deviceTypes, runtimes: runtimes)
+    }
+
     public static func decode(_ data: Data) throws -> [Simulator] {
         let raw = try JSONDecoder().decode(RawList.self, from: data)
         var result: [Simulator] = []

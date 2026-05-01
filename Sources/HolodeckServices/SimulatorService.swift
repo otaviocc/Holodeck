@@ -43,6 +43,30 @@ public actor SimulatorService {
         try await client.shutdown(udid)
     }
 
+    public func availableTargets() async throws -> AvailableTargets {
+        try await client.listAvailableTargets()
+    }
+
+    public func create(name: String, deviceType: DeviceType, runtime: Runtime) async throws -> UUID {
+        try await client.create(
+            name: name,
+            deviceTypeIdentifier: deviceType.identifier,
+            runtimeIdentifier: runtime.identifier
+        )
+    }
+
+    public func erase(_ udid: UUID) async throws {
+        try await client.erase(udid)
+    }
+
+    public func delete(_ udid: UUID) async throws {
+        try await client.delete(udid)
+    }
+
+    public func deleteUnavailable() async throws {
+        try await client.deleteUnavailable()
+    }
+
     public func resolve(query: String) async throws -> Simulator {
         let all = try await list()
         if let uuid = UUID(uuidString: query),

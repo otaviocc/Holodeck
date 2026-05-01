@@ -39,6 +39,10 @@ public enum AppEvent: Sendable {
     case screenshotFailed(String)
     case appearanceChanged(UUID, Appearance)
     case appearanceFailed(String)
+    case targetsLoaded(AvailableTargets)
+    case targetsFailed(String)
+    case simulatorCreated(UUID, String)
+    case simulatorCreateFailed(String)
 }
 
 public struct ReducerOutput: Equatable, Sendable {
@@ -52,6 +56,10 @@ public struct ReducerOutput: Equatable, Sendable {
         case stopRecording
         case captureScreenshot(UUID)
         case setAppearance(UUID, Appearance)
+        case eraseSimulator(UUID)
+        case deleteSimulator(UUID)
+        case loadTargets
+        case createSimulator(name: String, deviceType: DeviceType, runtime: Runtime)
     }
 
     public let state: AppState
@@ -140,6 +148,37 @@ public enum Reducer {
         case let .appearanceFailed(message):
             next.lastError = message
             return ReducerOutput(state: next)
+
+        case let .targetsLoaded(targets):
+            if case let .createWizard(wizard) = next.modal {
+                var updated = wizard
+                updated.deviceTypes = targets.deviceTypes.sorted { $0.name < $1.name }
+                updated.runtimes = targets.runtimes.sorted(by: >)
+                updated.step = updated.deviceTypes.isEmpty ? .loading : .pickDeviceType
+                next.modal = .createWizard(updated)
+            }
+            return ReducerOutput(state: next)
+
+        case let .targetsFailed(message):
+            if case .createWizard = next.modal { next.modal = nil }
+            next.lastError = message
+            return ReducerOutput(state: next)
+
+        case let .simulatorCreated(_, name):
+            next.modal = nil
+            next.statusMessage = "Created \(name)"
+            return ReducerOutput(state: next, effects: [.refresh])
+
+        case let .simulatorCreateFailed(message):
+            if case let .createWizard(wizard) = next.modal {
+                var updated = wizard
+                updated.step = .confirm
+                updated.error = message
+                next.modal = .createWizard(updated)
+            } else {
+                next.lastError = message
+            }
+            return ReducerOutput(state: next)
         }
     }
 
@@ -201,6 +240,24 @@ public enum Reducer {
             next.modal = .appearance
             return ReducerOutput(state: next)
 
+        case .char("e"):
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .shutdown else {
+                next.statusMessage = "Cannot erase: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.modal = .confirmErase(sim.id)
+            return ReducerOutput(state: next)
+
+        case .char("d"):
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            next.modal = .confirmDelete(sim.id)
+            return ReducerOutput(state: next)
+
+        case .char("n"):
+            next.modal = .createWizard(CreateWizard())
+            return ReducerOutput(state: next, effects: [.loadTargets])
+
         case .enter, .char(" "):
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
             guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
@@ -226,34 +283,6 @@ public enum Reducer {
     // swiftlint:enable function_body_length
 
     private static func handleModalKey(state: AppState, key: Key) -> ReducerOutput {
-        var next = state
-        switch state.modal {
-        case .appearance:
-            switch key {
-            case .char("l"):
-                guard let sim = next.selectedSimulator else {
-                    next.modal = nil
-                    return ReducerOutput(state: next)
-                }
-                next.modal = nil
-                next.statusMessage = "Setting appearance to light…"
-                return ReducerOutput(state: next, effects: [.setAppearance(sim.id, .light)])
-            case .char("d"):
-                guard let sim = next.selectedSimulator else {
-                    next.modal = nil
-                    return ReducerOutput(state: next)
-                }
-                next.modal = nil
-                next.statusMessage = "Setting appearance to dark…"
-                return ReducerOutput(state: next, effects: [.setAppearance(sim.id, .dark)])
-            case .escape, .char("q"):
-                next.modal = nil
-                return ReducerOutput(state: next)
-            default:
-                return ReducerOutput(state: next)
-            }
-        case .none:
-            return ReducerOutput(state: next)
-        }
+        ModalReducer.handle(state: state, key: key)
     }
 }
