@@ -39,12 +39,19 @@ struct RecordCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Output file path (default: ~/Screenshots/sim_record_<ts>.mp4).")
     var output: String?
 
-    @Option(help: "Video codec: h264 or hevc.")
-    var codec = "h264"
+    @Option(help: "Video codec: h264 or hevc. Defaults to value from ~/.config/holodeck/config.json.")
+    var codec: String?
 
     func run() async throws {
-        guard let codec = VideoCodec(rawValue: codec.lowercased()) else {
-            throw ValidationError("Invalid codec '\(codec)'. Use h264 or hevc.")
+        let config = (try? ConfigLoader.load()) ?? .default
+        let codecValue: VideoCodec
+        if let raw = codec {
+            guard let parsed = VideoCodec(rawValue: raw.lowercased()) else {
+                throw ValidationError("Invalid codec '\(raw)'. Use h264 or hevc.")
+            }
+            codecValue = parsed
+        } else {
+            codecValue = config.videoCodec
         }
         let service = SimulatorService()
         let sim = try await service.resolve(query: query)
@@ -54,7 +61,8 @@ struct RecordCommand: AsyncParsableCommand {
 
         let recording = RecordingService()
         let outURL = output.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
-        let path = try await recording.start(udid: sim.id, output: outURL, codec: codec)
+            ?? defaultOutputURL(config: config)
+        let path = try await recording.start(udid: sim.id, output: outURL, codec: codecValue)
         FileHandle.standardError.write(Data("Recording to \(path.path) — press Ctrl-C to stop.\n".utf8))
 
         await waitForSIGINT()
@@ -62,6 +70,14 @@ struct RecordCommand: AsyncParsableCommand {
         FileHandle.standardError.write(Data("\nFinalizing…\n".utf8))
         _ = await recording.stop()
         print(path.path)
+    }
+
+    private func defaultOutputURL(config: Config) -> URL {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        formatter.timeZone = TimeZone.current
+        let stamp = formatter.string(from: Date())
+        return config.resolvedScreenshotsDirectory.appendingPathComponent("sim_record_\(stamp).mp4")
     }
 
     private func waitForSIGINT() async {

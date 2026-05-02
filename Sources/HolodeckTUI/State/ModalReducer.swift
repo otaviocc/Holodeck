@@ -36,6 +36,9 @@ enum ModalReducer {
             return confirmDelete(state: next, id: id, key: key)
         case let .createWizard(wizard):
             return WizardReducer.handle(state: next, wizard: wizard, key: key)
+        case .help:
+            next.modal = nil
+            return ReducerOutput(state: next)
         case .none:
             next.modal = nil
             return ReducerOutput(state: next)

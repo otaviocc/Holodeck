@@ -38,12 +38,19 @@ struct ScreenshotCommand: AsyncParsableCommand {
     @Option(name: .shortAndLong, help: "Output file path (default: ~/Screenshots/sim_screenshot_<ts>.<ext>).")
     var output: String?
 
-    @Option(help: "Image type: png, jpeg, tiff, bmp.")
-    var type = "png"
+    @Option(help: "Image type: png, jpeg, tiff, bmp. Defaults to value from ~/.config/holodeck/config.json.")
+    var type: String?
 
     func run() async throws {
-        guard let type = ScreenshotType(rawValue: type.lowercased()) else {
-            throw ValidationError("Invalid type '\(type)'. Use png, jpeg, tiff, or bmp.")
+        let config = (try? ConfigLoader.load()) ?? .default
+        let imageType: ScreenshotType
+        if let raw = type {
+            guard let parsed = ScreenshotType(rawValue: raw.lowercased()) else {
+                throw ValidationError("Invalid type '\(raw)'. Use png, jpeg, tiff, or bmp.")
+            }
+            imageType = parsed
+        } else {
+            imageType = config.screenshotType
         }
         let service = SimulatorService()
         let sim = try await service.resolve(query: query)
@@ -52,7 +59,17 @@ struct ScreenshotCommand: AsyncParsableCommand {
         }
         let screenshots = ScreenshotService()
         let outURL = output.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
-        let path = try await screenshots.capture(udid: sim.id, output: outURL, type: type)
+            ?? defaultOutputURL(config: config, type: imageType)
+        let path = try await screenshots.capture(udid: sim.id, output: outURL, type: imageType)
         print(path.path)
+    }
+
+    private func defaultOutputURL(config: Config, type: ScreenshotType) -> URL {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        formatter.timeZone = TimeZone.current
+        let stamp = formatter.string(from: Date())
+        return config.resolvedScreenshotsDirectory
+            .appendingPathComponent("sim_screenshot_\(stamp).\(type.rawValue)")
     }
 }

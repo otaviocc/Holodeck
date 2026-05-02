@@ -31,6 +31,7 @@ public final class HolodeckApp {
     private let recording: RecordingService
     private let screenshots: ScreenshotService
     private let appearance: AppearanceService
+    private let config: Config
     private let terminal = TerminalMode()
     private let parser = InputParser()
     private var state = AppState()
@@ -40,12 +41,14 @@ public final class HolodeckApp {
         service: SimulatorService = SimulatorService(),
         recording: RecordingService = RecordingService(),
         screenshots: ScreenshotService = ScreenshotService(),
-        appearance: AppearanceService = AppearanceService()
+        appearance: AppearanceService = AppearanceService(),
+        config: Config = (try? ConfigLoader.load()) ?? .default
     ) {
         self.service = service
         self.recording = recording
         self.screenshots = screenshots
         self.appearance = appearance
+        self.config = config
     }
 
     public func run() async {
@@ -63,7 +66,10 @@ public final class HolodeckApp {
         let (eventStream, eventContinuation) = AsyncStream<AppEvent>.makeStream(bufferingPolicy: .unbounded)
 
         let inputTask = AppSpawn.inputTask(parser: parser, continuation: eventContinuation)
-        let pollTask = AppSpawn.pollTask(continuation: eventContinuation)
+        let pollTask = AppSpawn.pollTask(
+            interval: config.pollIntervalSeconds,
+            continuation: eventContinuation
+        )
         let resizeTask = installResizeHandler(continuation: eventContinuation)
 
         await AppSpawn.kickoffRefresh(service: service, continuation: eventContinuation)

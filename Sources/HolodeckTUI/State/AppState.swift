@@ -29,6 +29,7 @@ public enum Modal: Equatable, Sendable {
     case confirmErase(UUID)
     case confirmDelete(UUID)
     case createWizard(CreateWizard)
+    case help
 }
 
 public struct CreateWizard: Equatable, Sendable {

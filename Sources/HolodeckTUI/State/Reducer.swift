@@ -258,6 +258,10 @@ public enum Reducer {
             next.modal = .createWizard(CreateWizard())
             return ReducerOutput(state: next, effects: [.loadTargets])
 
+        case .char("?"):
+            next.modal = .help
+            return ReducerOutput(state: next)
+
         case .enter, .char(" "):
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
             guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }

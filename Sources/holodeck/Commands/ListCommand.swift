@@ -59,7 +59,9 @@ struct ListCommand: AsyncParsableCommand {
     func run() async throws {
         let service = SimulatorService()
         var simulators = try await service.list()
-        if let filter = platform?.platform {
+        let config = (try? ConfigLoader.load()) ?? .default
+        let effectivePlatform = platform?.platform ?? config.defaultPlatform
+        if let filter = effectivePlatform {
             simulators = simulators.filter { $0.runtime.platform == filter }
         }
         if json {

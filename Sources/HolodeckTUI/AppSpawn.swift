@@ -36,9 +36,12 @@ enum AppSpawn {
         }
     }
 
-    static func pollTask(continuation: AsyncStream<AppEvent>.Continuation) -> Task<Void, Never> {
+    static func pollTask(
+        interval: Double,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) -> Task<Void, Never> {
         Task.detached {
-            await pollLoop(continuation: continuation)
+            await pollLoop(interval: interval, continuation: continuation)
         }
     }
 
@@ -149,9 +152,13 @@ enum AppSpawn {
         }
     }
 
-    static func pollLoop(continuation: AsyncStream<AppEvent>.Continuation) async {
+    static func pollLoop(
+        interval: Double,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) async {
+        let nanos = UInt64(max(0.1, interval) * 1_000_000_000)
         while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            try? await Task.sleep(nanoseconds: nanos)
             if Task.isCancelled { break }
             continuation.yield(.pollTick)
         }

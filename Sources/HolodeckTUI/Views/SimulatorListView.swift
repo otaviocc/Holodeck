@@ -26,6 +26,9 @@ import HolodeckCore
 public enum SimulatorListView {
 
     public static func render(_ state: AppState) -> String {
+        if state.modal == .help {
+            return renderHelp(state: state)
+        }
         var lines: [String] = []
         let cols = max(40, state.cols)
         let rows = max(8, state.rows)
@@ -78,7 +81,7 @@ public enum SimulatorListView {
 
     private static func header(width: Int) -> String {
         let title = " holodeck "
-        let hint = " ⏎ boot/shutdown  r rec  p shot  a appear  n new  e erase  d delete  q quit "
+        let hint = " ⏎ toggle  r rec  p shot  a appear  n new  e erase  d delete  ? help  q quit "
         let space = max(0, width - title.count - hint.count)
         return "\(ANSI.inverse)\(title)\(String(repeating: " ", count: space))\(hint)\(ANSI.reset)"
     }
@@ -96,6 +99,8 @@ public enum SimulatorListView {
             text = "Delete \(name)?  y = confirm    n / Esc = cancel"
         case let .createWizard(wizard):
             text = createWizardBanner(wizard: wizard)
+        case .help:
+            text = "Help — press any key to dismiss"
         }
         let truncated = text.count > width ? String(text.prefix(width)) : text
         let space = max(0, width - truncated.count)
@@ -173,6 +178,39 @@ public enum SimulatorListView {
         let visible = visibleWidth ?? stripANSI(text).count
         let space = max(0, width - visible)
         return "\(text)\(String(repeating: " ", count: space))"
+    }
+
+    private static func renderHelp(state: AppState) -> String {
+        let cols = max(40, state.cols)
+        let rows = max(8, state.rows)
+        let entries: [(String, String)] = [
+            ("↑ ↓ / j k", "navigate"),
+            ("Enter / Space", "boot or shutdown selected"),
+            ("R", "force refresh"),
+            ("r", "start / stop recording"),
+            ("p", "screenshot"),
+            ("a", "appearance (light / dark)"),
+            ("n", "new simulator (wizard)"),
+            ("e", "erase (shutdown sims only)"),
+            ("d", "delete"),
+            ("?", "this help"),
+            ("q / Esc", "quit (or close modal)")
+        ]
+        var lines: [String] = []
+        lines.append(header(width: cols))
+        lines.append(pad("", width: cols))
+        lines.append(pad("  \(ANSI.bold)Keybindings\(ANSI.reset)", width: cols, visibleWidth: 13))
+        lines.append(pad("", width: cols))
+        let keyWidth = entries.map(\.0.count).max() ?? 0
+        for (key, description) in entries {
+            let padded = key.padding(toLength: keyWidth, withPad: " ", startingAt: 0)
+            lines.append(pad("  \(ANSI.cyan)\(padded)\(ANSI.reset)   \(description)", width: cols))
+        }
+        while lines.count < rows - 1 {
+            lines.append(pad("", width: cols))
+        }
+        lines.append(statusBar(state: state, width: cols))
+        return lines.joined(separator: "\r\n")
     }
 
     static func stripANSI(_ text: String) -> String {
