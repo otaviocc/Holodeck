@@ -35,13 +35,14 @@ public struct Runtime: Sendable, Equatable, Hashable, Comparable {
     }
 
     public init?(identifier: String) {
-        guard let platform = Platform(runtimeIdentifier: identifier) else { return nil }
-        let prefix = "com.apple.CoreSimulator.SimRuntime."
-        let suffix = String(identifier.dropFirst(prefix.count))
+        guard identifier.hasPrefix(SimctlIdentifiers.runtimePrefix) else { return nil }
+        let suffix = identifier.dropFirst(SimctlIdentifiers.runtimePrefix.count)
         guard let dash = suffix.firstIndex(of: "-") else { return nil }
+        let platformName = String(suffix[..<dash])
         let versionPart = suffix[suffix.index(after: dash)...]
             .replacingOccurrences(of: "-", with: ".")
-        guard let version = SemanticVersion(string: versionPart) else { return nil }
+        guard let platform = Platform(simctlName: platformName),
+              let version = SemanticVersion(string: versionPart) else { return nil }
         self.platform = platform
         self.version = version
         self.identifier = identifier

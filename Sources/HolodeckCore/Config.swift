@@ -65,15 +65,18 @@ public enum ConfigLoader {
     }
 
     public static func load(from url: URL = defaultPath) throws -> Config {
-        guard FileManager.default.fileExists(atPath: url.path) else {
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
             return .default
         }
-        let data = try Data(contentsOf: url)
         return try decode(data)
     }
 
     public static func decode(_ data: Data) throws -> Config {
-        let decoder = JSONDecoder()
-        return try decoder.decode(Config.self, from: data)
+        try decoder.decode(Config.self, from: data)
     }
+
+    private static let decoder = JSONDecoder()
 }

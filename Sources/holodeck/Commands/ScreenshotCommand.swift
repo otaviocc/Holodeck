@@ -59,17 +59,8 @@ struct ScreenshotCommand: AsyncParsableCommand {
         }
         let screenshots = ScreenshotService()
         let outURL = output.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
-            ?? defaultOutputURL(config: config, type: imageType)
+            ?? DefaultMediaPath.screenshot(in: config.resolvedScreenshotsDirectory, type: imageType)
         let path = try await screenshots.capture(udid: sim.id, output: outURL, type: imageType)
         print(path.path)
-    }
-
-    private func defaultOutputURL(config: Config, type: ScreenshotType) -> URL {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        formatter.timeZone = TimeZone.current
-        let stamp = formatter.string(from: Date())
-        return config.resolvedScreenshotsDirectory
-            .appendingPathComponent("sim_screenshot_\(stamp).\(type.rawValue)")
     }
 }

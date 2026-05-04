@@ -22,25 +22,20 @@
 
 import Foundation
 
-public struct DeviceType: Sendable, Equatable, Hashable {
+public enum DefaultMediaPath {
 
-    public let identifier: String
-    public let name: String
-
-    public init(identifier: String, name: String) {
-        self.identifier = identifier
-        self.name = name
+    public static func record(in directory: URL, date: Date = Date()) -> URL {
+        directory.appendingPathComponent("sim_record_\(timestamp(date)).mp4")
     }
 
-    public init(identifier: String) {
-        self.identifier = identifier
-        name = DeviceType.humanize(identifier: identifier)
+    public static func screenshot(in directory: URL, type: ScreenshotType, date: Date = Date()) -> URL {
+        directory.appendingPathComponent("sim_screenshot_\(timestamp(date)).\(type.rawValue)")
     }
 
-    static func humanize(identifier: String) -> String {
-        let tail = identifier.hasPrefix(SimctlIdentifiers.deviceTypePrefix)
-            ? String(identifier.dropFirst(SimctlIdentifiers.deviceTypePrefix.count))
-            : identifier
-        return tail.replacingOccurrences(of: "-", with: " ")
+    private static func timestamp(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        formatter.timeZone = TimeZone.current
+        return formatter.string(from: date)
     }
 }

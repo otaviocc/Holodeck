@@ -22,7 +22,7 @@
 
 import Foundation
 
-public actor SimctlClient {
+public struct SimctlClient: Sendable {
 
     private let runner: any ProcessRunning
 
@@ -31,9 +31,9 @@ public actor SimctlClient {
     }
 
     public func listDevices(includeUnavailable: Bool = false) async throws -> [Simulator] {
-        var args = ["simctl", "list", "--json", "devices"]
+        var args = ["list", "--json", "devices"]
         if !includeUnavailable { args.append("available") }
-        let result = try await invoke(args)
+        let result = try await runSimctl(args)
         do {
             return try DeviceListDecoder.decode(result.stdout)
         } catch {
@@ -42,15 +42,15 @@ public actor SimctlClient {
     }
 
     public func boot(_ udid: UUID) async throws {
-        try await runSimctl(["boot", udid.uuidString])
+        _ = try await runSimctl(["boot", udid.uuidString])
     }
 
     public func shutdown(_ udid: UUID) async throws {
-        try await runSimctl(["shutdown", udid.uuidString])
+        _ = try await runSimctl(["shutdown", udid.uuidString])
     }
 
     public func screenshot(udid: UUID, to path: URL, type: ScreenshotType) async throws {
-        try await runSimctl([
+        _ = try await runSimctl([
             "io", udid.uuidString, "screenshot",
             "--type", type.rawValue,
             path.path
@@ -58,35 +58,35 @@ public actor SimctlClient {
     }
 
     public func setAppearance(udid: UUID, appearance: Appearance) async throws {
-        try await runSimctl(["ui", udid.uuidString, "appearance", appearance.rawValue])
+        _ = try await runSimctl(["ui", udid.uuidString, "appearance", appearance.rawValue])
     }
 
     public func setStatusBar(udid: UUID, overrides: StatusBarOverrides) async throws {
         guard !overrides.isEmpty else {
             throw SimctlError.unsupportedOperation(reason: "no status bar overrides provided")
         }
-        try await runSimctl(["status_bar", udid.uuidString, "override"] + overrides.simctlArguments)
+        _ = try await runSimctl(["status_bar", udid.uuidString, "override"] + overrides.simctlArguments)
     }
 
     public func clearStatusBar(udid: UUID) async throws {
-        try await runSimctl(["status_bar", udid.uuidString, "clear"])
+        _ = try await runSimctl(["status_bar", udid.uuidString, "clear"])
     }
 
     public func setLocale(udid: UUID, bcp47: String) async throws {
         let appleLocale = bcp47.replacingOccurrences(of: "-", with: "_")
-        try await runSimctl([
+        async let languages: ProcessResult = runSimctl([
             "spawn", udid.uuidString,
             "defaults", "write", "-g", "AppleLanguages", "-array", bcp47
         ])
-        try await runSimctl([
+        async let locale: ProcessResult = runSimctl([
             "spawn", udid.uuidString,
             "defaults", "write", "-g", "AppleLocale", "-string", appleLocale
         ])
+        _ = try await (languages, locale)
     }
 
     public func listAvailableTargets() async throws -> AvailableTargets {
-        let args = ["simctl", "list", "--json", "devicetypes", "runtimes"]
-        let result = try await invoke(args)
+        let result = try await runSimctl(["list", "--json", "devicetypes", "runtimes"])
         do {
             return try DeviceListDecoder.decodeAvailableTargets(result.stdout)
         } catch {
@@ -95,7 +95,7 @@ public actor SimctlClient {
     }
 
     public func create(name: String, deviceTypeIdentifier: String, runtimeIdentifier: String) async throws -> UUID {
-        let result = try await invoke(["simctl", "create", name, deviceTypeIdentifier, runtimeIdentifier])
+        let result = try await runSimctl(["create", name, deviceTypeIdentifier, runtimeIdentifier])
         let stdout = String(data: result.stdout, encoding: .utf8) ?? ""
         let trimmed = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let udid = UUID(uuidString: trimmed) else {
@@ -105,22 +105,20 @@ public actor SimctlClient {
     }
 
     public func erase(_ udid: UUID) async throws {
-        try await runSimctl(["erase", udid.uuidString])
+        _ = try await runSimctl(["erase", udid.uuidString])
     }
 
     public func delete(_ udid: UUID) async throws {
-        try await runSimctl(["delete", udid.uuidString])
+        _ = try await runSimctl(["delete", udid.uuidString])
     }
 
     public func deleteUnavailable() async throws {
-        try await runSimctl(["delete", "unavailable"])
+        _ = try await runSimctl(["delete", "unavailable"])
     }
 
-    private func runSimctl(_ subcommand: [String]) async throws {
-        _ = try await invoke(["simctl"] + subcommand)
-    }
-
-    private func invoke(_ args: [String]) async throws -> ProcessResult {
+    @discardableResult
+    private func runSimctl(_ subcommand: [String]) async throws -> ProcessResult {
+        let args = ["simctl"] + subcommand
         let result: ProcessResult
         do {
             result = try await runner.run("/usr/bin/xcrun", args)

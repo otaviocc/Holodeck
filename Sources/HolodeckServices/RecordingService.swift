@@ -34,11 +34,11 @@ public actor RecordingService {
         get async { await recorder.isRunning }
     }
 
-    public func start(udid: UUID, output: URL? = nil, codec: VideoCodec = .h264) async throws -> URL {
+    public func start(udid: UUID, output: URL, codec: VideoCodec = .h264) async throws -> URL {
         if await recorder.isRunning {
             throw SimctlError.unsupportedOperation(reason: "already recording")
         }
-        let path = output ?? Self.defaultOutputPath()
+        let path = output
         try FileManager.default.createDirectory(
             at: path.deletingLastPathComponent(),
             withIntermediateDirectories: true
@@ -58,15 +58,5 @@ public actor RecordingService {
         let path = currentOutput
         currentOutput = nil
         return path
-    }
-
-    public static func defaultOutputPath() -> URL {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        formatter.timeZone = TimeZone.current
-        let stamp = formatter.string(from: Date())
-        return FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Screenshots", isDirectory: true)
-            .appendingPathComponent("sim_record_\(stamp).mp4")
     }
 }

@@ -61,7 +61,7 @@ struct RecordCommand: AsyncParsableCommand {
 
         let recording = RecordingService()
         let outURL = output.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
-            ?? defaultOutputURL(config: config)
+            ?? DefaultMediaPath.record(in: config.resolvedScreenshotsDirectory)
         let path = try await recording.start(udid: sim.id, output: outURL, codec: codecValue)
         FileHandle.standardError.write(Data("Recording to \(path.path) — press Ctrl-C to stop.\n".utf8))
 
@@ -70,14 +70,6 @@ struct RecordCommand: AsyncParsableCommand {
         FileHandle.standardError.write(Data("\nFinalizing…\n".utf8))
         _ = await recording.stop()
         print(path.path)
-    }
-
-    private func defaultOutputURL(config: Config) -> URL {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        formatter.timeZone = TimeZone.current
-        let stamp = formatter.string(from: Date())
-        return config.resolvedScreenshotsDirectory.appendingPathComponent("sim_record_\(stamp).mp4")
     }
 
     private func waitForSIGINT() async {

@@ -31,23 +31,12 @@ public struct ScreenshotService: Sendable {
         self.client = client
     }
 
-    public func capture(udid: UUID, output: URL? = nil, type: ScreenshotType = .png) async throws -> URL {
-        let path = output ?? Self.defaultOutputPath(type: type)
+    public func capture(udid: UUID, output: URL, type: ScreenshotType = .png) async throws -> URL {
         try FileManager.default.createDirectory(
-            at: path.deletingLastPathComponent(),
+            at: output.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
-        try await client.screenshot(udid: udid, to: path, type: type)
-        return path
-    }
-
-    public static func defaultOutputPath(type: ScreenshotType = .png) -> URL {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        formatter.timeZone = TimeZone.current
-        let stamp = formatter.string(from: Date())
-        return FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Screenshots", isDirectory: true)
-            .appendingPathComponent("sim_screenshot_\(stamp).\(type.rawValue)")
+        try await client.screenshot(udid: udid, to: output, type: type)
+        return output
     }
 }

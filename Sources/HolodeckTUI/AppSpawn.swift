@@ -87,11 +87,13 @@ enum AppSpawn {
     static func startRecording(
         recording: RecordingService,
         id: UUID,
+        output: URL,
+        codec: VideoCodec,
         continuation: AsyncStream<AppEvent>.Continuation
     ) {
         Task.detached {
             do {
-                let path = try await recording.start(udid: id)
+                let path = try await recording.start(udid: id, output: output, codec: codec)
                 continuation.yield(.recordingStarted(id, path))
             } catch {
                 continuation.yield(.recordingFailed(errorDescription(error)))
@@ -128,11 +130,13 @@ enum AppSpawn {
     static func screenshot(
         screenshots: ScreenshotService,
         id: UUID,
+        output: URL,
+        type: ScreenshotType,
         continuation: AsyncStream<AppEvent>.Continuation
     ) {
         Task.detached {
             do {
-                let path = try await screenshots.capture(udid: id)
+                let path = try await screenshots.capture(udid: id, output: output, type: type)
                 continuation.yield(.screenshotSaved(path))
             } catch {
                 continuation.yield(.screenshotFailed(errorDescription(error)))

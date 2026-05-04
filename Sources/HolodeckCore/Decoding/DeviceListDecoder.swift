@@ -24,6 +24,8 @@ import Foundation
 
 public enum DeviceListDecoder {
 
+    private static let decoder = JSONDecoder()
+
     private struct RawList: Decodable {
 
         let devices: [String: [RawDevice]]
@@ -60,7 +62,7 @@ public enum DeviceListDecoder {
     }
 
     public static func decodeAvailableTargets(_ data: Data) throws -> AvailableTargets {
-        let raw = try JSONDecoder().decode(RawTargets.self, from: data)
+        let raw = try decoder.decode(RawTargets.self, from: data)
         let deviceTypes = (raw.devicetypes ?? []).map { DeviceType(identifier: $0.identifier, name: $0.name) }
         let runtimes = (raw.runtimes ?? []).compactMap { rawRuntime -> Runtime? in
             guard rawRuntime.isAvailable ?? true else { return nil }
@@ -70,7 +72,7 @@ public enum DeviceListDecoder {
     }
 
     public static func decode(_ data: Data) throws -> [Simulator] {
-        let raw = try JSONDecoder().decode(RawList.self, from: data)
+        let raw = try decoder.decode(RawList.self, from: data)
         var result: [Simulator] = []
         for (runtimeId, devices) in raw.devices {
             guard let runtime = Runtime(identifier: runtimeId) else { continue }

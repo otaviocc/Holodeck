@@ -45,33 +45,41 @@ public struct ProcessRunner: ProcessRunning {
     public init() {}
 
     public func run(_ launchPath: String, _ arguments: [String]) async throws -> ProcessResult {
-        try await withCheckedThrowingContinuation { continuation in
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: launchPath)
+        process.arguments = arguments
+
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        process.standardOutput = stdoutPipe
+        process.standardError = stderrPipe
+
+        try process.run()
+
+        async let stdoutData = Self.readToEnd(stdoutPipe.fileHandleForReading)
+        async let stderrData = Self.readToEnd(stderrPipe.fileHandleForReading)
+        await Self.waitForExit(process)
+
+        return await ProcessResult(
+            stdout: stdoutData,
+            stderr: stderrData,
+            exitCode: process.terminationStatus
+        )
+    }
+
+    private static func readToEnd(_ handle: FileHandle) async -> Data {
+        await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                let process = Process()
-                process.executableURL = URL(fileURLWithPath: launchPath)
-                process.arguments = arguments
+                continuation.resume(returning: handle.readDataToEndOfFile())
+            }
+        }
+    }
 
-                let stdoutPipe = Pipe()
-                let stderrPipe = Pipe()
-                process.standardOutput = stdoutPipe
-                process.standardError = stderrPipe
-
-                do {
-                    try process.run()
-                } catch {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                let outData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
-                let errData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+    private static func waitForExit(_ process: Process) async {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
                 process.waitUntilExit()
-
-                continuation.resume(returning: ProcessResult(
-                    stdout: outData,
-                    stderr: errData,
-                    exitCode: process.terminationStatus
-                ))
+                continuation.resume()
             }
         }
     }

@@ -22,25 +22,8 @@
 
 import Foundation
 
-public struct DeviceType: Sendable, Equatable, Hashable {
+enum SimctlIdentifiers {
 
-    public let identifier: String
-    public let name: String
-
-    public init(identifier: String, name: String) {
-        self.identifier = identifier
-        self.name = name
-    }
-
-    public init(identifier: String) {
-        self.identifier = identifier
-        name = DeviceType.humanize(identifier: identifier)
-    }
-
-    static func humanize(identifier: String) -> String {
-        let tail = identifier.hasPrefix(SimctlIdentifiers.deviceTypePrefix)
-            ? String(identifier.dropFirst(SimctlIdentifiers.deviceTypePrefix.count))
-            : identifier
-        return tail.replacingOccurrences(of: "-", with: " ")
-    }
+    static let runtimePrefix = "com.apple.CoreSimulator.SimRuntime."
+    static let deviceTypePrefix = "com.apple.CoreSimulator.SimDeviceType."
 }

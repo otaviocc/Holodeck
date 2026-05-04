@@ -108,11 +108,26 @@ public final class HolodeckApp {
         case .refresh:
             AppSpawn.refresh(service: service, continuation: continuation)
         case let .startRecording(id):
-            AppSpawn.startRecording(recording: recording, id: id, continuation: continuation)
+            AppSpawn.startRecording(
+                recording: recording,
+                id: id,
+                output: DefaultMediaPath.record(in: config.resolvedScreenshotsDirectory),
+                codec: config.videoCodec,
+                continuation: continuation
+            )
         case .stopRecording:
             AppSpawn.stopRecording(recording: recording, continuation: continuation)
         case let .captureScreenshot(id):
-            AppSpawn.screenshot(screenshots: screenshots, id: id, continuation: continuation)
+            AppSpawn.screenshot(
+                screenshots: screenshots,
+                id: id,
+                output: DefaultMediaPath.screenshot(
+                    in: config.resolvedScreenshotsDirectory,
+                    type: config.screenshotType
+                ),
+                type: config.screenshotType,
+                continuation: continuation
+            )
         case let .setAppearance(id, value):
             AppSpawn.appearance(service: appearance, id: id, appearance: value, continuation: continuation)
         case let .eraseSimulator(id):

@@ -30,12 +30,14 @@ public enum Platform: String, Sendable, CaseIterable, Codable {
     case visionOS
 
     public init?(runtimeIdentifier: String) {
-        let prefix = "com.apple.CoreSimulator.SimRuntime."
-        guard runtimeIdentifier.hasPrefix(prefix) else { return nil }
-        let suffix = runtimeIdentifier.dropFirst(prefix.count)
+        guard runtimeIdentifier.hasPrefix(SimctlIdentifiers.runtimePrefix) else { return nil }
+        let suffix = runtimeIdentifier.dropFirst(SimctlIdentifiers.runtimePrefix.count)
         guard let dash = suffix.firstIndex(of: "-") else { return nil }
-        let name = String(suffix[..<dash])
-        switch name.lowercased() {
+        self.init(simctlName: String(suffix[..<dash]))
+    }
+
+    init?(simctlName: String) {
+        switch simctlName.lowercased() {
         case "ios": self = .iOS
         case "watchos": self = .watchOS
         case "tvos": self = .tvOS
