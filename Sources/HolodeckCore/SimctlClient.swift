@@ -57,6 +57,19 @@ public struct SimctlClient: Sendable {
         ])
     }
 
+    public static func recordVideoCommand(
+        udid: UUID,
+        output: URL,
+        codec: VideoCodec
+    ) -> (launchPath: String, arguments: [String]) {
+        let args = [
+            "simctl", "io", udid.uuidString, "recordVideo",
+            "--codec", codec.rawValue,
+            output.path
+        ]
+        return ("/usr/bin/xcrun", args)
+    }
+
     public func setAppearance(udid: UUID, appearance: Appearance) async throws {
         _ = try await runSimctl(["ui", udid.uuidString, "appearance", appearance.rawValue])
     }

@@ -32,6 +32,13 @@ public enum DefaultMediaPath {
         directory.appendingPathComponent("sim_screenshot_\(timestamp(date)).\(type.rawValue)")
     }
 
+    public static func ensureDirectoryExists(for path: URL) throws {
+        try FileManager.default.createDirectory(
+            at: path.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+    }
+
     private static func timestamp(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"

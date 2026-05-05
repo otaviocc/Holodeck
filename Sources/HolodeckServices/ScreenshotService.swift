@@ -32,10 +32,7 @@ public struct ScreenshotService: Sendable {
     }
 
     public func capture(udid: UUID, output: URL, type: ScreenshotType = .png) async throws -> URL {
-        try FileManager.default.createDirectory(
-            at: output.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
+        try DefaultMediaPath.ensureDirectoryExists(for: output)
         try await client.screenshot(udid: udid, to: output, type: type)
         return output
     }

@@ -23,7 +23,7 @@
 import Foundation
 import HolodeckCore
 
-public actor SimulatorService {
+public struct SimulatorService: Sendable {
 
     private let client: SimctlClient
 
@@ -75,15 +75,22 @@ public actor SimulatorService {
             return match
         }
         let needle = query.lowercased()
-        let matches = all.filter { $0.name.lowercased() == needle }
-            + all.filter { $0.name.lowercased().contains(needle) && $0.name.lowercased() != needle }
-        let uniqueExact = all.filter { $0.name.lowercased() == needle }
-        if uniqueExact.count == 1 { return uniqueExact[0] }
-        if uniqueExact.count > 1 {
-            throw SimctlError.ambiguousMatch(query: query, candidates: uniqueExact)
+        var exact: [Simulator] = []
+        var partial: [Simulator] = []
+        for sim in all {
+            let name = sim.name.lowercased()
+            if name == needle {
+                exact.append(sim)
+            } else if name.contains(needle) {
+                partial.append(sim)
+            }
         }
-        if matches.count == 1 { return matches[0] }
-        if matches.isEmpty { throw SimctlError.simulatorNotFound(query: query) }
-        throw SimctlError.ambiguousMatch(query: query, candidates: matches)
+        if exact.count == 1 { return exact[0] }
+        if exact.count > 1 {
+            throw SimctlError.ambiguousMatch(query: query, candidates: exact)
+        }
+        if partial.count == 1 { return partial[0] }
+        if partial.isEmpty { throw SimctlError.simulatorNotFound(query: query) }
+        throw SimctlError.ambiguousMatch(query: query, candidates: partial)
     }
 }

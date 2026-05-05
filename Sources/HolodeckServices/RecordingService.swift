@@ -38,19 +38,11 @@ public actor RecordingService {
         if await recorder.isRunning {
             throw SimctlError.unsupportedOperation(reason: "already recording")
         }
-        let path = output
-        try FileManager.default.createDirectory(
-            at: path.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        let args = [
-            "simctl", "io", udid.uuidString, "recordVideo",
-            "--codec", codec.rawValue,
-            path.path
-        ]
-        try await recorder.start(launchPath: "/usr/bin/xcrun", arguments: args)
-        currentOutput = path
-        return path
+        try DefaultMediaPath.ensureDirectoryExists(for: output)
+        let command = SimctlClient.recordVideoCommand(udid: udid, output: output, codec: codec)
+        try await recorder.start(launchPath: command.launchPath, arguments: command.arguments)
+        currentOutput = output
+        return output
     }
 
     public func stop() async -> URL? {
