@@ -128,16 +128,15 @@ public struct AppState: Equatable, Sendable {
         self.modal = modal
     }
 
-    public var sortedSimulators: [Simulator] {
+    public var selectedSimulator: Simulator? {
+        guard !simulators.isEmpty, selectedIndex >= 0, selectedIndex < simulators.count else { return nil }
+        return simulators[selectedIndex]
+    }
+
+    public static func sort(_ simulators: [Simulator]) -> [Simulator] {
         simulators.sorted { lhs, rhs in
             if lhs.runtime != rhs.runtime { return lhs.runtime > rhs.runtime }
             return lhs.name < rhs.name
         }
-    }
-
-    public var selectedSimulator: Simulator? {
-        let sorted = sortedSimulators
-        guard !sorted.isEmpty, selectedIndex >= 0, selectedIndex < sorted.count else { return nil }
-        return sorted[selectedIndex]
     }
 }

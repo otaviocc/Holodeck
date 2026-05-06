@@ -35,6 +35,7 @@ public final class HolodeckApp {
     private let terminal = TerminalMode()
     private let parser = InputParser()
     private var state = AppState()
+    private var lastRenderedState: AppState?
     private var signalSources: [DispatchSourceSignal] = []
 
     public init(
@@ -200,8 +201,10 @@ public final class HolodeckApp {
     }
 
     private func render() {
+        if lastRenderedState == state { return }
         let body = SimulatorListView.render(state)
         write(ANSI.home + ANSI.clearScreen + body)
+        lastRenderedState = state
     }
 
     private func write(_ text: String) {

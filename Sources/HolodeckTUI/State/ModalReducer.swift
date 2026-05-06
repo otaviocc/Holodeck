@@ -31,9 +31,9 @@ enum ModalReducer {
         case .appearance:
             return appearance(state: next, key: key)
         case let .confirmErase(id):
-            return confirmErase(state: next, id: id, key: key)
+            return confirm(state: next, id: id, key: key, status: "Erasing…", effect: .eraseSimulator(id))
         case let .confirmDelete(id):
-            return confirmDelete(state: next, id: id, key: key)
+            return confirm(state: next, id: id, key: key, status: "Deleting…", effect: .deleteSimulator(id))
         case let .createWizard(wizard):
             return WizardReducer.handle(state: next, wizard: wizard, key: key)
         case .help:
@@ -72,30 +72,20 @@ enum ModalReducer {
         }
     }
 
-    private static func confirmErase(state: AppState, id: UUID, key: Key) -> ReducerOutput {
+    private static func confirm(
+        state: AppState,
+        id: UUID,
+        key: Key,
+        status: String,
+        effect: ReducerOutput.SideEffect
+    ) -> ReducerOutput {
         var next = state
         switch key {
         case .char("y"), .char("Y"):
             next.modal = nil
-            next.statusMessage = "Erasing…"
+            next.statusMessage = status
             next.pendingOperations.insert(id)
-            return ReducerOutput(state: next, effects: [.eraseSimulator(id)])
-        case .char("n"), .char("N"), .escape, .char("q"):
-            next.modal = nil
-            return ReducerOutput(state: next)
-        default:
-            return ReducerOutput(state: next)
-        }
-    }
-
-    private static func confirmDelete(state: AppState, id: UUID, key: Key) -> ReducerOutput {
-        var next = state
-        switch key {
-        case .char("y"), .char("Y"):
-            next.modal = nil
-            next.statusMessage = "Deleting…"
-            next.pendingOperations.insert(id)
-            return ReducerOutput(state: next, effects: [.deleteSimulator(id)])
+            return ReducerOutput(state: next, effects: [effect])
         case .char("n"), .char("N"), .escape, .char("q"):
             next.modal = nil
             return ReducerOutput(state: next)

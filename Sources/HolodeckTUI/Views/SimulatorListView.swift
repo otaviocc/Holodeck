@@ -45,9 +45,8 @@ public enum SimulatorListView {
             bodyOffset += 1
         }
 
-        let sorted = state.sortedSimulators
         let bodyHeight = rows - 4 - bodyOffset
-        let listSlice = bodyHeight > 0 ? Array(sorted.prefix(bodyHeight)) : []
+        let listSlice = bodyHeight > 0 ? Array(state.simulators.prefix(bodyHeight)) : []
 
         if listSlice.isEmpty {
             lines.append(pad("  (no simulators)", width: cols))
@@ -168,14 +167,15 @@ public enum SimulatorListView {
         } else {
             ""
         }
-        let leftVisible = stripANSI(left)
-        let truncated = leftVisible.count > width ? String(leftVisible.prefix(width)) : leftVisible
-        let padding = max(0, width - truncated.count)
-        return "\(ANSI.inverse) \(left)\(String(repeating: " ", count: padding - 1))\(ANSI.reset)"
+        let leftVisible = ANSI.stripEscapes(from: left)
+        let available = max(0, width - 1)
+        let truncated = leftVisible.count > available ? String(leftVisible.prefix(available)) : leftVisible
+        let padding = max(0, available - truncated.count)
+        return "\(ANSI.inverse) \(left)\(String(repeating: " ", count: padding))\(ANSI.reset)"
     }
 
     private static func pad(_ text: String, width: Int, visibleWidth: Int? = nil) -> String {
-        let visible = visibleWidth ?? stripANSI(text).count
+        let visible = visibleWidth ?? ANSI.stripEscapes(from: text).count
         let space = max(0, width - visible)
         return "\(text)\(String(repeating: " ", count: space))"
     }
@@ -214,18 +214,6 @@ public enum SimulatorListView {
     }
 
     static func stripANSI(_ text: String) -> String {
-        var out = ""
-        var inEscape = false
-        for char in text {
-            if inEscape {
-                if char.isLetter { inEscape = false }
-                continue
-            }
-            if char == "\u{1B}" { inEscape = true
-                continue
-            }
-            out.append(char)
-        }
-        return out
+        ANSI.stripEscapes(from: text)
     }
 }

@@ -50,13 +50,8 @@ enum AppSpawn {
         id: UUID,
         continuation: AsyncStream<AppEvent>.Continuation
     ) {
-        Task.detached {
-            do {
-                try await service.boot(id)
-                continuation.yield(.operationCompleted(id))
-            } catch {
-                continuation.yield(.operationFailed(id, errorDescription(error)))
-            }
+        spawnPerSimulator(id: id, continuation: continuation) {
+            try await service.boot(id)
         }
     }
 
@@ -65,13 +60,28 @@ enum AppSpawn {
         id: UUID,
         continuation: AsyncStream<AppEvent>.Continuation
     ) {
-        Task.detached {
-            do {
-                try await service.shutdown(id)
-                continuation.yield(.operationCompleted(id))
-            } catch {
-                continuation.yield(.operationFailed(id, errorDescription(error)))
-            }
+        spawnPerSimulator(id: id, continuation: continuation) {
+            try await service.shutdown(id)
+        }
+    }
+
+    static func erase(
+        service: SimulatorService,
+        id: UUID,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        spawnPerSimulator(id: id, continuation: continuation) {
+            try await service.erase(id)
+        }
+    }
+
+    static func delete(
+        service: SimulatorService,
+        id: UUID,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        spawnPerSimulator(id: id, continuation: continuation) {
+            try await service.delete(id)
         }
     }
 
@@ -91,14 +101,12 @@ enum AppSpawn {
         codec: VideoCodec,
         continuation: AsyncStream<AppEvent>.Continuation
     ) {
-        Task.detached {
-            do {
-                let path = try await recording.start(udid: id, output: output, codec: codec)
-                continuation.yield(.recordingStarted(id, path))
-            } catch {
-                continuation.yield(.recordingFailed(errorDescription(error)))
-            }
-        }
+        spawn(
+            continuation: continuation,
+            work: { try await recording.start(udid: id, output: output, codec: codec) },
+            success: { .recordingStarted(id, $0) },
+            failure: { .recordingFailed($0) }
+        )
     }
 
     static func stopRecording(
@@ -117,14 +125,12 @@ enum AppSpawn {
         appearance: Appearance,
         continuation: AsyncStream<AppEvent>.Continuation
     ) {
-        Task.detached {
-            do {
-                try await service.set(udid: id, appearance: appearance)
-                continuation.yield(.appearanceChanged(id, appearance))
-            } catch {
-                continuation.yield(.appearanceFailed(errorDescription(error)))
-            }
-        }
+        spawn(
+            continuation: continuation,
+            work: { try await service.set(udid: id, appearance: appearance) },
+            success: { .appearanceChanged(id, appearance) },
+            failure: { .appearanceFailed($0) }
+        )
     }
 
     static func screenshot(
@@ -134,14 +140,39 @@ enum AppSpawn {
         type: ScreenshotType,
         continuation: AsyncStream<AppEvent>.Continuation
     ) {
-        Task.detached {
-            do {
-                let path = try await screenshots.capture(udid: id, output: output, type: type)
-                continuation.yield(.screenshotSaved(path))
-            } catch {
-                continuation.yield(.screenshotFailed(errorDescription(error)))
-            }
-        }
+        spawn(
+            continuation: continuation,
+            work: { try await screenshots.capture(udid: id, output: output, type: type) },
+            success: { .screenshotSaved($0) },
+            failure: { .screenshotFailed($0) }
+        )
+    }
+
+    static func loadTargets(
+        service: SimulatorService,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        spawn(
+            continuation: continuation,
+            work: { try await service.availableTargets() },
+            success: { .targetsLoaded($0) },
+            failure: { .targetsFailed($0) }
+        )
+    }
+
+    static func create(
+        service: SimulatorService,
+        name: String,
+        deviceType: DeviceType,
+        runtime: Runtime,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        spawn(
+            continuation: continuation,
+            work: { try await service.create(name: name, deviceType: deviceType, runtime: runtime) },
+            success: { .simulatorCreated($0, name) },
+            failure: { .simulatorCreateFailed($0) }
+        )
     }
 
     static func kickoffRefresh(
@@ -189,80 +220,38 @@ enum AppSpawn {
         }
     }
 
-    static func erase(
-        service: SimulatorService,
-        id: UUID,
-        continuation: AsyncStream<AppEvent>.Continuation
-    ) {
-        Task.detached {
-            do {
-                try await service.erase(id)
-                continuation.yield(.operationCompleted(id))
-            } catch {
-                continuation.yield(.operationFailed(id, errorDescription(error)))
-            }
-        }
-    }
-
-    static func delete(
-        service: SimulatorService,
-        id: UUID,
-        continuation: AsyncStream<AppEvent>.Continuation
-    ) {
-        Task.detached {
-            do {
-                try await service.delete(id)
-                continuation.yield(.operationCompleted(id))
-            } catch {
-                continuation.yield(.operationFailed(id, errorDescription(error)))
-            }
-        }
-    }
-
-    static func loadTargets(
-        service: SimulatorService,
-        continuation: AsyncStream<AppEvent>.Continuation
-    ) {
-        Task.detached {
-            do {
-                let targets = try await service.availableTargets()
-                continuation.yield(.targetsLoaded(targets))
-            } catch {
-                continuation.yield(.targetsFailed(errorDescription(error)))
-            }
-        }
-    }
-
-    static func create(
-        service: SimulatorService,
-        name: String,
-        deviceType: DeviceType,
-        runtime: Runtime,
-        continuation: AsyncStream<AppEvent>.Continuation
-    ) {
-        Task.detached {
-            do {
-                let udid = try await service.create(name: name, deviceType: deviceType, runtime: runtime)
-                continuation.yield(.simulatorCreated(udid, name))
-            } catch {
-                continuation.yield(.simulatorCreateFailed(errorDescription(error)))
-            }
-        }
-    }
-
     static func errorDescription(_ error: Error) -> String {
-        if let simctl = error as? SimctlError {
-            switch simctl {
-            case let .commandFailed(_, _, stderr):
-                return stderr.isEmpty ? "command failed" : stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-            case let .simulatorNotFound(query): return "not found: \(query)"
-            case let .ambiguousMatch(query, _): return "ambiguous: \(query)"
-            case .decodingFailed: return "decode failed"
-            case let .alreadyInState(state): return "already \(state.rawValue)"
-            case .xcodeNotFound: return "Xcode not found"
-            case let .unsupportedOperation(reason): return reason
+        (error as? SimctlError).map(\.description) ?? "\(error)"
+    }
+
+    private static func spawnPerSimulator(
+        id: UUID,
+        continuation: AsyncStream<AppEvent>.Continuation,
+        work: @Sendable @escaping () async throws -> Void
+    ) {
+        Task.detached {
+            do {
+                try await work()
+                continuation.yield(.operationCompleted(id))
+            } catch {
+                continuation.yield(.operationFailed(id, errorDescription(error)))
             }
         }
-        return "\(error)"
+    }
+
+    private static func spawn<T: Sendable>(
+        continuation: AsyncStream<AppEvent>.Continuation,
+        work: @Sendable @escaping () async throws -> T,
+        success: @Sendable @escaping (T) -> AppEvent,
+        failure: @Sendable @escaping (String) -> AppEvent
+    ) {
+        Task.detached {
+            do {
+                let value = try await work()
+                continuation.yield(success(value))
+            } catch {
+                continuation.yield(failure(errorDescription(error)))
+            }
+        }
     }
 }

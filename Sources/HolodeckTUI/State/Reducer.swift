@@ -78,8 +78,8 @@ public enum Reducer {
         var next = state
         switch event {
         case let .refreshed(sims):
-            next.simulators = sims
-            let count = next.sortedSimulators.count
+            next.simulators = AppState.sort(sims)
+            let count = next.simulators.count
             if count == 0 {
                 next.selectedIndex = 0
             } else if next.selectedIndex >= count {
@@ -190,7 +190,7 @@ public enum Reducer {
             return handleModalKey(state: state, key: key)
         }
         var next = state
-        let count = next.sortedSimulators.count
+        let count = next.simulators.count
         switch key {
         case .up, .char("k"):
             if count > 0 { next.selectedIndex = max(0, next.selectedIndex - 1) }

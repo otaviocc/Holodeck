@@ -22,7 +22,7 @@
 
 import Foundation
 
-public enum SimctlError: Error, Sendable {
+public enum SimctlError: Error, Sendable, CustomStringConvertible {
 
     case xcodeNotFound
     case simulatorNotFound(query: String)
@@ -31,4 +31,24 @@ public enum SimctlError: Error, Sendable {
     case commandFailed(command: String, exitCode: Int32, stderr: String)
     case decodingFailed(underlying: Error)
     case unsupportedOperation(reason: String)
+
+    public var description: String {
+        switch self {
+        case .xcodeNotFound:
+            return "Xcode not found"
+        case let .simulatorNotFound(query):
+            return "not found: \(query)"
+        case let .ambiguousMatch(query, _):
+            return "ambiguous: \(query)"
+        case let .alreadyInState(state):
+            return "already \(state.rawValue)"
+        case let .commandFailed(_, _, stderr):
+            let trimmed = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "command failed" : trimmed
+        case .decodingFailed:
+            return "decode failed"
+        case let .unsupportedOperation(reason):
+            return reason
+        }
+    }
 }

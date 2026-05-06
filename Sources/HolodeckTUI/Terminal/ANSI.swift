@@ -47,4 +47,22 @@ public enum ANSI {
     public static let red = fg(31)
     public static let cyan = fg(36)
     public static let gray = fg(90)
+
+    public static func stripEscapes(from text: String) -> String {
+        guard text.contains("\u{1B}") else { return text }
+        var out = ""
+        var inEscape = false
+        for char in text {
+            if inEscape {
+                if char.isLetter { inEscape = false }
+                continue
+            }
+            if char == "\u{1B}" {
+                inEscape = true
+                continue
+            }
+            out.append(char)
+        }
+        return out
+    }
 }
