@@ -39,24 +39,15 @@ struct ScreenshotCommand: AsyncParsableCommand {
     var output: String?
 
     @Option(help: "Image type: png, jpeg, tiff, bmp. Defaults to value from ~/.config/holodeck/config.json.")
-    var type: String?
+    var type: ScreenshotType?
 
     func run() async throws {
-        let config = (try? ConfigLoader.load()) ?? .default
-        let imageType: ScreenshotType
-        if let raw = type {
-            guard let parsed = ScreenshotType(rawValue: raw.lowercased()) else {
-                throw ValidationError("Invalid type '\(raw)'. Use png, jpeg, tiff, or bmp.")
-            }
-            imageType = parsed
-        } else {
-            imageType = config.screenshotType
-        }
+        let config = ConfigLoader.loadOrDefault()
+        let imageType = type ?? config.screenshotType
         let service = SimulatorService()
-        let sim = try await service.resolve(query: query)
-        guard sim.state == .booted else {
-            throw ValidationError("\(sim.name) is \(sim.state.rawValue); only booted simulators can be captured.")
-        }
+        let sim = try await service.resolveInState(
+            query, .booted, purpose: "only booted simulators can be captured"
+        )
         let screenshots = ScreenshotService()
         let outURL = output.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
             ?? DefaultMediaPath.screenshot(in: config.resolvedScreenshotsDirectory, type: imageType)

@@ -47,7 +47,7 @@ struct StatusBarCommand: AsyncParsableCommand {
         var time: String?
 
         @Option(help: "Battery state: charging, charged, discharging.")
-        var batteryState: String?
+        var batteryState: BatteryState?
 
         @Option(help: "Battery level (0–100).")
         var batteryLevel: Int?
@@ -62,12 +62,6 @@ struct StatusBarCommand: AsyncParsableCommand {
         var operatorName: String?
 
         func run() async throws {
-            let batteryState = try batteryState.map { raw -> BatteryState in
-                guard let value = BatteryState(rawValue: raw.lowercased()) else {
-                    throw ValidationError("Invalid battery state '\(raw)'. Use charging, charged, or discharging.")
-                }
-                return value
-            }
             let overrides = StatusBarOverrides(
                 time: time,
                 batteryState: batteryState,
@@ -80,10 +74,9 @@ struct StatusBarCommand: AsyncParsableCommand {
                 throw ValidationError("Provide at least one --option to override.")
             }
             let service = SimulatorService()
-            let sim = try await service.resolve(query: query)
-            guard sim.state == .booted else {
-                throw ValidationError("\(sim.name) is \(sim.state.rawValue); the simulator must be booted.")
-            }
+            let sim = try await service.resolveInState(
+                query, .booted, purpose: "the simulator must be booted"
+            )
             try await StatusBarService().override(udid: sim.id, overrides: overrides)
             print("Applied status bar overrides to \(sim.name).")
         }
@@ -101,10 +94,9 @@ struct StatusBarCommand: AsyncParsableCommand {
 
         func run() async throws {
             let service = SimulatorService()
-            let sim = try await service.resolve(query: query)
-            guard sim.state == .booted else {
-                throw ValidationError("\(sim.name) is \(sim.state.rawValue); the simulator must be booted.")
-            }
+            let sim = try await service.resolveInState(
+                query, .booted, purpose: "the simulator must be booted"
+            )
             try await StatusBarService().clear(udid: sim.id)
             print("Cleared status bar overrides on \(sim.name).")
         }

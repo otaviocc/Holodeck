@@ -74,6 +74,10 @@ public enum ConfigLoader {
         return try decode(data)
     }
 
+    public static func loadOrDefault(from url: URL = defaultPath) -> Config {
+        (try? load(from: url)) ?? .default
+    }
+
     public static func decode(_ data: Data) throws -> Config {
         try decoder.decode(Config.self, from: data)
     }

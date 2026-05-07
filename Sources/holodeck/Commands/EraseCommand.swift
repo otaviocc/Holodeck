@@ -53,18 +53,22 @@ struct EraseCommand: AsyncParsableCommand {
                 print("Aborted.")
                 return
             }
-            for sim in sims {
-                try await service.erase(sim.id)
-                print("Erased \(sim.name).")
+            try await withThrowingTaskGroup(of: String.self) { group in
+                for sim in sims {
+                    group.addTask {
+                        try await service.erase(sim.id)
+                        return sim.name
+                    }
+                }
+                for try await name in group {
+                    print("Erased \(name).")
+                }
             }
         } else {
             guard let query else {
                 throw ValidationError("Provide a simulator name/UDID or --all.")
             }
-            let sim = try await service.resolve(query: query)
-            guard sim.state == .shutdown else {
-                throw ValidationError("\(sim.name) is \(sim.state.rawValue); shut it down first.")
-            }
+            let sim = try await service.resolveInState(query, .shutdown, purpose: "shut it down first")
             guard ConfirmPrompt.confirm("Erase \(sim.name)?", skip: yes) else {
                 print("Aborted.")
                 return

@@ -40,10 +40,9 @@ struct LocaleCommand: AsyncParsableCommand {
 
     func run() async throws {
         let service = SimulatorService()
-        let sim = try await service.resolve(query: query)
-        guard sim.state == .booted else {
-            throw ValidationError("\(sim.name) is \(sim.state.rawValue); locale can only be set on booted simulators.")
-        }
+        let sim = try await service.resolveInState(
+            query, .booted, purpose: "locale can only be set on booted simulators"
+        )
         try await LocaleService().set(udid: sim.id, bcp47: tag)
         print("Set \(sim.name) locale to \(tag). Reboot the simulator for changes to take effect.")
     }

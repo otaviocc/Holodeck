@@ -25,21 +25,6 @@ import Foundation
 import HolodeckCore
 import HolodeckServices
 
-struct PlatformArgument: ExpressibleByArgument {
-
-    let platform: Platform
-
-    init?(argument: String) {
-        switch argument.lowercased() {
-        case "ios": platform = .iOS
-        case "watchos": platform = .watchOS
-        case "tvos": platform = .tvOS
-        case "visionos": platform = .visionOS
-        default: return nil
-        }
-    }
-}
-
 struct ListCommand: AsyncParsableCommand {
 
     static let configuration = CommandConfiguration(
@@ -47,11 +32,11 @@ struct ListCommand: AsyncParsableCommand {
         abstract: "List available simulators."
     )
 
-    @Option(name: .long, help: "Filter by platform: ios, watchos, tvos, visionos.")
-    var platform: PlatformArgument?
-
-    @Flag(name: .long, help: "Only show available simulators (default).")
-    var available = false
+    @Option(
+        name: .long,
+        help: "Filter by platform: ios, watchos, tvos, visionos. Defaults to value from ~/.config/holodeck/config.json."
+    )
+    var platform: Platform?
 
     @Flag(name: .long, help: "Emit JSON instead of a table.")
     var json = false
@@ -59,8 +44,7 @@ struct ListCommand: AsyncParsableCommand {
     func run() async throws {
         let service = SimulatorService()
         var simulators = try await service.list()
-        let config = (try? ConfigLoader.load()) ?? .default
-        let effectivePlatform = platform?.platform ?? config.defaultPlatform
+        let effectivePlatform = platform ?? ConfigLoader.loadOrDefault().defaultPlatform
         if let filter = effectivePlatform {
             simulators = simulators.filter { $0.runtime.platform == filter }
         }

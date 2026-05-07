@@ -36,19 +36,13 @@ struct AppearanceCommand: AsyncParsableCommand {
     var query: String
 
     @Argument(help: "Appearance: light or dark.")
-    var appearance: String
+    var appearance: Appearance
 
     func run() async throws {
-        guard let appearance = Appearance(rawValue: appearance.lowercased()) else {
-            throw ValidationError("Invalid appearance '\(appearance)'. Use light or dark.")
-        }
         let service = SimulatorService()
-        let sim = try await service.resolve(query: query)
-        guard sim.state == .booted else {
-            throw ValidationError(
-                "\(sim.name) is \(sim.state.rawValue); appearance can only be set on booted simulators."
-            )
-        }
+        let sim = try await service.resolveInState(
+            query, .booted, purpose: "appearance can only be set on booted simulators"
+        )
         try await AppearanceService().set(udid: sim.id, appearance: appearance)
         print("Set \(sim.name) appearance to \(appearance.rawValue).")
     }

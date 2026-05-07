@@ -40,24 +40,15 @@ struct RecordCommand: AsyncParsableCommand {
     var output: String?
 
     @Option(help: "Video codec: h264 or hevc. Defaults to value from ~/.config/holodeck/config.json.")
-    var codec: String?
+    var codec: VideoCodec?
 
     func run() async throws {
-        let config = (try? ConfigLoader.load()) ?? .default
-        let codecValue: VideoCodec
-        if let raw = codec {
-            guard let parsed = VideoCodec(rawValue: raw.lowercased()) else {
-                throw ValidationError("Invalid codec '\(raw)'. Use h264 or hevc.")
-            }
-            codecValue = parsed
-        } else {
-            codecValue = config.videoCodec
-        }
+        let config = ConfigLoader.loadOrDefault()
+        let codecValue = codec ?? config.videoCodec
         let service = SimulatorService()
-        let sim = try await service.resolve(query: query)
-        guard sim.state == .booted else {
-            throw ValidationError("\(sim.name) is \(sim.state.rawValue); only booted simulators can be recorded.")
-        }
+        let sim = try await service.resolveInState(
+            query, .booted, purpose: "only booted simulators can be recorded"
+        )
 
         let recording = RecordingService()
         let outURL = output.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
@@ -89,6 +80,7 @@ struct RecordCommand: AsyncParsableCommand {
 
         private var continuation: CheckedContinuation<Void, Never>?
         private let lock = NSLock()
+
         init(continuation: CheckedContinuation<Void, Never>) {
             self.continuation = continuation
         }

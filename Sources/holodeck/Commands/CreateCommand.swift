@@ -60,17 +60,26 @@ struct CreateCommand: AsyncParsableCommand {
     }
 
     private func matchDeviceTypes(in types: [DeviceType], query: String) -> [DeviceType] {
-        let needle = query.lowercased()
-        let exact = types.filter { $0.name.lowercased() == needle }
-        if !exact.isEmpty { return exact }
-        return types.filter { $0.name.lowercased().contains(needle) }
+        Self.bestMatches(in: types, query: query, label: \.name)
     }
 
     private func matchRuntimes(in runtimes: [Runtime], query: String) -> [Runtime] {
+        Self.bestMatches(in: runtimes, query: query, label: \.displayName)
+    }
+
+    private static func bestMatches<T>(in items: [T], query: String, label: KeyPath<T, String>) -> [T] {
         let needle = query.lowercased()
-        let exact = runtimes.filter { $0.displayName.lowercased() == needle }
-        if !exact.isEmpty { return exact }
-        return runtimes.filter { $0.displayName.lowercased().contains(needle) }
+        var exact: [T] = []
+        var partial: [T] = []
+        for item in items {
+            let name = item[keyPath: label].lowercased()
+            if name == needle {
+                exact.append(item)
+            } else if name.contains(needle) {
+                partial.append(item)
+            }
+        }
+        return exact.isEmpty ? partial : exact
     }
 }
 
