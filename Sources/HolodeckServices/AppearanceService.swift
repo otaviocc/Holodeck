@@ -25,11 +25,17 @@ import HolodeckCore
 
 public struct AppearanceService: Sendable {
 
+    // MARK: - Properties
+
     private let client: SimctlClient
+
+    // MARK: - Lifecycle
 
     public init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
+
+    // MARK: - Public
 
     public func set(udid: UUID, appearance: Appearance) async throws {
         try await client.setAppearance(udid: udid, appearance: appearance)

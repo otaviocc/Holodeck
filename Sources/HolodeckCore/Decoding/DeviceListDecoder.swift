@@ -24,7 +24,7 @@ import Foundation
 
 public enum DeviceListDecoder {
 
-    private static let decoder = JSONDecoder()
+    // MARK: - Nested types
 
     private struct RawList: Decodable {
 
@@ -60,6 +60,12 @@ public enum DeviceListDecoder {
         let name: String
         let isAvailable: Bool?
     }
+
+    // MARK: - Properties
+
+    private static let decoder = JSONDecoder()
+
+    // MARK: - Public
 
     public static func decodeAvailableTargets(_ data: Data) throws -> AvailableTargets {
         let raw = try decoder.decode(RawTargets.self, from: data)

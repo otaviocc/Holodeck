@@ -27,6 +27,8 @@ import HolodeckServices
 
 public final class HolodeckApp {
 
+    // MARK: - Properties
+
     private let service: SimulatorService
     private let recording: RecordingService
     private let screenshots: ScreenshotService
@@ -37,6 +39,8 @@ public final class HolodeckApp {
     private var state = AppState()
     private var lastRenderedState: AppState?
     private var signalSources: [DispatchSourceSignal] = []
+
+    // MARK: - Lifecycle
 
     public init(
         service: SimulatorService = SimulatorService(),

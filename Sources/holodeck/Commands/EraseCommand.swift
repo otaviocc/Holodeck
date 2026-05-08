@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct EraseCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "erase",
         abstract: "Erase a simulator's content. The simulator must be shut down."
@@ -40,6 +42,8 @@ struct EraseCommand: AsyncParsableCommand {
 
     @Flag(name: .shortAndLong, help: "Skip the confirmation prompt.")
     var yes = false
+
+    // MARK: - Public
 
     func run() async throws {
         let service = SimulatorService()

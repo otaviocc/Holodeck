@@ -24,10 +24,14 @@ import Foundation
 
 public enum Platform: String, Sendable, CaseIterable, Codable {
 
+    // MARK: - Properties
+
     case iOS
     case watchOS
     case tvOS
     case visionOS
+
+    // MARK: - Lifecycle
 
     public init?(runtimeIdentifier: String) {
         guard runtimeIdentifier.hasPrefix(SimctlIdentifiers.runtimePrefix) else { return nil }

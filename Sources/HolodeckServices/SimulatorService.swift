@@ -25,11 +25,17 @@ import HolodeckCore
 
 public struct SimulatorService: Sendable {
 
+    // MARK: - Properties
+
     private let client: SimctlClient
+
+    // MARK: - Lifecycle
 
     public init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
+
+    // MARK: - Public
 
     public func list(includeUnavailable: Bool = false) async throws -> [Simulator] {
         try await client.listDevices(includeUnavailable: includeUnavailable)

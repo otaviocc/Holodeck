@@ -24,6 +24,8 @@ import Foundation
 
 public enum DefaultMediaPath {
 
+    // MARK: - Public
+
     public static func record(in directory: URL, date: Date = Date()) -> URL {
         directory.appendingPathComponent("sim_record_\(timestamp(date)).mp4")
     }
@@ -38,6 +40,8 @@ public enum DefaultMediaPath {
             withIntermediateDirectories: true
         )
     }
+
+    // MARK: - Private
 
     private static func timestamp(_ date: Date) -> String {
         let formatter = DateFormatter()

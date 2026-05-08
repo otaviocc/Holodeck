@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct AppearanceCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "appearance",
         abstract: "Set light or dark appearance on a booted simulator."
@@ -37,6 +39,8 @@ struct AppearanceCommand: AsyncParsableCommand {
 
     @Argument(help: "Appearance: light or dark.")
     var appearance: Appearance
+
+    // MARK: - Public
 
     func run() async throws {
         let service = SimulatorService()

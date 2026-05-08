@@ -24,6 +24,8 @@ import Foundation
 
 public enum SimctlError: Error, Sendable, CustomStringConvertible {
 
+    // MARK: - Properties
+
     case xcodeNotFound
     case simulatorNotFound(query: String)
     case ambiguousMatch(query: String, candidates: [Simulator])
@@ -31,6 +33,8 @@ public enum SimctlError: Error, Sendable, CustomStringConvertible {
     case commandFailed(command: String, exitCode: Int32, stderr: String)
     case decodingFailed(underlying: Error)
     case unsupportedOperation(reason: String)
+
+    // MARK: - Public
 
     public var description: String {
         switch self {

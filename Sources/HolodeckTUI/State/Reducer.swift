@@ -47,6 +47,8 @@ public enum AppEvent: Sendable {
 
 public struct ReducerOutput: Equatable, Sendable {
 
+    // MARK: - Nested types
+
     public enum SideEffect: Equatable, Sendable {
 
         case boot(UUID)
@@ -62,8 +64,12 @@ public struct ReducerOutput: Equatable, Sendable {
         case createSimulator(name: String, deviceType: DeviceType, runtime: Runtime)
     }
 
+    // MARK: - Properties
+
     public let state: AppState
     public let effects: [SideEffect]
+
+    // MARK: - Lifecycle
 
     public init(state: AppState, effects: [SideEffect] = []) {
         self.state = state
@@ -72,6 +78,8 @@ public struct ReducerOutput: Equatable, Sendable {
 }
 
 public enum Reducer {
+
+    // MARK: - Public
 
     // swiftlint:disable function_body_length
     public static func reduce(_ state: AppState, _ event: AppEvent) -> ReducerOutput {
@@ -183,6 +191,8 @@ public enum Reducer {
     }
 
     // swiftlint:enable function_body_length
+
+    // MARK: - Private
 
     // swiftlint:disable function_body_length
     private static func handleKey(state: AppState, key: Key) -> ReducerOutput {

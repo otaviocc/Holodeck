@@ -37,12 +37,16 @@ public enum BatteryState: String, Sendable, CaseIterable {
 
 public struct StatusBarOverrides: Sendable, Equatable {
 
+    // MARK: - Properties
+
     public var time: String?
     public var batteryState: BatteryState?
     public var batteryLevel: Int?
     public var wifiBars: Int?
     public var cellularBars: Int?
     public var operatorName: String?
+
+    // MARK: - Lifecycle
 
     public init(
         time: String? = nil,
@@ -59,6 +63,8 @@ public struct StatusBarOverrides: Sendable, Equatable {
         self.cellularBars = cellularBars
         self.operatorName = operatorName
     }
+
+    // MARK: - Public
 
     public var isEmpty: Bool {
         time == nil

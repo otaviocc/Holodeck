@@ -24,9 +24,13 @@ import Foundation
 
 public struct SemanticVersion: Sendable, Equatable, Hashable, Comparable, CustomStringConvertible {
 
+    // MARK: - Properties
+
     public let major: Int
     public let minor: Int
     public let patch: Int
+
+    // MARK: - Lifecycle
 
     public init(major: Int, minor: Int = 0, patch: Int = 0) {
         self.major = major
@@ -43,6 +47,8 @@ public struct SemanticVersion: Sendable, Equatable, Hashable, Comparable, Custom
         self.minor = minor
         self.patch = patch
     }
+
+    // MARK: - Public
 
     public static func < (lhs: SemanticVersion, rhs: SemanticVersion) -> Bool {
         if lhs.major != rhs.major { return lhs.major < rhs.major }

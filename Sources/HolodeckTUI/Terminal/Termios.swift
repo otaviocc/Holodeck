@@ -25,10 +25,18 @@ import Foundation
 
 public final class TerminalMode {
 
+    // MARK: - Properties
+
     private var original = termios()
     private var isRaw = false
 
+    // MARK: - Lifecycle
+
     public init() {}
+
+    deinit { restore() }
+
+    // MARK: - Public
 
     public func enterRaw() {
         guard !isRaw else { return }
@@ -56,8 +64,6 @@ public final class TerminalMode {
         tcsetattr(STDIN_FILENO, TCSAFLUSH, &original)
         isRaw = false
     }
-
-    deinit { restore() }
 }
 
 public enum TerminalSize {

@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct ScreenshotCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "screenshot",
         abstract: "Capture a screenshot from a booted simulator."
@@ -40,6 +42,8 @@ struct ScreenshotCommand: AsyncParsableCommand {
 
     @Option(help: "Image type: png, jpeg, tiff, bmp. Defaults to value from ~/.config/holodeck/config.json.")
     var type: ScreenshotType?
+
+    // MARK: - Public
 
     func run() async throws {
         let config = ConfigLoader.loadOrDefault()

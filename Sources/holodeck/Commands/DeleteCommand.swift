@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct DeleteCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "delete",
         abstract: "Delete a simulator, or all simulators whose runtime is no longer available."
@@ -40,6 +42,8 @@ struct DeleteCommand: AsyncParsableCommand {
 
     @Flag(name: .shortAndLong, help: "Skip the confirmation prompt.")
     var yes = false
+
+    // MARK: - Public
 
     func run() async throws {
         let service = SimulatorService()

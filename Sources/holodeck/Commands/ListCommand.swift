@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct ListCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "list",
         abstract: "List available simulators."
@@ -41,6 +43,8 @@ struct ListCommand: AsyncParsableCommand {
     @Flag(name: .long, help: "Emit JSON instead of a table.")
     var json = false
 
+    // MARK: - Public
+
     func run() async throws {
         let service = SimulatorService()
         var simulators = try await service.list()
@@ -54,6 +58,8 @@ struct ListCommand: AsyncParsableCommand {
             printTable(simulators)
         }
     }
+
+    // MARK: - Private
 
     private func printJSON(_ simulators: [Simulator]) {
         struct Out: Encodable {

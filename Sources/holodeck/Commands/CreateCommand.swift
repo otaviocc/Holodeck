@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct CreateCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "create",
         abstract: "Create a new simulator by device type and runtime."
@@ -40,6 +42,8 @@ struct CreateCommand: AsyncParsableCommand {
 
     @Option(help: "Runtime (substring matched against the runtime display name, e.g. \"iOS 18.2\").")
     var runtime: String
+
+    // MARK: - Public
 
     func run() async throws {
         let service = SimulatorService()
@@ -58,6 +62,8 @@ struct CreateCommand: AsyncParsableCommand {
         let udid = try await service.create(name: name, deviceType: deviceType, runtime: runtime)
         print("Created \(name) (\(udid.uuidString)) — \(deviceType.name) / \(runtime.displayName)")
     }
+
+    // MARK: - Private
 
     private func matchDeviceTypes(in types: [DeviceType], query: String) -> [DeviceType] {
         Self.bestMatches(in: types, query: query, label: \.name)

@@ -24,9 +24,13 @@ import Foundation
 
 public struct Runtime: Sendable, Equatable, Hashable, Comparable {
 
+    // MARK: - Properties
+
     public let platform: Platform
     public let version: SemanticVersion
     public let identifier: String
+
+    // MARK: - Lifecycle
 
     public init(platform: Platform, version: SemanticVersion, identifier: String) {
         self.platform = platform
@@ -47,6 +51,8 @@ public struct Runtime: Sendable, Equatable, Hashable, Comparable {
         self.version = version
         self.identifier = identifier
     }
+
+    // MARK: - Public
 
     public var displayName: String {
         "\(platform.rawValue) \(version)"

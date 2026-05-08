@@ -25,6 +25,8 @@ import HolodeckCore
 
 enum ModalReducer {
 
+    // MARK: - Public
+
     static func handle(state: AppState, key: Key) -> ReducerOutput {
         var next = state
         switch state.modal {
@@ -44,6 +46,8 @@ enum ModalReducer {
             return ReducerOutput(state: next)
         }
     }
+
+    // MARK: - Private
 
     private static func appearance(state: AppState, key: Key) -> ReducerOutput {
         var next = state

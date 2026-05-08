@@ -25,10 +25,16 @@ import HolodeckCore
 
 public actor RecordingService {
 
+    // MARK: - Properties
+
     private let recorder = Recorder()
     public private(set) var currentOutput: URL?
 
+    // MARK: - Lifecycle
+
     public init() {}
+
+    // MARK: - Public
 
     public var isRecording: Bool {
         get async { await recorder.isRunning }

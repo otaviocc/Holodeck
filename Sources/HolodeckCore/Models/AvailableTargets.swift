@@ -24,8 +24,12 @@ import Foundation
 
 public struct AvailableTargets: Sendable, Equatable {
 
+    // MARK: - Properties
+
     public let deviceTypes: [DeviceType]
     public let runtimes: [Runtime]
+
+    // MARK: - Lifecycle
 
     public init(deviceTypes: [DeviceType], runtimes: [Runtime]) {
         self.deviceTypes = deviceTypes

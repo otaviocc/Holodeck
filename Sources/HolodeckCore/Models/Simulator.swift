@@ -24,6 +24,8 @@ import Foundation
 
 public struct Simulator: Sendable, Equatable, Identifiable {
 
+    // MARK: - Properties
+
     public let id: UUID
     public let name: String
     public let runtime: Runtime
@@ -32,6 +34,8 @@ public struct Simulator: Sendable, Equatable, Identifiable {
     public let isAvailable: Bool
     public let dataPath: URL?
     public let logPath: URL?
+
+    // MARK: - Lifecycle
 
     public init(
         id: UUID,

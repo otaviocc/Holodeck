@@ -28,6 +28,34 @@ import HolodeckServices
 
 struct RecordCommand: AsyncParsableCommand {
 
+    // MARK: - Nested types
+
+    private final class ContinuationBox: @unchecked Sendable {
+
+        // MARK: - Properties
+
+        private var continuation: CheckedContinuation<Void, Never>?
+        private let lock = NSLock()
+
+        // MARK: - Lifecycle
+
+        init(continuation: CheckedContinuation<Void, Never>) {
+            self.continuation = continuation
+        }
+
+        // MARK: - Public
+
+        func fire() {
+            lock.lock()
+            let pending = continuation
+            continuation = nil
+            lock.unlock()
+            pending?.resume()
+        }
+    }
+
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "record",
         abstract: "Record video from a booted simulator. Press Ctrl-C to stop cleanly."
@@ -41,6 +69,8 @@ struct RecordCommand: AsyncParsableCommand {
 
     @Option(help: "Video codec: h264 or hevc. Defaults to value from ~/.config/holodeck/config.json.")
     var codec: VideoCodec?
+
+    // MARK: - Public
 
     func run() async throws {
         let config = ConfigLoader.loadOrDefault()
@@ -63,6 +93,8 @@ struct RecordCommand: AsyncParsableCommand {
         print(path.path)
     }
 
+    // MARK: - Private
+
     private func waitForSIGINT() async {
         signal(SIGINT, SIG_IGN)
         let source = DispatchSource.makeSignalSource(signal: SIGINT, queue: .global())
@@ -74,23 +106,5 @@ struct RecordCommand: AsyncParsableCommand {
             source.resume()
         }
         source.cancel()
-    }
-
-    private final class ContinuationBox: @unchecked Sendable {
-
-        private var continuation: CheckedContinuation<Void, Never>?
-        private let lock = NSLock()
-
-        init(continuation: CheckedContinuation<Void, Never>) {
-            self.continuation = continuation
-        }
-
-        func fire() {
-            lock.lock()
-            let pending = continuation
-            continuation = nil
-            lock.unlock()
-            pending?.resume()
-        }
     }
 }

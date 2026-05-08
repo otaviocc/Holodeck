@@ -24,15 +24,21 @@ import Foundation
 
 public actor Recorder {
 
+    // MARK: - Properties
+
     private var process: Process?
     private var stdoutPipe: Pipe?
     private var stderrPipe: Pipe?
 
-    public init() {}
-
     public var isRunning: Bool {
         process?.isRunning ?? false
     }
+
+    // MARK: - Lifecycle
+
+    public init() {}
+
+    // MARK: - Public
 
     public func start(launchPath: String, arguments: [String]) throws {
         guard process == nil || !(process?.isRunning ?? false) else { return }
@@ -69,6 +75,8 @@ public actor Recorder {
         }
         cleanup()
     }
+
+    // MARK: - Private
 
     private func cleanup() {
         stdoutPipe?.fileHandleForReading.readabilityHandler = nil

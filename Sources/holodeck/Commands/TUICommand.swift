@@ -25,10 +25,14 @@ import HolodeckTUI
 
 struct TUICommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "tui",
         abstract: "Launch the interactive simulator TUI."
     )
+
+    // MARK: - Public
 
     func run() async throws {
         let app = HolodeckApp()

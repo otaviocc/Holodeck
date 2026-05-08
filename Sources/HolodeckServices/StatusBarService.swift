@@ -25,11 +25,17 @@ import HolodeckCore
 
 public struct StatusBarService: Sendable {
 
+    // MARK: - Properties
+
     private let client: SimctlClient
+
+    // MARK: - Lifecycle
 
     public init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
+
+    // MARK: - Public
 
     public func override(udid: UUID, overrides: StatusBarOverrides) async throws {
         try await client.setStatusBar(udid: udid, overrides: overrides)

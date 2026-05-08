@@ -24,6 +24,8 @@ import Foundation
 
 public enum ANSI {
 
+    // MARK: - Properties
+
     public static let esc = "\u{1B}"
     public static let csi = "\u{1B}["
 
@@ -38,15 +40,17 @@ public enum ANSI {
     public static let bold = "\(csi)1m"
     public static let dim = "\(csi)2m"
 
-    public static func fg(_ code: Int) -> String {
-        "\(csi)\(code)m"
-    }
-
     public static let green = fg(32)
     public static let yellow = fg(33)
     public static let red = fg(31)
     public static let cyan = fg(36)
     public static let gray = fg(90)
+
+    // MARK: - Public
+
+    public static func fg(_ code: Int) -> String {
+        "\(csi)\(code)m"
+    }
 
     public static func stripEscapes(from text: String) -> String {
         guard text.contains("\u{1B}") else { return text }

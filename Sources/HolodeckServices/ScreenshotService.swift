@@ -25,11 +25,17 @@ import HolodeckCore
 
 public struct ScreenshotService: Sendable {
 
+    // MARK: - Properties
+
     private let client: SimctlClient
+
+    // MARK: - Lifecycle
 
     public init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
+
+    // MARK: - Public
 
     public func capture(udid: UUID, output: URL, type: ScreenshotType = .png) async throws -> URL {
         try DefaultMediaPath.ensureDirectoryExists(for: output)

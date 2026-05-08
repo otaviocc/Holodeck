@@ -24,9 +24,13 @@ import Foundation
 
 public struct ProcessResult: Sendable {
 
+    // MARK: - Properties
+
     public let stdout: Data
     public let stderr: Data
     public let exitCode: Int32
+
+    // MARK: - Lifecycle
 
     public init(stdout: Data, stderr: Data, exitCode: Int32) {
         self.stdout = stdout
@@ -42,7 +46,11 @@ public protocol ProcessRunning: Sendable {
 
 public struct ProcessRunner: ProcessRunning {
 
+    // MARK: - Lifecycle
+
     public init() {}
+
+    // MARK: - Public
 
     public func run(_ launchPath: String, _ arguments: [String]) async throws -> ProcessResult {
         let process = Process()
@@ -66,6 +74,8 @@ public struct ProcessRunner: ProcessRunning {
             exitCode: process.terminationStatus
         )
     }
+
+    // MARK: - Private
 
     private static func readToEnd(_ handle: FileHandle) async -> Data {
         await withCheckedContinuation { continuation in

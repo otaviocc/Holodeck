@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct ShutdownCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "shutdown",
         abstract: "Shut down a simulator by name or UDID."
@@ -34,6 +36,8 @@ struct ShutdownCommand: AsyncParsableCommand {
 
     @Argument(help: "Simulator name or UDID.")
     var query: String
+
+    // MARK: - Public
 
     func run() async throws {
         let service = SimulatorService()

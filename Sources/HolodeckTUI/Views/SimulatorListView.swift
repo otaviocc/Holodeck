@@ -25,6 +25,8 @@ import HolodeckCore
 
 public enum SimulatorListView {
 
+    // MARK: - Public
+
     public static func render(_ state: AppState) -> String {
         if state.modal == .help {
             return renderHelp(state: state)
@@ -77,6 +79,12 @@ public enum SimulatorListView {
         lines.append(statusBar(state: state, width: cols))
         return lines.joined(separator: "\r\n")
     }
+
+    static func stripANSI(_ text: String) -> String {
+        ANSI.stripEscapes(from: text)
+    }
+
+    // MARK: - Private
 
     private static func header(width: Int) -> String {
         let title = " holodeck "
@@ -211,9 +219,5 @@ public enum SimulatorListView {
         }
         lines.append(statusBar(state: state, width: cols))
         return lines.joined(separator: "\r\n")
-    }
-
-    static func stripANSI(_ text: String) -> String {
-        ANSI.stripEscapes(from: text)
     }
 }

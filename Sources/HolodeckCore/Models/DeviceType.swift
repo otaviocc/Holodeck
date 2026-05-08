@@ -24,8 +24,12 @@ import Foundation
 
 public struct DeviceType: Sendable, Equatable, Hashable {
 
+    // MARK: - Properties
+
     public let identifier: String
     public let name: String
+
+    // MARK: - Lifecycle
 
     public init(identifier: String, name: String) {
         self.identifier = identifier
@@ -36,6 +40,8 @@ public struct DeviceType: Sendable, Equatable, Hashable {
         self.identifier = identifier
         name = DeviceType.humanize(identifier: identifier)
     }
+
+    // MARK: - Public
 
     static func humanize(identifier: String) -> String {
         let tail = identifier.hasPrefix(SimctlIdentifiers.deviceTypePrefix)

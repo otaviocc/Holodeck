@@ -34,6 +34,8 @@ public enum Modal: Equatable, Sendable {
 
 public struct CreateWizard: Equatable, Sendable {
 
+    // MARK: - Nested types
+
     public enum Step: Equatable, Sendable {
 
         case loading
@@ -43,12 +45,16 @@ public struct CreateWizard: Equatable, Sendable {
         case submitting
     }
 
+    // MARK: - Properties
+
     public var step: Step
     public var deviceTypes: [DeviceType]
     public var runtimes: [Runtime]
     public var deviceTypeIndex: Int
     public var runtimeIndex: Int
     public var error: String?
+
+    // MARK: - Lifecycle
 
     public init(
         step: Step = .loading,
@@ -65,6 +71,8 @@ public struct CreateWizard: Equatable, Sendable {
         self.runtimeIndex = runtimeIndex
         self.error = error
     }
+
+    // MARK: - Public
 
     public var selectedDeviceType: DeviceType? {
         guard !deviceTypes.isEmpty, deviceTypeIndex < deviceTypes.count else { return nil }
@@ -86,6 +94,8 @@ public struct CreateWizard: Equatable, Sendable {
 
 public struct AppState: Equatable, Sendable {
 
+    // MARK: - Properties
+
     public var simulators: [Simulator]
     public var selectedIndex: Int
     public var statusMessage: String?
@@ -98,9 +108,7 @@ public struct AppState: Equatable, Sendable {
     public var recordingPath: URL?
     public var modal: Modal?
 
-    public var isRecording: Bool {
-        recordingDeviceID != nil
-    }
+    // MARK: - Lifecycle
 
     public init(
         simulators: [Simulator] = [],
@@ -126,6 +134,12 @@ public struct AppState: Equatable, Sendable {
         self.recordingDeviceID = recordingDeviceID
         self.recordingPath = recordingPath
         self.modal = modal
+    }
+
+    // MARK: - Public
+
+    public var isRecording: Bool {
+        recordingDeviceID != nil
     }
 
     public var selectedSimulator: Simulator? {

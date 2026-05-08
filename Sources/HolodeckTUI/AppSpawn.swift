@@ -27,6 +27,8 @@ import HolodeckServices
 
 enum AppSpawn {
 
+    // MARK: - Public
+
     static func inputTask(
         parser: InputParser,
         continuation: AsyncStream<AppEvent>.Continuation
@@ -223,6 +225,8 @@ enum AppSpawn {
     static func errorDescription(_ error: Error) -> String {
         (error as? SimctlError).map(\.description) ?? "\(error)"
     }
+
+    // MARK: - Private
 
     private static func spawnPerSimulator(
         id: UUID,

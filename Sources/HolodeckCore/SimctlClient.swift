@@ -24,11 +24,17 @@ import Foundation
 
 public struct SimctlClient: Sendable {
 
+    // MARK: - Properties
+
     private let runner: any ProcessRunning
+
+    // MARK: - Lifecycle
 
     public init(runner: any ProcessRunning = ProcessRunner()) {
         self.runner = runner
     }
+
+    // MARK: - Public
 
     public func listDevices(includeUnavailable: Bool = false) async throws -> [Simulator] {
         var args = ["list", "--json", "devices"]
@@ -128,6 +134,8 @@ public struct SimctlClient: Sendable {
     public func deleteUnavailable() async throws {
         _ = try await runSimctl(["delete", "unavailable"])
     }
+
+    // MARK: - Private
 
     @discardableResult
     private func runSimctl(_ subcommand: [String]) async throws -> ProcessResult {

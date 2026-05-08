@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct BootCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "boot",
         abstract: "Boot a simulator by name or UDID."
@@ -34,6 +36,8 @@ struct BootCommand: AsyncParsableCommand {
 
     @Argument(help: "Simulator name or UDID.")
     var query: String
+
+    // MARK: - Public
 
     func run() async throws {
         let service = SimulatorService()

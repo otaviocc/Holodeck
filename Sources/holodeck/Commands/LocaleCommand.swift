@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct LocaleCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "locale",
         abstract: "Set the simulator locale and language (BCP-47 tag). Requires reboot to take effect."
@@ -37,6 +39,8 @@ struct LocaleCommand: AsyncParsableCommand {
 
     @Argument(help: "BCP-47 tag, e.g. en, en-US, pt-BR.")
     var tag: String
+
+    // MARK: - Public
 
     func run() async throws {
         let service = SimulatorService()

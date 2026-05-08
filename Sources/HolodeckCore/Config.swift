@@ -24,11 +24,15 @@ import Foundation
 
 public struct Config: Sendable, Equatable, Codable {
 
+    // MARK: - Properties
+
     public var defaultPlatform: Platform?
     public var screenshotsDirectory: String
     public var videoCodec: VideoCodec
     public var screenshotType: ScreenshotType
     public var pollIntervalSeconds: Double
+
+    // MARK: - Lifecycle
 
     public init(
         defaultPlatform: Platform? = nil,
@@ -44,6 +48,8 @@ public struct Config: Sendable, Equatable, Codable {
         self.pollIntervalSeconds = pollIntervalSeconds
     }
 
+    // MARK: - Public
+
     public var resolvedScreenshotsDirectory: URL {
         URL(fileURLWithPath: (screenshotsDirectory as NSString).expandingTildeInPath)
     }
@@ -56,6 +62,8 @@ extension VideoCodec: Codable {}
 extension ScreenshotType: Codable {}
 
 public enum ConfigLoader {
+
+    // MARK: - Public
 
     public static var defaultPath: URL {
         let base = ProcessInfo.processInfo.environment["XDG_CONFIG_HOME"].map {
@@ -81,6 +89,8 @@ public enum ConfigLoader {
     public static func decode(_ data: Data) throws -> Config {
         try decoder.decode(Config.self, from: data)
     }
+
+    // MARK: - Private
 
     private static let decoder = JSONDecoder()
 }

@@ -38,7 +38,11 @@ public enum Key: Equatable, Sendable {
 
 public struct InputParser: Sendable {
 
+    // MARK: - Lifecycle
+
     public init() {}
+
+    // MARK: - Public
 
     public func parse(_ bytes: [UInt8]) -> [Key] {
         var keys: [Key] = []

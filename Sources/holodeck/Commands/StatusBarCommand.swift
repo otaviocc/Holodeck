@@ -27,13 +27,11 @@ import HolodeckServices
 
 struct StatusBarCommand: AsyncParsableCommand {
 
-    static let configuration = CommandConfiguration(
-        commandName: "statusbar",
-        abstract: "Override or clear the simulator status bar. Overrides only persist while the simulator runs.",
-        subcommands: [Override.self, Clear.self]
-    )
+    // MARK: - Nested types
 
     struct Override: AsyncParsableCommand {
+
+        // MARK: - Properties
 
         static let configuration = CommandConfiguration(
             commandName: "override",
@@ -61,6 +59,8 @@ struct StatusBarCommand: AsyncParsableCommand {
         @Option(help: "Operator name.")
         var operatorName: String?
 
+        // MARK: - Public
+
         func run() async throws {
             let overrides = StatusBarOverrides(
                 time: time,
@@ -84,6 +84,8 @@ struct StatusBarCommand: AsyncParsableCommand {
 
     struct Clear: AsyncParsableCommand {
 
+        // MARK: - Properties
+
         static let configuration = CommandConfiguration(
             commandName: "clear",
             abstract: "Clear status bar overrides."
@@ -91,6 +93,8 @@ struct StatusBarCommand: AsyncParsableCommand {
 
         @Argument(help: "Simulator name or UDID.")
         var query: String
+
+        // MARK: - Public
 
         func run() async throws {
             let service = SimulatorService()
@@ -101,4 +105,12 @@ struct StatusBarCommand: AsyncParsableCommand {
             print("Cleared status bar overrides on \(sim.name).")
         }
     }
+
+    // MARK: - Properties
+
+    static let configuration = CommandConfiguration(
+        commandName: "statusbar",
+        abstract: "Override or clear the simulator status bar. Overrides only persist while the simulator runs.",
+        subcommands: [Override.self, Clear.self]
+    )
 }
