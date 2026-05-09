@@ -20,49 +20,56 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import XCTest
+import Foundation
+import Testing
 @testable import HolodeckCore
 
-final class DeviceListDecoderTests: XCTestCase {
+struct DeviceListDecoderTests {
 
-    func testDecodesFixture() throws {
-        let url = try XCTUnwrap(Bundle.module.url(forResource: "simctl-list-fixture", withExtension: "json"))
+    @Test("It should decode the captured simctl list fixture")
+    func decodesFixture() throws {
+        let url = try #require(Bundle.module.url(forResource: "simctl-list-fixture", withExtension: "json"))
         let data = try Data(contentsOf: url)
         let simulators = try DeviceListDecoder.decode(data)
-        XCTAssertFalse(simulators.isEmpty)
-        XCTAssertTrue(simulators.allSatisfy(\.isAvailable))
-        XCTAssertTrue(simulators.contains { $0.runtime.platform == .iOS })
+        #expect(!simulators.isEmpty)
+        #expect(simulators.allSatisfy { $0.isAvailable })
+        #expect(simulators.contains { $0.runtime.platform == .iOS })
     }
 
-    func testPlatformParsing() {
-        XCTAssertEqual(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"), .iOS)
-        XCTAssertEqual(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.watchOS-11-2"), .watchOS)
-        XCTAssertEqual(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.tvOS-18-1"), .tvOS)
-        XCTAssertEqual(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.xrOS-2-1"), .visionOS)
-        XCTAssertNil(Platform(runtimeIdentifier: "garbage"))
+    @Test("It should parse platform names from runtime identifiers")
+    func platformParsing() {
+        #expect(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2") == .iOS)
+        #expect(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.watchOS-11-2") == .watchOS)
+        #expect(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.tvOS-18-1") == .tvOS)
+        #expect(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.xrOS-2-1") == .visionOS)
+        #expect(Platform(runtimeIdentifier: "garbage") == nil)
     }
 
-    func testSemanticVersionParsing() {
-        XCTAssertEqual(SemanticVersion(string: "18.2"), SemanticVersion(major: 18, minor: 2))
-        XCTAssertEqual(SemanticVersion(string: "18.2.1"), SemanticVersion(major: 18, minor: 2, patch: 1))
-        XCTAssertEqual(SemanticVersion(string: "17"), SemanticVersion(major: 17))
-        XCTAssertNil(SemanticVersion(string: "abc"))
-        XCTAssertLessThan(SemanticVersion(major: 17, minor: 5), SemanticVersion(major: 18, minor: 0))
+    @Test("It should parse semantic version strings")
+    func semanticVersionParsing() {
+        #expect(SemanticVersion(string: "18.2") == SemanticVersion(major: 18, minor: 2))
+        #expect(SemanticVersion(string: "18.2.1") == SemanticVersion(major: 18, minor: 2, patch: 1))
+        #expect(SemanticVersion(string: "17") == SemanticVersion(major: 17))
+        #expect(SemanticVersion(string: "abc") == nil)
+        #expect(SemanticVersion(major: 17, minor: 5) < SemanticVersion(major: 18, minor: 0))
     }
 
-    func testRuntimeParsing() throws {
-        let runtime = try XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
-        XCTAssertEqual(runtime.platform, .iOS)
-        XCTAssertEqual(runtime.version, SemanticVersion(major: 18, minor: 2))
-        XCTAssertEqual(runtime.displayName, "iOS 18.2")
+    @Test("It should parse runtime identifiers into platform and version")
+    func runtimeParsing() throws {
+        let runtime = try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
+        #expect(runtime.platform == .iOS)
+        #expect(runtime.version == SemanticVersion(major: 18, minor: 2))
+        #expect(runtime.displayName == "iOS 18.2")
     }
 
-    func testDeviceTypeHumanization() {
-        let dt = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro")
-        XCTAssertEqual(dt.name, "iPhone 16 Pro")
+    @Test("It should humanize device type identifiers")
+    func deviceTypeHumanization() {
+        let deviceType = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro")
+        #expect(deviceType.name == "iPhone 16 Pro")
     }
 
-    func testUnknownRuntimeIsSkipped() throws {
+    @Test("It should skip simulators whose runtime cannot be parsed")
+    func unknownRuntimeIsSkipped() throws {
         let json = Data("""
         { "devices": {
             "com.apple.CoreSimulator.SimRuntime.iOS-18-2": [
@@ -86,7 +93,7 @@ final class DeviceListDecoderTests: XCTestCase {
         }}
         """.utf8)
         let result = try DeviceListDecoder.decode(json)
-        XCTAssertEqual(result.count, 1)
-        XCTAssertEqual(result.first?.name, "Test")
+        #expect(result.count == 1)
+        #expect(result.first?.name == "Test")
     }
 }

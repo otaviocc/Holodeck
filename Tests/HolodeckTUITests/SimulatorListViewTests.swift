@@ -20,17 +20,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+import Foundation
 import HolodeckCore
-import XCTest
+import Testing
 @testable import HolodeckTUI
 
-final class SimulatorListViewTests: XCTestCase {
+struct SimulatorListViewTests {
 
-    func testRenderContainsSimulatorNamesAndState() throws {
+    @Test("It should render simulator names, state, and runtime")
+    func renderContainsSimulatorNamesAndState() throws {
         let sim = try Simulator(
-            id: XCTUnwrap(UUID(uuidString: "00000000-0000-0000-0000-000000000001")),
+            id: #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001")),
             name: "iPhone 16 Pro",
-            runtime: XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
+            runtime: #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
             deviceType: DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro"),
             state: .booted,
             isAvailable: true,
@@ -40,24 +42,26 @@ final class SimulatorListViewTests: XCTestCase {
         let state = AppState(simulators: [sim], rows: 10, cols: 80)
         let frame = SimulatorListView.render(state)
         let plain = SimulatorListView.stripANSI(frame)
-        XCTAssertTrue(plain.contains("iPhone 16 Pro"))
-        XCTAssertTrue(plain.contains("Booted"))
-        XCTAssertTrue(plain.contains("iOS 18.2"))
-        XCTAssertTrue(plain.contains("holodeck"))
+        #expect(plain.contains("iPhone 16 Pro"))
+        #expect(plain.contains("Booted"))
+        #expect(plain.contains("iOS 18.2"))
+        #expect(plain.contains("holodeck"))
     }
 
-    func testRenderShowsEmptyMessageWhenNoSimulators() {
+    @Test("It should show a placeholder when there are no simulators")
+    func renderShowsEmptyMessageWhenNoSimulators() {
         let state = AppState(rows: 10, cols: 80)
         let frame = SimulatorListView.render(state)
         let plain = SimulatorListView.stripANSI(frame)
-        XCTAssertTrue(plain.contains("(no simulators)"))
+        #expect(plain.contains("(no simulators)"))
     }
 
-    func testRenderHighlightsSelectedRow() throws {
+    @Test("It should highlight the selected row with a chevron")
+    func renderHighlightsSelectedRow() throws {
         let sim = try Simulator(
             id: UUID(),
             name: "Alpha",
-            runtime: XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
+            runtime: #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
             deviceType: DeviceType(identifier: "x"),
             state: .shutdown,
             isAvailable: true,
@@ -66,6 +70,6 @@ final class SimulatorListViewTests: XCTestCase {
         )
         let state = AppState(simulators: [sim], selectedIndex: 0, rows: 10, cols: 80)
         let frame = SimulatorListView.render(state)
-        XCTAssertTrue(frame.contains("› Alpha"))
+        #expect(frame.contains("› Alpha"))
     }
 }

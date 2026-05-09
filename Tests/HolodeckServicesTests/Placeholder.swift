@@ -20,11 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import XCTest
+import Testing
 
-final class HolodeckServicesPlaceholderTests: XCTestCase {
+struct HolodeckServicesPlaceholderTests {
 
-    func testPlaceholder() {
-        XCTAssertTrue(true)
+    @Test("It should keep the test target alive until real tests land")
+    func placeholder() {
+        #expect(Bool(true))
     }
 }

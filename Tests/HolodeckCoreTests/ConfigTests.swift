@@ -20,21 +20,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import XCTest
+import Foundation
+import Testing
 @testable import HolodeckCore
 
-final class ConfigTests: XCTestCase {
+struct ConfigTests {
 
-    func testDefaults() {
+    @Test("It should provide sensible defaults")
+    func defaults() {
         let config = Config.default
-        XCTAssertNil(config.defaultPlatform)
-        XCTAssertEqual(config.screenshotsDirectory, "~/Screenshots")
-        XCTAssertEqual(config.videoCodec, .h264)
-        XCTAssertEqual(config.screenshotType, .png)
-        XCTAssertEqual(config.pollIntervalSeconds, 2.0)
+        #expect(config.defaultPlatform == nil)
+        #expect(config.screenshotsDirectory == "~/Screenshots")
+        #expect(config.videoCodec == .h264)
+        #expect(config.screenshotType == .png)
+        #expect(config.pollIntervalSeconds == 2.0)
     }
 
-    func testDecodeFullConfig() throws {
+    @Test("It should decode a fully populated config")
+    func decodeFull() throws {
         let json = Data("""
         {
           "defaultPlatform": "watchOS",
@@ -45,33 +48,41 @@ final class ConfigTests: XCTestCase {
         }
         """.utf8)
         let config = try ConfigLoader.decode(json)
-        XCTAssertEqual(config.defaultPlatform, .watchOS)
-        XCTAssertEqual(config.screenshotsDirectory, "~/Captures")
-        XCTAssertEqual(config.videoCodec, .hevc)
-        XCTAssertEqual(config.screenshotType, .jpeg)
-        XCTAssertEqual(config.pollIntervalSeconds, 5)
+        #expect(config.defaultPlatform == .watchOS)
+        #expect(config.screenshotsDirectory == "~/Captures")
+        #expect(config.videoCodec == .hevc)
+        #expect(config.screenshotType == .jpeg)
+        #expect(config.pollIntervalSeconds == 5)
     }
 
-    func testDecodeRejectsMalformed() {
+    @Test("It should reject malformed JSON")
+    func rejectMalformed() {
         let json = Data("not json".utf8)
-        XCTAssertThrowsError(try ConfigLoader.decode(json))
+        #expect(throws: (any Error).self) {
+            try ConfigLoader.decode(json)
+        }
     }
 
-    func testDecodeRejectsUnknownEnumValue() {
+    @Test("It should reject unknown enum values")
+    func rejectUnknownEnum() {
         let json = Data("""
         { "videoCodec": "av1", "screenshotsDirectory": "~/x", "screenshotType": "png", "pollIntervalSeconds": 2 }
         """.utf8)
-        XCTAssertThrowsError(try ConfigLoader.decode(json))
+        #expect(throws: (any Error).self) {
+            try ConfigLoader.decode(json)
+        }
     }
 
-    func testLoadMissingFileReturnsDefault() throws {
+    @Test("It should return defaults when the config file is missing")
+    func missingFile() throws {
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("holodeck-missing-\(UUID().uuidString).json")
         let config = try ConfigLoader.load(from: tmp)
-        XCTAssertEqual(config, .default)
+        #expect(config == .default)
     }
 
-    func testLoadFromFile() throws {
+    @Test("It should load a config file from disk")
+    func loadFromFile() throws {
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("holodeck-test-\(UUID().uuidString).json")
         let payload = Data("""
@@ -80,13 +91,14 @@ final class ConfigTests: XCTestCase {
         try payload.write(to: tmp)
         defer { try? FileManager.default.removeItem(at: tmp) }
         let config = try ConfigLoader.load(from: tmp)
-        XCTAssertEqual(config.videoCodec, .hevc)
-        XCTAssertEqual(config.screenshotsDirectory, "~/Foo")
+        #expect(config.videoCodec == .hevc)
+        #expect(config.screenshotsDirectory == "~/Foo")
     }
 
-    func testResolvedScreenshotsDirectoryExpandsTilde() {
+    @Test("It should expand the tilde in screenshotsDirectory")
+    func expandTilde() {
         let config = Config(screenshotsDirectory: "~/Pictures")
-        XCTAssertFalse(config.resolvedScreenshotsDirectory.path.hasPrefix("~"))
-        XCTAssertTrue(config.resolvedScreenshotsDirectory.path.hasSuffix("/Pictures"))
+        #expect(!config.resolvedScreenshotsDirectory.path.hasPrefix("~"))
+        #expect(config.resolvedScreenshotsDirectory.path.hasSuffix("/Pictures"))
     }
 }

@@ -20,28 +20,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import XCTest
+import Foundation
+import Testing
 @testable import HolodeckCore
 
-final class RecorderTests: XCTestCase {
+struct RecorderTests {
 
-    func testStartAndStopInterruptsLongRunningProcess() async throws {
+    @Test("It should interrupt a long-running process when stopped")
+    func startAndStopInterruptsLongRunningProcess() async throws {
         let recorder = Recorder()
         try await recorder.start(launchPath: "/bin/sleep", arguments: ["30"])
         var running = await recorder.isRunning
-        XCTAssertTrue(running)
+        #expect(running)
         let started = Date()
         await recorder.stop()
         let elapsed = Date().timeIntervalSince(started)
         running = await recorder.isRunning
-        XCTAssertFalse(running)
-        XCTAssertLessThan(elapsed, 5.0, "stop() should interrupt promptly, took \(elapsed)s")
+        #expect(!running)
+        #expect(elapsed < 5.0, "stop() should interrupt promptly, took \(elapsed)s")
     }
 
-    func testStopWithoutStartIsNoop() async {
+    @Test("It should treat stop() with no started process as a no-op")
+    func stopWithoutStartIsNoop() async {
         let recorder = Recorder()
         await recorder.stop()
         let running = await recorder.isRunning
-        XCTAssertFalse(running)
+        #expect(!running)
     }
 }

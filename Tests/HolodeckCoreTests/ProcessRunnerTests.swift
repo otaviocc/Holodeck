@@ -20,21 +20,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import XCTest
+import Foundation
+import Testing
 @testable import HolodeckCore
 
-final class ProcessRunnerTests: XCTestCase {
+struct ProcessRunnerTests {
 
-    func testEchoRoundTrip() async throws {
+    @Test("It should echo stdin back through stdout with a zero exit code")
+    func echoRoundTrip() async throws {
         let runner = ProcessRunner()
         let result = try await runner.run("/bin/echo", ["hello"])
-        XCTAssertEqual(result.exitCode, 0)
-        XCTAssertEqual(String(data: result.stdout, encoding: .utf8), "hello\n")
+        #expect(result.exitCode == 0)
+        #expect(String(data: result.stdout, encoding: .utf8) == "hello\n")
     }
 
-    func testNonZeroExitCode() async throws {
+    @Test("It should report a non-zero exit code for /usr/bin/false")
+    func nonZeroExitCode() async throws {
         let runner = ProcessRunner()
         let result = try await runner.run("/usr/bin/false", [])
-        XCTAssertNotEqual(result.exitCode, 0)
+        #expect(result.exitCode != 0)
     }
 }

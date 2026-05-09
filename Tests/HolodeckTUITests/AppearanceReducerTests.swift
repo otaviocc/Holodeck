@@ -20,17 +20,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+import Foundation
 import HolodeckCore
-import XCTest
+import Testing
 @testable import HolodeckTUI
 
-final class AppearanceReducerTests: XCTestCase {
+struct AppearanceReducerTests {
 
     private func bootedSim() throws -> Simulator {
         try Simulator(
             id: UUID(),
             name: "iPhone 16",
-            runtime: XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
+            runtime: #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
             deviceType: DeviceType(identifier: "x"),
             state: .booted,
             isAvailable: true,
@@ -43,7 +44,7 @@ final class AppearanceReducerTests: XCTestCase {
         try Simulator(
             id: UUID(),
             name: "Off",
-            runtime: XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
+            runtime: #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
             deviceType: DeviceType(identifier: "x"),
             state: .shutdown,
             isAvailable: true,
@@ -52,64 +53,72 @@ final class AppearanceReducerTests: XCTestCase {
         )
     }
 
-    func testAOpensAppearanceModalWhenBooted() throws {
+    @Test("It should open the appearance modal when a is pressed on a booted simulator")
+    func aOpensAppearanceModalWhenBooted() throws {
         let sim = try bootedSim()
         let state = AppState(simulators: [sim])
         let out = Reducer.reduce(state, .key(.char("a")))
-        XCTAssertEqual(out.state.modal, .appearance)
-        XCTAssertEqual(out.effects, [])
+        #expect(out.state.modal == .appearance)
+        #expect(out.effects == [])
     }
 
-    func testADoesNotOpenModalWhenShutdown() throws {
+    @Test("It should not open the appearance modal on a shut-down simulator")
+    func aDoesNotOpenModalWhenShutdown() throws {
         let sim = try shutdownSim()
         let state = AppState(simulators: [sim])
         let out = Reducer.reduce(state, .key(.char("a")))
-        XCTAssertNil(out.state.modal)
-        XCTAssertNotNil(out.state.statusMessage)
+        #expect(out.state.modal == nil)
+        #expect(out.state.statusMessage != nil)
     }
 
-    func testLInModalEmitsSetAppearanceLight() throws {
+    @Test("It should emit setAppearance(.light) when l is pressed in the appearance modal")
+    func lInModalEmitsSetAppearanceLight() throws {
         let sim = try bootedSim()
         let state = AppState(simulators: [sim], modal: .appearance)
         let out = Reducer.reduce(state, .key(.char("l")))
-        XCTAssertNil(out.state.modal)
-        XCTAssertEqual(out.effects, [.setAppearance(sim.id, .light)])
+        #expect(out.state.modal == nil)
+        #expect(out.effects == [.setAppearance(sim.id, .light)])
     }
 
-    func testDInModalEmitsSetAppearanceDark() throws {
+    @Test("It should emit setAppearance(.dark) when d is pressed in the appearance modal")
+    func dInModalEmitsSetAppearanceDark() throws {
         let sim = try bootedSim()
         let state = AppState(simulators: [sim], modal: .appearance)
         let out = Reducer.reduce(state, .key(.char("d")))
-        XCTAssertNil(out.state.modal)
-        XCTAssertEqual(out.effects, [.setAppearance(sim.id, .dark)])
+        #expect(out.state.modal == nil)
+        #expect(out.effects == [.setAppearance(sim.id, .dark)])
     }
 
-    func testEscapeInModalCancels() throws {
+    @Test("It should cancel the appearance modal on Escape without emitting effects")
+    func escapeInModalCancels() throws {
         let sim = try bootedSim()
         let state = AppState(simulators: [sim], modal: .appearance)
         let out = Reducer.reduce(state, .key(.escape))
-        XCTAssertNil(out.state.modal)
-        XCTAssertEqual(out.effects, [])
-        XCTAssertFalse(out.state.isQuitting)
+        #expect(out.state.modal == nil)
+        #expect(out.effects == [])
+        #expect(!out.state.isQuitting)
     }
 
-    func testNavigationKeysSuppressedInsideModal() throws {
+    @Test("It should ignore navigation keys while the appearance modal is open")
+    func navigationKeysSuppressedInsideModal() throws {
         let sim1 = try bootedSim()
         let sim2 = try bootedSim()
         let state = AppState(simulators: [sim1, sim2], selectedIndex: 0, modal: .appearance)
         let out = Reducer.reduce(state, .key(.down))
-        XCTAssertEqual(out.state.selectedIndex, 0)
+        #expect(out.state.selectedIndex == 0)
     }
 
-    func testAppearanceChangedRefreshes() {
+    @Test("It should refresh and surface a status message when appearance changes")
+    func appearanceChangedRefreshes() {
         let id = UUID()
         let out = Reducer.reduce(AppState(), .appearanceChanged(id, .dark))
-        XCTAssertEqual(out.effects, [.refresh])
-        XCTAssertTrue(out.state.statusMessage?.contains("dark") ?? false)
+        #expect(out.effects == [.refresh])
+        #expect(out.state.statusMessage?.contains("dark") ?? false)
     }
 
-    func testAppearanceFailedSetsError() {
+    @Test("It should record an error when the appearance change fails")
+    func appearanceFailedSetsError() {
         let out = Reducer.reduce(AppState(), .appearanceFailed("boom"))
-        XCTAssertEqual(out.state.lastError, "boom")
+        #expect(out.state.lastError == "boom")
     }
 }

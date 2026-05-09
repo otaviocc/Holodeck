@@ -20,11 +20,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+import Foundation
 import HolodeckCore
-import XCTest
+import Testing
 @testable import HolodeckTUI
 
-final class ReducerTests: XCTestCase {
+struct ReducerTests {
 
     private func makeSim(name: String, state: SimulatorState, version: Int = 18) -> Simulator {
         Simulator(
@@ -43,62 +44,69 @@ final class ReducerTests: XCTestCase {
         )
     }
 
-    func testNavigationClampsToBounds() {
+    @Test("It should clamp navigation to the simulator list bounds")
+    func navigationClampsToBounds() {
         var state = AppState(simulators: [
             makeSim(name: "A", state: .shutdown),
             makeSim(name: "B", state: .shutdown)
         ])
         state = Reducer.reduce(state, .key(.up)).state
-        XCTAssertEqual(state.selectedIndex, 0)
+        #expect(state.selectedIndex == 0)
         state = Reducer.reduce(state, .key(.down)).state
-        XCTAssertEqual(state.selectedIndex, 1)
+        #expect(state.selectedIndex == 1)
         state = Reducer.reduce(state, .key(.down)).state
-        XCTAssertEqual(state.selectedIndex, 1)
+        #expect(state.selectedIndex == 1)
     }
 
-    func testQuitSetsFlag() {
+    @Test("It should set the quitting flag when q is pressed")
+    func quitSetsFlag() {
         var state = AppState()
         state = Reducer.reduce(state, .key(.char("q"))).state
-        XCTAssertTrue(state.isQuitting)
+        #expect(state.isQuitting)
     }
 
-    func testEnterOnShutdownEmitsBoot() {
+    @Test("It should emit a boot effect when Enter hits a shutdown simulator")
+    func enterOnShutdownEmitsBoot() {
         let sim = makeSim(name: "A", state: .shutdown)
         let state = AppState(simulators: [sim])
         let out = Reducer.reduce(state, .key(.enter))
-        XCTAssertEqual(out.effects, [.boot(sim.id)])
-        XCTAssertTrue(out.state.pendingOperations.contains(sim.id))
+        #expect(out.effects == [.boot(sim.id)])
+        #expect(out.state.pendingOperations.contains(sim.id))
     }
 
-    func testEnterOnBootedEmitsShutdown() {
+    @Test("It should emit a shutdown effect when Enter hits a booted simulator")
+    func enterOnBootedEmitsShutdown() {
         let sim = makeSim(name: "A", state: .booted)
         let state = AppState(simulators: [sim])
         let out = Reducer.reduce(state, .key(.enter))
-        XCTAssertEqual(out.effects, [.shutdown(sim.id)])
+        #expect(out.effects == [.shutdown(sim.id)])
     }
 
-    func testEnterIgnoredWhilePending() {
+    @Test("It should ignore Enter while an operation is pending")
+    func enterIgnoredWhilePending() {
         let sim = makeSim(name: "A", state: .shutdown)
         let state = AppState(simulators: [sim], pendingOperations: [sim.id])
         let out = Reducer.reduce(state, .key(.enter))
-        XCTAssertEqual(out.effects, [])
+        #expect(out.effects == [])
     }
 
-    func testOperationCompletedTriggersRefresh() {
+    @Test("It should trigger a refresh after an operation completes")
+    func operationCompletedTriggersRefresh() {
         let id = UUID()
         let state = AppState(pendingOperations: [id])
         let out = Reducer.reduce(state, .operationCompleted(id))
-        XCTAssertFalse(out.state.pendingOperations.contains(id))
-        XCTAssertEqual(out.effects, [.refresh])
+        #expect(!out.state.pendingOperations.contains(id))
+        #expect(out.effects == [.refresh])
     }
 
-    func testRefreshedClampsSelection() {
+    @Test("It should clamp the selection when the refreshed list shrinks")
+    func refreshedClampsSelection() {
         var state = AppState(simulators: [
             makeSim(name: "A", state: .shutdown),
             makeSim(name: "B", state: .shutdown),
             makeSim(name: "C", state: .shutdown)
         ], selectedIndex: 2)
         state = Reducer.reduce(state, .refreshed([makeSim(name: "Z", state: .shutdown)])).state
-        XCTAssertEqual(state.selectedIndex, 0)
+        #expect(state.selectedIndex == 0)
     }
 }

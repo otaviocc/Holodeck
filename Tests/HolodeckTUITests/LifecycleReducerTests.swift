@@ -20,17 +20,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+import Foundation
 import HolodeckCore
-import XCTest
+import Testing
 @testable import HolodeckTUI
 
-final class LifecycleReducerTests: XCTestCase {
+struct LifecycleReducerTests {
 
     private func sim(state: SimulatorState, name: String = "iPhone 16") throws -> Simulator {
         try Simulator(
             id: UUID(),
             name: name,
-            runtime: XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
+            runtime: #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
             deviceType: DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16"),
             state: state,
             isAvailable: true,
@@ -39,122 +40,140 @@ final class LifecycleReducerTests: XCTestCase {
         )
     }
 
-    func testEOpensConfirmEraseWhenShutdown() throws {
+    @Test("It should open the erase confirmation when e is pressed on a shut-down simulator")
+    func eOpensConfirmEraseWhenShutdown() throws {
         let device = try sim(state: .shutdown)
         let state = AppState(simulators: [device])
         let out = Reducer.reduce(state, .key(.char("e")))
-        XCTAssertEqual(out.state.modal, .confirmErase(device.id))
+        #expect(out.state.modal == .confirmErase(device.id))
     }
 
-    func testEDoesNothingWhenBooted() throws {
+    @Test("It should ignore e when the selected simulator is booted")
+    func eDoesNothingWhenBooted() throws {
         let device = try sim(state: .booted)
         let state = AppState(simulators: [device])
         let out = Reducer.reduce(state, .key(.char("e")))
-        XCTAssertNil(out.state.modal)
+        #expect(out.state.modal == nil)
     }
 
-    func testYInConfirmEraseEmitsEffect() throws {
+    @Test("It should emit eraseSimulator when y confirms the erase modal")
+    func yInConfirmEraseEmitsEffect() throws {
         let device = try sim(state: .shutdown)
         let state = AppState(simulators: [device], modal: .confirmErase(device.id))
         let out = Reducer.reduce(state, .key(.char("y")))
-        XCTAssertEqual(out.effects, [.eraseSimulator(device.id)])
-        XCTAssertNil(out.state.modal)
-        XCTAssertTrue(out.state.pendingOperations.contains(device.id))
+        #expect(out.effects == [.eraseSimulator(device.id)])
+        #expect(out.state.modal == nil)
+        #expect(out.state.pendingOperations.contains(device.id))
     }
 
-    func testNCancelsConfirmDelete() throws {
+    @Test("It should cancel the delete modal when n is pressed")
+    func nCancelsConfirmDelete() throws {
         let device = try sim(state: .shutdown)
         let state = AppState(simulators: [device], modal: .confirmDelete(device.id))
         let out = Reducer.reduce(state, .key(.char("n")))
-        XCTAssertNil(out.state.modal)
-        XCTAssertEqual(out.effects, [])
+        #expect(out.state.modal == nil)
+        #expect(out.effects == [])
     }
 
-    func testDOpensConfirmDelete() throws {
+    @Test("It should open the delete confirmation when d is pressed")
+    func dOpensConfirmDelete() throws {
         let device = try sim(state: .shutdown)
         let state = AppState(simulators: [device])
         let out = Reducer.reduce(state, .key(.char("d")))
-        XCTAssertEqual(out.state.modal, .confirmDelete(device.id))
+        #expect(out.state.modal == .confirmDelete(device.id))
     }
 
-    func testNOpensWizardAndLoadsTargets() {
+    @Test("It should open the create wizard and request available targets when n is pressed")
+    func nOpensWizardAndLoadsTargets() {
         let out = Reducer.reduce(AppState(), .key(.char("n")))
-        XCTAssertEqual(out.effects, [.loadTargets])
+        #expect(out.effects == [.loadTargets])
         guard case .createWizard = out.state.modal else {
-            return XCTFail("expected createWizard modal")
+            Issue.record("expected createWizard modal")
+            return
         }
     }
 
-    func testTargetsLoadedPopulatesWizard() throws {
+    @Test("It should populate the wizard with loaded targets")
+    func targetsLoadedPopulatesWizard() throws {
         let dtype = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16")
-        let runtime = try XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
+        let runtime = try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
         let state = AppState(modal: .createWizard(CreateWizard()))
         let out = Reducer.reduce(state, .targetsLoaded(AvailableTargets(deviceTypes: [dtype], runtimes: [runtime])))
         guard case let .createWizard(wizard) = out.state.modal else {
-            return XCTFail("expected wizard modal")
+            Issue.record("expected wizard modal")
+            return
         }
-        XCTAssertEqual(wizard.step, .pickDeviceType)
-        XCTAssertEqual(wizard.deviceTypes.count, 1)
-        XCTAssertEqual(wizard.runtimes.count, 1)
+        #expect(wizard.step == .pickDeviceType)
+        #expect(wizard.deviceTypes.count == 1)
+        #expect(wizard.runtimes.count == 1)
     }
 
-    func testWizardEnterAdvancesSteps() throws {
+    @Test("It should advance the wizard one step at a time on Enter")
+    func wizardEnterAdvancesSteps() throws {
         let dtype = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16")
-        let runtime = try XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
+        let runtime = try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
         let wizard = CreateWizard(step: .pickDeviceType, deviceTypes: [dtype], runtimes: [runtime])
         let state = AppState(modal: .createWizard(wizard))
         let afterFirst = Reducer.reduce(state, .key(.enter))
         guard case let .createWizard(stepTwo) = afterFirst.state.modal else {
-            return XCTFail("expected wizard")
+            Issue.record("expected wizard")
+            return
         }
-        XCTAssertEqual(stepTwo.step, .pickRuntime)
+        #expect(stepTwo.step == .pickRuntime)
         let afterSecond = Reducer.reduce(afterFirst.state, .key(.enter))
         guard case let .createWizard(stepThree) = afterSecond.state.modal else {
-            return XCTFail("expected wizard")
+            Issue.record("expected wizard")
+            return
         }
-        XCTAssertEqual(stepThree.step, .confirm)
+        #expect(stepThree.step == .confirm)
     }
 
-    func testWizardConfirmEmitsCreateEffect() throws {
+    @Test("It should emit createSimulator when the wizard is confirmed")
+    func wizardConfirmEmitsCreateEffect() throws {
         let dtype = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16")
-        let runtime = try XCTUnwrap(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
+        let runtime = try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
         let wizard = CreateWizard(step: .confirm, deviceTypes: [dtype], runtimes: [runtime])
         let state = AppState(modal: .createWizard(wizard))
         let out = Reducer.reduce(state, .key(.char("y")))
-        XCTAssertEqual(out.effects.count, 1)
+        #expect(out.effects.count == 1)
         guard case let .createSimulator(name, deviceType, pickedRuntime) = out.effects.first else {
-            return XCTFail("expected createSimulator effect")
+            Issue.record("expected createSimulator effect")
+            return
         }
-        XCTAssertTrue(name.contains("iPhone"))
-        XCTAssertEqual(deviceType.identifier, dtype.identifier)
-        XCTAssertEqual(pickedRuntime.identifier, runtime.identifier)
+        #expect(name.contains("iPhone"))
+        #expect(deviceType.identifier == dtype.identifier)
+        #expect(pickedRuntime.identifier == runtime.identifier)
     }
 
-    func testWizardEscapeCancels() {
+    @Test("It should cancel the wizard on Escape")
+    func wizardEscapeCancels() {
         let dtype = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16")
         let wizard = CreateWizard(step: .pickDeviceType, deviceTypes: [dtype])
         let state = AppState(modal: .createWizard(wizard))
         let out = Reducer.reduce(state, .key(.escape))
-        XCTAssertNil(out.state.modal)
+        #expect(out.state.modal == nil)
     }
 
-    func testSimulatorCreatedClosesModalAndRefreshes() {
+    @Test("It should close the wizard and refresh after a simulator is created")
+    func simulatorCreatedClosesModalAndRefreshes() {
         let wizard = CreateWizard(step: .submitting)
         let state = AppState(modal: .createWizard(wizard))
         let out = Reducer.reduce(state, .simulatorCreated(UUID(), "Test"))
-        XCTAssertNil(out.state.modal)
-        XCTAssertEqual(out.effects, [.refresh])
-        XCTAssertTrue(out.state.statusMessage?.contains("Test") ?? false)
+        #expect(out.state.modal == nil)
+        #expect(out.effects == [.refresh])
+        #expect(out.state.statusMessage?.contains("Test") ?? false)
     }
 
-    func testSimulatorCreateFailedReturnsToConfirmWithError() {
+    @Test("It should return to the confirm step with an error if create fails")
+    func simulatorCreateFailedReturnsToConfirmWithError() {
         let wizard = CreateWizard(step: .submitting)
         let state = AppState(modal: .createWizard(wizard))
         let out = Reducer.reduce(state, .simulatorCreateFailed("boom"))
         guard case let .createWizard(updated) = out.state.modal else {
-            return XCTFail("expected wizard")
+            Issue.record("expected wizard")
+            return
         }
-        XCTAssertEqual(updated.step, .confirm)
-        XCTAssertEqual(updated.error, "boom")
+        #expect(updated.step == .confirm)
+        #expect(updated.error == "boom")
     }
 }

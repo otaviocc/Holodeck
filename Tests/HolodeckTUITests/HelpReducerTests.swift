@@ -20,34 +20,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import XCTest
+import Testing
 @testable import HolodeckTUI
 
-final class HelpReducerTests: XCTestCase {
+struct HelpReducerTests {
 
-    func testQuestionMarkOpensHelp() {
+    @Test("It should open the help modal when ? is pressed")
+    func questionMarkOpensHelp() {
         let out = Reducer.reduce(AppState(), .key(.char("?")))
-        XCTAssertEqual(out.state.modal, .help)
+        #expect(out.state.modal == .help)
     }
 
-    func testAnyKeyClosesHelp() {
+    @Test("It should close the help modal on any key")
+    func anyKeyClosesHelp() {
         let state = AppState(modal: .help)
         let out = Reducer.reduce(state, .key(.char("j")))
-        XCTAssertNil(out.state.modal)
+        #expect(out.state.modal == nil)
     }
 
-    func testEscapeClosesHelp() {
+    @Test("It should close the help modal on Escape")
+    func escapeClosesHelp() {
         let state = AppState(modal: .help)
         let out = Reducer.reduce(state, .key(.escape))
-        XCTAssertNil(out.state.modal)
+        #expect(out.state.modal == nil)
     }
 
-    func testHelpRendersKeybindingsList() {
+    @Test("It should render the keybindings list when help is open")
+    func helpRendersKeybindingsList() {
         let state = AppState(rows: 30, cols: 80, modal: .help)
         let frame = SimulatorListView.render(state)
         let plain = SimulatorListView.stripANSI(frame)
-        XCTAssertTrue(plain.contains("Keybindings"))
-        XCTAssertTrue(plain.contains("boot or shutdown"))
-        XCTAssertTrue(plain.contains("screenshot"))
+        #expect(plain.contains("Keybindings"))
+        #expect(plain.contains("boot or shutdown"))
+        #expect(plain.contains("screenshot"))
     }
 }

@@ -20,17 +20,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+import Foundation
 import HolodeckCore
-import XCTest
+import Testing
 @testable import HolodeckTUI
 
-final class MediaReducerTests: XCTestCase {
+struct MediaReducerTests {
 
-    private func bootedSim(name: String = "iPhone 16") -> Simulator {
-        Simulator(
+    private func bootedSim(name: String = "iPhone 16") throws -> Simulator {
+        try Simulator(
             id: UUID(),
             name: name,
-            runtime: Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")!,
+            runtime: #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
             deviceType: DeviceType(identifier: "x"),
             state: .booted,
             isAvailable: true,
@@ -39,11 +40,11 @@ final class MediaReducerTests: XCTestCase {
         )
     }
 
-    private func shutdownSim() -> Simulator {
-        Simulator(
+    private func shutdownSim() throws -> Simulator {
+        try Simulator(
             id: UUID(),
             name: "Off",
-            runtime: Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")!,
+            runtime: #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2")),
             deviceType: DeviceType(identifier: "x"),
             state: .shutdown,
             isAvailable: true,
@@ -52,79 +53,88 @@ final class MediaReducerTests: XCTestCase {
         )
     }
 
-    func testRStartsRecordingWhenBooted() {
-        let sim = bootedSim()
+    @Test("It should start recording when r is pressed and the simulator is booted")
+    func rStartsRecordingWhenBooted() throws {
+        let sim = try bootedSim()
         let state = AppState(simulators: [sim])
         let out = Reducer.reduce(state, .key(.char("r")))
-        XCTAssertEqual(out.effects, [.startRecording(sim.id)])
+        #expect(out.effects == [.startRecording(sim.id)])
     }
 
-    func testRDoesNotRecordWhenShutdown() {
-        let sim = shutdownSim()
+    @Test("It should not record a shut-down simulator")
+    func rDoesNotRecordWhenShutdown() throws {
+        let sim = try shutdownSim()
         let state = AppState(simulators: [sim])
         let out = Reducer.reduce(state, .key(.char("r")))
-        XCTAssertEqual(out.effects, [])
-        XCTAssertNotNil(out.state.statusMessage)
+        #expect(out.effects == [])
+        #expect(out.state.statusMessage != nil)
     }
 
-    func testRStopsRecordingWhenAlreadyRecording() {
-        let sim = bootedSim()
+    @Test("It should stop the active recording when r is pressed again")
+    func rStopsRecordingWhenAlreadyRecording() throws {
+        let sim = try bootedSim()
         let state = AppState(
             simulators: [sim],
             recordingDeviceID: sim.id,
             recordingPath: URL(fileURLWithPath: "/tmp/x.mp4")
         )
         let out = Reducer.reduce(state, .key(.char("r")))
-        XCTAssertEqual(out.effects, [.stopRecording])
+        #expect(out.effects == [.stopRecording])
     }
 
-    func testQDuringRecordingStopsInsteadOfQuitting() {
-        let sim = bootedSim()
+    @Test("It should stop recording instead of quitting when q is pressed mid-recording")
+    func qDuringRecordingStopsInsteadOfQuitting() throws {
+        let sim = try bootedSim()
         let state = AppState(
             simulators: [sim],
             recordingDeviceID: sim.id,
             recordingPath: URL(fileURLWithPath: "/tmp/x.mp4")
         )
         let out = Reducer.reduce(state, .key(.char("q")))
-        XCTAssertEqual(out.effects, [.stopRecording])
-        XCTAssertFalse(out.state.isQuitting)
+        #expect(out.effects == [.stopRecording])
+        #expect(!out.state.isQuitting)
     }
 
-    func testPCapturesScreenshotWhenBooted() {
-        let sim = bootedSim()
+    @Test("It should capture a screenshot when p is pressed and the simulator is booted")
+    func pCapturesScreenshotWhenBooted() throws {
+        let sim = try bootedSim()
         let state = AppState(simulators: [sim])
         let out = Reducer.reduce(state, .key(.char("p")))
-        XCTAssertEqual(out.effects, [.captureScreenshot(sim.id)])
+        #expect(out.effects == [.captureScreenshot(sim.id)])
     }
 
-    func testRecordingStartedSetsState() {
+    @Test("It should record the recording device id when recordingStarted fires")
+    func recordingStartedSetsState() {
         let id = UUID()
         let url = URL(fileURLWithPath: "/tmp/r.mp4")
         let out = Reducer.reduce(AppState(), .recordingStarted(id, url))
-        XCTAssertEqual(out.state.recordingDeviceID, id)
-        XCTAssertEqual(out.state.recordingPath, url)
-        XCTAssertTrue(out.state.isRecording)
+        #expect(out.state.recordingDeviceID == id)
+        #expect(out.state.recordingPath == url)
+        #expect(out.state.isRecording)
     }
 
-    func testRecordingStoppedClearsAndRefreshes() {
+    @Test("It should clear the recording state and refresh when the recording stops")
+    func recordingStoppedClearsAndRefreshes() {
         let id = UUID()
         let url = URL(fileURLWithPath: "/tmp/r.mp4")
         let state = AppState(recordingDeviceID: id, recordingPath: url)
         let out = Reducer.reduce(state, .recordingStopped(url))
-        XCTAssertNil(out.state.recordingDeviceID)
-        XCTAssertNil(out.state.recordingPath)
-        XCTAssertEqual(out.effects, [.refresh])
-        XCTAssertTrue(out.state.statusMessage?.contains("Saved") ?? false)
+        #expect(out.state.recordingDeviceID == nil)
+        #expect(out.state.recordingPath == nil)
+        #expect(out.effects == [.refresh])
+        #expect(out.state.statusMessage?.contains("Saved") ?? false)
     }
 
-    func testPollTickRefreshesWhenIdle() {
+    @Test("It should refresh on every poll tick when nothing else is happening")
+    func pollTickRefreshesWhenIdle() {
         let out = Reducer.reduce(AppState(), .pollTick)
-        XCTAssertEqual(out.effects, [.refresh])
+        #expect(out.effects == [.refresh])
     }
 
-    func testPollTickSuppressedWhileRecording() {
+    @Test("It should suppress polling while a recording is active")
+    func pollTickSuppressedWhileRecording() {
         let state = AppState(recordingDeviceID: UUID(), recordingPath: URL(fileURLWithPath: "/tmp/r.mp4"))
         let out = Reducer.reduce(state, .pollTick)
-        XCTAssertEqual(out.effects, [])
+        #expect(out.effects == [])
     }
 }
