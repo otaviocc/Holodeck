@@ -36,7 +36,7 @@ public struct Config: Sendable, Equatable, Codable {
 
     public init(
         defaultPlatform: Platform? = nil,
-        screenshotsDirectory: String = "~/Screenshots",
+        screenshotsDirectory: String = "~/Desktop",
         videoCodec: VideoCodec = .h264,
         screenshotType: ScreenshotType = .png,
         pollIntervalSeconds: Double = 2.0

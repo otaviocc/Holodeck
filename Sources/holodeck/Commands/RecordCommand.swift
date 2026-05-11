@@ -64,7 +64,7 @@ struct RecordCommand: AsyncParsableCommand {
     @Argument(help: "Simulator name or UDID.")
     var query: String
 
-    @Option(name: .shortAndLong, help: "Output file path (default: ~/Screenshots/sim_record_<ts>.mp4).")
+    @Option(name: .shortAndLong, help: "Output file path (default: ~/Desktop/sim_record_<ts>.mp4).")
     var output: String?
 
     @Option(help: "Video codec: h264 or hevc. Defaults to value from ~/.config/holodeck/config.json.")

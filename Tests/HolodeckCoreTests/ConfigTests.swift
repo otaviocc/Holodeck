@@ -30,7 +30,7 @@ struct ConfigTests {
     func defaults() {
         let config = Config.default
         #expect(config.defaultPlatform == nil)
-        #expect(config.screenshotsDirectory == "~/Screenshots")
+        #expect(config.screenshotsDirectory == "~/Desktop")
         #expect(config.videoCodec == .h264)
         #expect(config.screenshotType == .png)
         #expect(config.pollIntervalSeconds == 2.0)

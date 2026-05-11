@@ -89,7 +89,7 @@ raise an error. Sample:
 | Field | Default | Affects |
 | --- | --- | --- |
 | `defaultPlatform` | `null` | `list --platform` and (eventually) TUI default filter |
-| `screenshotsDirectory` | `~/Screenshots` | Default output dir for `record` and `screenshot` |
+| `screenshotsDirectory` | `~/Desktop` | Default output dir for `record` and `screenshot` |
 | `videoCodec` | `h264` | `record --codec` default |
 | `screenshotType` | `png` | `screenshot --type` default |
 | `pollIntervalSeconds` | `2.0` | TUI refresh cadence |

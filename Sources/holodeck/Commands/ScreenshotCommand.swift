@@ -37,7 +37,7 @@ struct ScreenshotCommand: AsyncParsableCommand {
     @Argument(help: "Simulator name or UDID.")
     var query: String
 
-    @Option(name: .shortAndLong, help: "Output file path (default: ~/Screenshots/sim_screenshot_<ts>.<ext>).")
+    @Option(name: .shortAndLong, help: "Output file path (default: ~/Desktop/sim_screenshot_<ts>.<ext>).")
     var output: String?
 
     @Option(help: "Image type: png, jpeg, tiff, bmp. Defaults to value from ~/.config/holodeck/config.json.")
