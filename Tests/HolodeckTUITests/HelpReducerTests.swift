@@ -27,29 +27,47 @@ struct HelpReducerTests {
 
     @Test("It should open the help modal when ? is pressed")
     func questionMarkOpensHelp() {
+        // When
         let out = Reducer.reduce(AppState(), .key(.char("?")))
+
+        // Then
         #expect(out.state.modal == .help)
     }
 
     @Test("It should close the help modal on any key")
     func anyKeyClosesHelp() {
+        // Given
         let state = AppState(modal: .help)
+
+        // When
         let out = Reducer.reduce(state, .key(.char("j")))
+
+        // Then
         #expect(out.state.modal == nil)
     }
 
     @Test("It should close the help modal on Escape")
     func escapeClosesHelp() {
+        // Given
         let state = AppState(modal: .help)
+
+        // When
         let out = Reducer.reduce(state, .key(.escape))
+
+        // Then
         #expect(out.state.modal == nil)
     }
 
     @Test("It should render the keybindings list when help is open")
     func helpRendersKeybindingsList() {
+        // Given
         let state = AppState(rows: 30, cols: 80, modal: .help)
+
+        // When
         let frame = SimulatorListView.render(state)
         let plain = SimulatorListView.stripANSI(frame)
+
+        // Then
         #expect(plain.contains("Keybindings"))
         #expect(plain.contains("boot or shutdown"))
         #expect(plain.contains("screenshot"))

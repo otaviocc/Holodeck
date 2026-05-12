@@ -46,67 +46,105 @@ struct ReducerTests {
 
     @Test("It should clamp navigation to the simulator list bounds")
     func navigationClampsToBounds() {
+        // Given
         var state = AppState(simulators: [
             makeSim(name: "A", state: .shutdown),
             makeSim(name: "B", state: .shutdown)
         ])
+
+        // When
         state = Reducer.reduce(state, .key(.up)).state
-        #expect(state.selectedIndex == 0)
+        let afterUp = state.selectedIndex
         state = Reducer.reduce(state, .key(.down)).state
-        #expect(state.selectedIndex == 1)
+        let afterDown = state.selectedIndex
         state = Reducer.reduce(state, .key(.down)).state
-        #expect(state.selectedIndex == 1)
+        let afterClamp = state.selectedIndex
+
+        // Then
+        #expect(afterUp == 0)
+        #expect(afterDown == 1)
+        #expect(afterClamp == 1)
     }
 
     @Test("It should set the quitting flag when q is pressed")
     func quitSetsFlag() {
+        // Given
         var state = AppState()
+
+        // When
         state = Reducer.reduce(state, .key(.char("q"))).state
+
+        // Then
         #expect(state.isQuitting)
     }
 
     @Test("It should emit a boot effect when Enter hits a shutdown simulator")
     func enterOnShutdownEmitsBoot() {
+        // Given
         let sim = makeSim(name: "A", state: .shutdown)
         let state = AppState(simulators: [sim])
+
+        // When
         let out = Reducer.reduce(state, .key(.enter))
+
+        // Then
         #expect(out.effects == [.boot(sim.id)])
         #expect(out.state.pendingOperations.contains(sim.id))
     }
 
     @Test("It should emit a shutdown effect when Enter hits a booted simulator")
     func enterOnBootedEmitsShutdown() {
+        // Given
         let sim = makeSim(name: "A", state: .booted)
         let state = AppState(simulators: [sim])
+
+        // When
         let out = Reducer.reduce(state, .key(.enter))
+
+        // Then
         #expect(out.effects == [.shutdown(sim.id)])
     }
 
     @Test("It should ignore Enter while an operation is pending")
     func enterIgnoredWhilePending() {
+        // Given
         let sim = makeSim(name: "A", state: .shutdown)
         let state = AppState(simulators: [sim], pendingOperations: [sim.id])
+
+        // When
         let out = Reducer.reduce(state, .key(.enter))
+
+        // Then
         #expect(out.effects == [])
     }
 
     @Test("It should trigger a refresh after an operation completes")
     func operationCompletedTriggersRefresh() {
+        // Given
         let id = UUID()
         let state = AppState(pendingOperations: [id])
+
+        // When
         let out = Reducer.reduce(state, .operationCompleted(id))
+
+        // Then
         #expect(!out.state.pendingOperations.contains(id))
         #expect(out.effects == [.refresh])
     }
 
     @Test("It should clamp the selection when the refreshed list shrinks")
     func refreshedClampsSelection() {
+        // Given
         var state = AppState(simulators: [
             makeSim(name: "A", state: .shutdown),
             makeSim(name: "B", state: .shutdown),
             makeSim(name: "C", state: .shutdown)
         ], selectedIndex: 2)
+
+        // When
         state = Reducer.reduce(state, .refreshed([makeSim(name: "Z", state: .shutdown)])).state
+
+        // Then
         #expect(state.selectedIndex == 0)
     }
 }

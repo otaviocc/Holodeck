@@ -42,25 +42,40 @@ struct LifecycleReducerTests {
 
     @Test("It should open the erase confirmation when e is pressed on a shut-down simulator")
     func eOpensConfirmEraseWhenShutdown() throws {
+        // Given
         let device = try sim(state: .shutdown)
         let state = AppState(simulators: [device])
+
+        // When
         let out = Reducer.reduce(state, .key(.char("e")))
+
+        // Then
         #expect(out.state.modal == .confirmErase(device.id))
     }
 
     @Test("It should ignore e when the selected simulator is booted")
     func eDoesNothingWhenBooted() throws {
+        // Given
         let device = try sim(state: .booted)
         let state = AppState(simulators: [device])
+
+        // When
         let out = Reducer.reduce(state, .key(.char("e")))
+
+        // Then
         #expect(out.state.modal == nil)
     }
 
     @Test("It should emit eraseSimulator when y confirms the erase modal")
     func yInConfirmEraseEmitsEffect() throws {
+        // Given
         let device = try sim(state: .shutdown)
         let state = AppState(simulators: [device], modal: .confirmErase(device.id))
+
+        // When
         let out = Reducer.reduce(state, .key(.char("y")))
+
+        // Then
         #expect(out.effects == [.eraseSimulator(device.id)])
         #expect(out.state.modal == nil)
         #expect(out.state.pendingOperations.contains(device.id))
@@ -68,24 +83,37 @@ struct LifecycleReducerTests {
 
     @Test("It should cancel the delete modal when n is pressed")
     func nCancelsConfirmDelete() throws {
+        // Given
         let device = try sim(state: .shutdown)
         let state = AppState(simulators: [device], modal: .confirmDelete(device.id))
+
+        // When
         let out = Reducer.reduce(state, .key(.char("n")))
+
+        // Then
         #expect(out.state.modal == nil)
         #expect(out.effects == [])
     }
 
     @Test("It should open the delete confirmation when d is pressed")
     func dOpensConfirmDelete() throws {
+        // Given
         let device = try sim(state: .shutdown)
         let state = AppState(simulators: [device])
+
+        // When
         let out = Reducer.reduce(state, .key(.char("d")))
+
+        // Then
         #expect(out.state.modal == .confirmDelete(device.id))
     }
 
     @Test("It should open the create wizard and request available targets when n is pressed")
     func nOpensWizardAndLoadsTargets() {
+        // When
         let out = Reducer.reduce(AppState(), .key(.char("n")))
+
+        // Then
         #expect(out.effects == [.loadTargets])
         guard case .createWizard = out.state.modal else {
             Issue.record("expected createWizard modal")
@@ -95,10 +123,15 @@ struct LifecycleReducerTests {
 
     @Test("It should populate the wizard with loaded targets")
     func targetsLoadedPopulatesWizard() throws {
+        // Given
         let dtype = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16")
         let runtime = try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
         let state = AppState(modal: .createWizard(CreateWizard()))
+
+        // When
         let out = Reducer.reduce(state, .targetsLoaded(AvailableTargets(deviceTypes: [dtype], runtimes: [runtime])))
+
+        // Then
         guard case let .createWizard(wizard) = out.state.modal else {
             Issue.record("expected wizard modal")
             return
@@ -110,17 +143,22 @@ struct LifecycleReducerTests {
 
     @Test("It should advance the wizard one step at a time on Enter")
     func wizardEnterAdvancesSteps() throws {
+        // Given
         let dtype = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16")
         let runtime = try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
         let wizard = CreateWizard(step: .pickDeviceType, deviceTypes: [dtype], runtimes: [runtime])
         let state = AppState(modal: .createWizard(wizard))
+
+        // When
         let afterFirst = Reducer.reduce(state, .key(.enter))
+        let afterSecond = Reducer.reduce(afterFirst.state, .key(.enter))
+
+        // Then
         guard case let .createWizard(stepTwo) = afterFirst.state.modal else {
             Issue.record("expected wizard")
             return
         }
         #expect(stepTwo.step == .pickRuntime)
-        let afterSecond = Reducer.reduce(afterFirst.state, .key(.enter))
         guard case let .createWizard(stepThree) = afterSecond.state.modal else {
             Issue.record("expected wizard")
             return
@@ -130,11 +168,16 @@ struct LifecycleReducerTests {
 
     @Test("It should emit createSimulator when the wizard is confirmed")
     func wizardConfirmEmitsCreateEffect() throws {
+        // Given
         let dtype = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16")
         let runtime = try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
         let wizard = CreateWizard(step: .confirm, deviceTypes: [dtype], runtimes: [runtime])
         let state = AppState(modal: .createWizard(wizard))
+
+        // When
         let out = Reducer.reduce(state, .key(.char("y")))
+
+        // Then
         #expect(out.effects.count == 1)
         guard case let .createSimulator(name, deviceType, pickedRuntime) = out.effects.first else {
             Issue.record("expected createSimulator effect")
@@ -147,18 +190,28 @@ struct LifecycleReducerTests {
 
     @Test("It should cancel the wizard on Escape")
     func wizardEscapeCancels() {
+        // Given
         let dtype = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16")
         let wizard = CreateWizard(step: .pickDeviceType, deviceTypes: [dtype])
         let state = AppState(modal: .createWizard(wizard))
+
+        // When
         let out = Reducer.reduce(state, .key(.escape))
+
+        // Then
         #expect(out.state.modal == nil)
     }
 
     @Test("It should close the wizard and refresh after a simulator is created")
     func simulatorCreatedClosesModalAndRefreshes() {
+        // Given
         let wizard = CreateWizard(step: .submitting)
         let state = AppState(modal: .createWizard(wizard))
+
+        // When
         let out = Reducer.reduce(state, .simulatorCreated(UUID(), "Test"))
+
+        // Then
         #expect(out.state.modal == nil)
         #expect(out.effects == [.refresh])
         #expect(out.state.statusMessage?.contains("Test") ?? false)
@@ -166,9 +219,14 @@ struct LifecycleReducerTests {
 
     @Test("It should return to the confirm step with an error if create fails")
     func simulatorCreateFailedReturnsToConfirmWithError() {
+        // Given
         let wizard = CreateWizard(step: .submitting)
         let state = AppState(modal: .createWizard(wizard))
+
+        // When
         let out = Reducer.reduce(state, .simulatorCreateFailed("boom"))
+
+        // Then
         guard case let .createWizard(updated) = out.state.modal else {
             Issue.record("expected wizard")
             return

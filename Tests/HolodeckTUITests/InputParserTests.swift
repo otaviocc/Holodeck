@@ -29,6 +29,7 @@ struct InputParserTests {
 
     @Test("It should decode CSI arrow sequences as directional keys")
     func arrowKeys() {
+        // Then
         #expect(parser.parse([0x1B, 0x5B, 0x41]) == [.up])
         #expect(parser.parse([0x1B, 0x5B, 0x42]) == [.down])
         #expect(parser.parse([0x1B, 0x5B, 0x43]) == [.right])
@@ -37,6 +38,7 @@ struct InputParserTests {
 
     @Test("It should map printable characters and control bytes to keys")
     func printableAndControl() {
+        // Then
         #expect(parser.parse(Array("jkq".utf8)) == [.char("j"), .char("k"), .char("q")])
         #expect(parser.parse([0x0D]) == [.enter])
         #expect(parser.parse([0x0A]) == [.enter])
@@ -46,12 +48,19 @@ struct InputParserTests {
 
     @Test("It should emit a lone escape byte as the escape key")
     func loneEscape() {
+        // Then
         #expect(parser.parse([0x1B]) == [.escape])
     }
 
     @Test("It should parse mixed CSI and printable byte sequences")
     func mixedSequence() {
+        // Given
         let bytes: [UInt8] = [0x1B, 0x5B, 0x42, 0x6A, 0x0D]
-        #expect(parser.parse(bytes) == [.down, .char("j"), .enter])
+
+        // When
+        let keys = parser.parse(bytes)
+
+        // Then
+        #expect(keys == [.down, .char("j"), .enter])
     }
 }

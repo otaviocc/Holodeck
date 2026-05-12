@@ -55,59 +55,89 @@ struct MediaReducerTests {
 
     @Test("It should start recording when r is pressed and the simulator is booted")
     func rStartsRecordingWhenBooted() throws {
+        // Given
         let sim = try bootedSim()
         let state = AppState(simulators: [sim])
+
+        // When
         let out = Reducer.reduce(state, .key(.char("r")))
+
+        // Then
         #expect(out.effects == [.startRecording(sim.id)])
     }
 
     @Test("It should not record a shut-down simulator")
     func rDoesNotRecordWhenShutdown() throws {
+        // Given
         let sim = try shutdownSim()
         let state = AppState(simulators: [sim])
+
+        // When
         let out = Reducer.reduce(state, .key(.char("r")))
+
+        // Then
         #expect(out.effects == [])
         #expect(out.state.statusMessage != nil)
     }
 
     @Test("It should stop the active recording when r is pressed again")
     func rStopsRecordingWhenAlreadyRecording() throws {
+        // Given
         let sim = try bootedSim()
         let state = AppState(
             simulators: [sim],
             recordingDeviceID: sim.id,
             recordingPath: URL(fileURLWithPath: "/tmp/x.mp4")
         )
+
+        // When
         let out = Reducer.reduce(state, .key(.char("r")))
+
+        // Then
         #expect(out.effects == [.stopRecording])
     }
 
     @Test("It should stop recording instead of quitting when q is pressed mid-recording")
     func qDuringRecordingStopsInsteadOfQuitting() throws {
+        // Given
         let sim = try bootedSim()
         let state = AppState(
             simulators: [sim],
             recordingDeviceID: sim.id,
             recordingPath: URL(fileURLWithPath: "/tmp/x.mp4")
         )
+
+        // When
         let out = Reducer.reduce(state, .key(.char("q")))
+
+        // Then
         #expect(out.effects == [.stopRecording])
         #expect(!out.state.isQuitting)
     }
 
     @Test("It should capture a screenshot when p is pressed and the simulator is booted")
     func pCapturesScreenshotWhenBooted() throws {
+        // Given
         let sim = try bootedSim()
         let state = AppState(simulators: [sim])
+
+        // When
         let out = Reducer.reduce(state, .key(.char("p")))
+
+        // Then
         #expect(out.effects == [.captureScreenshot(sim.id)])
     }
 
     @Test("It should record the recording device id when recordingStarted fires")
     func recordingStartedSetsState() {
+        // Given
         let id = UUID()
         let url = URL(fileURLWithPath: "/tmp/r.mp4")
+
+        // When
         let out = Reducer.reduce(AppState(), .recordingStarted(id, url))
+
+        // Then
         #expect(out.state.recordingDeviceID == id)
         #expect(out.state.recordingPath == url)
         #expect(out.state.isRecording)
@@ -115,10 +145,15 @@ struct MediaReducerTests {
 
     @Test("It should clear the recording state and refresh when the recording stops")
     func recordingStoppedClearsAndRefreshes() {
+        // Given
         let id = UUID()
         let url = URL(fileURLWithPath: "/tmp/r.mp4")
         let state = AppState(recordingDeviceID: id, recordingPath: url)
+
+        // When
         let out = Reducer.reduce(state, .recordingStopped(url))
+
+        // Then
         #expect(out.state.recordingDeviceID == nil)
         #expect(out.state.recordingPath == nil)
         #expect(out.effects == [.refresh])
@@ -127,14 +162,22 @@ struct MediaReducerTests {
 
     @Test("It should refresh on every poll tick when nothing else is happening")
     func pollTickRefreshesWhenIdle() {
+        // When
         let out = Reducer.reduce(AppState(), .pollTick)
+
+        // Then
         #expect(out.effects == [.refresh])
     }
 
     @Test("It should suppress polling while a recording is active")
     func pollTickSuppressedWhileRecording() {
+        // Given
         let state = AppState(recordingDeviceID: UUID(), recordingPath: URL(fileURLWithPath: "/tmp/r.mp4"))
+
+        // When
         let out = Reducer.reduce(state, .pollTick)
+
+        // Then
         #expect(out.effects == [])
     }
 }

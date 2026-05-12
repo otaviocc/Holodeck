@@ -29,6 +29,7 @@ struct SimulatorListViewTests {
 
     @Test("It should render simulator names, state, and runtime")
     func renderContainsSimulatorNamesAndState() throws {
+        // Given
         let sim = try Simulator(
             id: #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001")),
             name: "iPhone 16 Pro",
@@ -40,8 +41,12 @@ struct SimulatorListViewTests {
             logPath: nil
         )
         let state = AppState(simulators: [sim], rows: 10, cols: 80)
+
+        // When
         let frame = SimulatorListView.render(state)
         let plain = SimulatorListView.stripANSI(frame)
+
+        // Then
         #expect(plain.contains("iPhone 16 Pro"))
         #expect(plain.contains("Booted"))
         #expect(plain.contains("iOS 18.2"))
@@ -50,14 +55,20 @@ struct SimulatorListViewTests {
 
     @Test("It should show a placeholder when there are no simulators")
     func renderShowsEmptyMessageWhenNoSimulators() {
+        // Given
         let state = AppState(rows: 10, cols: 80)
+
+        // When
         let frame = SimulatorListView.render(state)
         let plain = SimulatorListView.stripANSI(frame)
+
+        // Then
         #expect(plain.contains("(no simulators)"))
     }
 
     @Test("It should highlight the selected row with a chevron")
     func renderHighlightsSelectedRow() throws {
+        // Given
         let sim = try Simulator(
             id: UUID(),
             name: "Alpha",
@@ -69,7 +80,11 @@ struct SimulatorListViewTests {
             logPath: nil
         )
         let state = AppState(simulators: [sim], selectedIndex: 0, rows: 10, cols: 80)
+
+        // When
         let frame = SimulatorListView.render(state)
+
+        // Then
         #expect(frame.contains("› Alpha"))
     }
 }

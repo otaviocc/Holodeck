@@ -28,7 +28,10 @@ struct ConfigTests {
 
     @Test("It should provide sensible defaults")
     func defaults() {
+        // Given
         let config = Config.default
+
+        // Then
         #expect(config.defaultPlatform == nil)
         #expect(config.screenshotsDirectory == "~/Desktop")
         #expect(config.videoCodec == .h264)
@@ -38,6 +41,7 @@ struct ConfigTests {
 
     @Test("It should decode a fully populated config")
     func decodeFull() throws {
+        // Given
         let json = Data("""
         {
           "defaultPlatform": "watchOS",
@@ -47,7 +51,11 @@ struct ConfigTests {
           "pollIntervalSeconds": 5
         }
         """.utf8)
+
+        // When
         let config = try ConfigLoader.decode(json)
+
+        // Then
         #expect(config.defaultPlatform == .watchOS)
         #expect(config.screenshotsDirectory == "~/Captures")
         #expect(config.videoCodec == .hevc)
@@ -57,7 +65,10 @@ struct ConfigTests {
 
     @Test("It should reject malformed JSON")
     func rejectMalformed() {
+        // Given
         let json = Data("not json".utf8)
+
+        // Then
         #expect(throws: (any Error).self) {
             try ConfigLoader.decode(json)
         }
@@ -65,9 +76,12 @@ struct ConfigTests {
 
     @Test("It should reject unknown enum values")
     func rejectUnknownEnum() {
+        // Given
         let json = Data("""
         { "videoCodec": "av1", "screenshotsDirectory": "~/x", "screenshotType": "png", "pollIntervalSeconds": 2 }
         """.utf8)
+
+        // Then
         #expect(throws: (any Error).self) {
             try ConfigLoader.decode(json)
         }
@@ -75,14 +89,20 @@ struct ConfigTests {
 
     @Test("It should return defaults when the config file is missing")
     func missingFile() throws {
+        // Given
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("holodeck-missing-\(UUID().uuidString).json")
+
+        // When
         let config = try ConfigLoader.load(from: tmp)
+
+        // Then
         #expect(config == .default)
     }
 
     @Test("It should load a config file from disk")
     func loadFromFile() throws {
+        // Given
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("holodeck-test-\(UUID().uuidString).json")
         let payload = Data("""
@@ -90,14 +110,21 @@ struct ConfigTests {
         """.utf8)
         try payload.write(to: tmp)
         defer { try? FileManager.default.removeItem(at: tmp) }
+
+        // When
         let config = try ConfigLoader.load(from: tmp)
+
+        // Then
         #expect(config.videoCodec == .hevc)
         #expect(config.screenshotsDirectory == "~/Foo")
     }
 
     @Test("It should expand the tilde in screenshotsDirectory")
     func expandTilde() {
+        // Given
         let config = Config(screenshotsDirectory: "~/Pictures")
+
+        // Then
         #expect(!config.resolvedScreenshotsDirectory.path.hasPrefix("~"))
         #expect(config.resolvedScreenshotsDirectory.path.hasSuffix("/Pictures"))
     }

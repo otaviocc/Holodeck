@@ -28,16 +28,23 @@ struct DeviceListDecoderTests {
 
     @Test("It should decode the captured simctl list fixture")
     func decodesFixture() throws {
+        // Given
         let url = try #require(Bundle.module.url(forResource: "simctl-list-fixture", withExtension: "json"))
         let data = try Data(contentsOf: url)
+
+        // When
         let simulators = try DeviceListDecoder.decode(data)
+
+        // Then
         #expect(!simulators.isEmpty)
+        // swiftformat:disable:next preferKeyPath
         #expect(simulators.allSatisfy { $0.isAvailable })
         #expect(simulators.contains { $0.runtime.platform == .iOS })
     }
 
     @Test("It should parse platform names from runtime identifiers")
     func platformParsing() {
+        // Then
         #expect(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2") == .iOS)
         #expect(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.watchOS-11-2") == .watchOS)
         #expect(Platform(runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.tvOS-18-1") == .tvOS)
@@ -47,6 +54,7 @@ struct DeviceListDecoderTests {
 
     @Test("It should parse semantic version strings")
     func semanticVersionParsing() {
+        // Then
         #expect(SemanticVersion(string: "18.2") == SemanticVersion(major: 18, minor: 2))
         #expect(SemanticVersion(string: "18.2.1") == SemanticVersion(major: 18, minor: 2, patch: 1))
         #expect(SemanticVersion(string: "17") == SemanticVersion(major: 17))
@@ -56,7 +64,10 @@ struct DeviceListDecoderTests {
 
     @Test("It should parse runtime identifiers into platform and version")
     func runtimeParsing() throws {
+        // When
         let runtime = try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"))
+
+        // Then
         #expect(runtime.platform == .iOS)
         #expect(runtime.version == SemanticVersion(major: 18, minor: 2))
         #expect(runtime.displayName == "iOS 18.2")
@@ -64,12 +75,16 @@ struct DeviceListDecoderTests {
 
     @Test("It should humanize device type identifiers")
     func deviceTypeHumanization() {
+        // When
         let deviceType = DeviceType(identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro")
+
+        // Then
         #expect(deviceType.name == "iPhone 16 Pro")
     }
 
     @Test("It should skip simulators whose runtime cannot be parsed")
     func unknownRuntimeIsSkipped() throws {
+        // Given
         let json = Data("""
         { "devices": {
             "com.apple.CoreSimulator.SimRuntime.iOS-18-2": [
@@ -92,7 +107,11 @@ struct DeviceListDecoderTests {
             ]
         }}
         """.utf8)
+
+        // When
         let result = try DeviceListDecoder.decode(json)
+
+        // Then
         #expect(result.count == 1)
         #expect(result.first?.name == "Test")
     }

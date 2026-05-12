@@ -28,23 +28,33 @@ struct RecorderTests {
 
     @Test("It should interrupt a long-running process when stopped")
     func startAndStopInterruptsLongRunningProcess() async throws {
+        // Given
         let recorder = Recorder()
         try await recorder.start(launchPath: "/bin/sleep", arguments: ["30"])
-        var running = await recorder.isRunning
-        #expect(running)
         let started = Date()
+        let runningBeforeStop = await recorder.isRunning
+
+        // When
         await recorder.stop()
         let elapsed = Date().timeIntervalSince(started)
-        running = await recorder.isRunning
-        #expect(!running)
+        let runningAfterStop = await recorder.isRunning
+
+        // Then
+        #expect(runningBeforeStop)
+        #expect(!runningAfterStop)
         #expect(elapsed < 5.0, "stop() should interrupt promptly, took \(elapsed)s")
     }
 
     @Test("It should treat stop() with no started process as a no-op")
     func stopWithoutStartIsNoop() async {
+        // Given
         let recorder = Recorder()
+
+        // When
         await recorder.stop()
         let running = await recorder.isRunning
+
+        // Then
         #expect(!running)
     }
 }

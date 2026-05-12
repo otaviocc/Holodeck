@@ -55,45 +55,70 @@ struct AppearanceReducerTests {
 
     @Test("It should open the appearance modal when a is pressed on a booted simulator")
     func aOpensAppearanceModalWhenBooted() throws {
+        // Given
         let sim = try bootedSim()
         let state = AppState(simulators: [sim])
+
+        // When
         let out = Reducer.reduce(state, .key(.char("a")))
+
+        // Then
         #expect(out.state.modal == .appearance)
         #expect(out.effects == [])
     }
 
     @Test("It should not open the appearance modal on a shut-down simulator")
     func aDoesNotOpenModalWhenShutdown() throws {
+        // Given
         let sim = try shutdownSim()
         let state = AppState(simulators: [sim])
+
+        // When
         let out = Reducer.reduce(state, .key(.char("a")))
+
+        // Then
         #expect(out.state.modal == nil)
         #expect(out.state.statusMessage != nil)
     }
 
     @Test("It should emit setAppearance(.light) when l is pressed in the appearance modal")
     func lInModalEmitsSetAppearanceLight() throws {
+        // Given
         let sim = try bootedSim()
         let state = AppState(simulators: [sim], modal: .appearance)
+
+        // When
         let out = Reducer.reduce(state, .key(.char("l")))
+
+        // Then
         #expect(out.state.modal == nil)
         #expect(out.effects == [.setAppearance(sim.id, .light)])
     }
 
     @Test("It should emit setAppearance(.dark) when d is pressed in the appearance modal")
     func dInModalEmitsSetAppearanceDark() throws {
+        // Given
         let sim = try bootedSim()
         let state = AppState(simulators: [sim], modal: .appearance)
+
+        // When
         let out = Reducer.reduce(state, .key(.char("d")))
+
+        // Then
         #expect(out.state.modal == nil)
         #expect(out.effects == [.setAppearance(sim.id, .dark)])
     }
 
     @Test("It should cancel the appearance modal on Escape without emitting effects")
     func escapeInModalCancels() throws {
+        // Given
         let sim = try bootedSim()
         let state = AppState(simulators: [sim], modal: .appearance)
+
+        // When
         let out = Reducer.reduce(state, .key(.escape))
+
+        // Then
         #expect(out.state.modal == nil)
         #expect(out.effects == [])
         #expect(!out.state.isQuitting)
@@ -101,24 +126,37 @@ struct AppearanceReducerTests {
 
     @Test("It should ignore navigation keys while the appearance modal is open")
     func navigationKeysSuppressedInsideModal() throws {
+        // Given
         let sim1 = try bootedSim()
         let sim2 = try bootedSim()
         let state = AppState(simulators: [sim1, sim2], selectedIndex: 0, modal: .appearance)
+
+        // When
         let out = Reducer.reduce(state, .key(.down))
+
+        // Then
         #expect(out.state.selectedIndex == 0)
     }
 
     @Test("It should refresh and surface a status message when appearance changes")
     func appearanceChangedRefreshes() {
+        // Given
         let id = UUID()
+
+        // When
         let out = Reducer.reduce(AppState(), .appearanceChanged(id, .dark))
+
+        // Then
         #expect(out.effects == [.refresh])
         #expect(out.state.statusMessage?.contains("dark") ?? false)
     }
 
     @Test("It should record an error when the appearance change fails")
     func appearanceFailedSetsError() {
+        // When
         let out = Reducer.reduce(AppState(), .appearanceFailed("boom"))
+
+        // Then
         #expect(out.state.lastError == "boom")
     }
 }

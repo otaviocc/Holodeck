@@ -28,16 +28,26 @@ struct ProcessRunnerTests {
 
     @Test("It should echo stdin back through stdout with a zero exit code")
     func echoRoundTrip() async throws {
+        // Given
         let runner = ProcessRunner()
+
+        // When
         let result = try await runner.run("/bin/echo", ["hello"])
+
+        // Then
         #expect(result.exitCode == 0)
         #expect(String(data: result.stdout, encoding: .utf8) == "hello\n")
     }
 
     @Test("It should report a non-zero exit code for /usr/bin/false")
     func nonZeroExitCode() async throws {
+        // Given
         let runner = ProcessRunner()
+
+        // When
         let result = try await runner.run("/usr/bin/false", [])
+
+        // Then
         #expect(result.exitCode != 0)
     }
 }
