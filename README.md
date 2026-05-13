@@ -1,12 +1,14 @@
 # holodeck
 
+<img width="1059" height="664" alt="" src="https://github.com/user-attachments/assets/ad98aab5-a791-476c-80b2-e2b96a57f6a4" />
+
 A macOS CLI and TUI for managing iOS simulators. A Swift replacement for ad-hoc
 `xcrun simctl` wrappers, built as a single SwiftPM binary with no external
 runtime dependencies beyond `swift-argument-parser`.
 
 ```
-holodeck                # full-screen TUI (default)
-holodeck list           # scripting subcommands for CI / shell composition
+holodeck                                    # full-screen TUI (default)
+holodeck list                               # scripting subcommands for CI / shell composition
 holodeck boot "iPhone 17 Pro"
 holodeck record "iPhone 17 Pro" -o demo.mp4
 ```
