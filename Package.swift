@@ -32,6 +32,10 @@ let package = Package(
             resources: [.process("Resources")]
         ),
         .testTarget(
+            name: "HolodeckServicesTests",
+            dependencies: ["HolodeckServices", "HolodeckCore"]
+        ),
+        .testTarget(
             name: "HolodeckTUITests",
             dependencies: ["HolodeckTUI"]
         )
