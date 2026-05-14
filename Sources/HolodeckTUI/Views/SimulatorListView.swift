@@ -237,7 +237,6 @@ public enum SimulatorListView {
             ("e", "erase (shutdown sims only)"),
             ("d", "delete"),
             ("P", "privacy wizard (app → action → permission)"),
-            ("s", "toggle system apps in privacy wizard"),
             ("?", "this help"),
             ("q / Esc", "quit (or close modal)")
         ]

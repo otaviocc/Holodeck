@@ -59,7 +59,7 @@ struct AppsCommand: AsyncParsableCommand {
                 apps = apps.filter(\.isUserApp)
             }
             if json {
-                printJSON(apps)
+                try printJSON(apps)
             } else {
                 printTable(apps)
             }
@@ -67,7 +67,7 @@ struct AppsCommand: AsyncParsableCommand {
 
         // MARK: - Private
 
-        private func printJSON(_ apps: [InstalledApp]) {
+        private func printJSON(_ apps: [InstalledApp]) throws {
             struct Out: Encodable {
 
                 let bundleID: String
@@ -80,7 +80,8 @@ struct AppsCommand: AsyncParsableCommand {
             }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            if let data = try? encoder.encode(out), let str = String(data: data, encoding: .utf8) {
+            let data = try encoder.encode(out)
+            if let str = String(bytes: data, encoding: .utf8) {
                 print(str)
             }
         }

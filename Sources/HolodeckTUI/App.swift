@@ -168,6 +168,7 @@ public final class HolodeckApp {
             )
         }
     }
+
     // swiftlint:enable function_body_length
 
     private func installResizeHandler(continuation: AsyncStream<AppEvent>.Continuation) -> Task<Void, Never> {

@@ -62,10 +62,11 @@ public enum AppListDecoder {
             return InstalledApp(bundleID: bundleID, name: name, version: version, isUserApp: isUserApp)
         }
         return apps.sorted { lhs, rhs in
-            if lhs.name.localizedCaseInsensitiveCompare(rhs.name) != .orderedSame {
-                return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            switch lhs.name.localizedCaseInsensitiveCompare(rhs.name) {
+            case .orderedAscending: true
+            case .orderedDescending: false
+            case .orderedSame: lhs.bundleID < rhs.bundleID
             }
-            return lhs.bundleID < rhs.bundleID
         }
     }
 }
