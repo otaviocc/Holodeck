@@ -88,7 +88,9 @@ public enum SimulatorListView {
 
     private static func header(width: Int) -> String {
         let title = " holodeck "
-        let hint = " ⏎ toggle  r rec  p shot  a appear  n new  e erase  d delete  ? help  q quit "
+        let fullHint = " ⏎ toggle  r rec  p shot  a appear  n new  e erase  d delete  ? help  q quit "
+        let shortHint = " ⏎ toggle  ? help  q quit "
+        let hint = width >= title.count + fullHint.count ? fullHint : shortHint
         let space = max(0, width - title.count - hint.count)
         return "\(ANSI.inverse)\(title)\(String(repeating: " ", count: space))\(hint)\(ANSI.reset)"
     }
