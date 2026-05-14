@@ -221,7 +221,7 @@ public enum Reducer {
         case let .privacyApplyFailed(message):
             if case let .privacyWizard(wizard) = next.modal {
                 var updated = wizard
-                updated.step = .pickPermission
+                updated.step = .pickAction
                 updated.error = message
                 next.modal = .privacyWizard(updated)
             } else {

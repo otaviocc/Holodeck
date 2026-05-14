@@ -33,6 +33,7 @@ enum PrivacyWizardReducer {
             next.modal = nil
             return ReducerOutput(state: next)
         }
+        let viewport = PrivacyWizard.appViewport(rows: state.rows)
         switch wizard.step {
         case .loadingApps:
             return ReducerOutput(state: next)
@@ -40,26 +41,21 @@ enum PrivacyWizardReducer {
             switch key {
             case .up, .char("k"):
                 updated.appIndex = max(0, updated.appIndex - 1)
+                if updated.appIndex < updated.appScrollOffset {
+                    updated.appScrollOffset = updated.appIndex
+                }
             case .down, .char("j"):
                 updated.appIndex = min(max(0, updated.apps.count - 1), updated.appIndex + 1)
+                if updated.appIndex >= updated.appScrollOffset + viewport {
+                    updated.appScrollOffset = updated.appIndex - viewport + 1
+                }
             case .char("s"):
                 updated.showSystem.toggle()
                 updated.appIndex = 0
+                updated.appScrollOffset = 0
             case .enter:
                 guard updated.selectedApp != nil else { return ReducerOutput(state: next) }
-                updated.step = .pickAction
-            default: break
-            }
-        case .pickAction:
-            switch key {
-            case .up, .char("k"):
-                updated.actionIndex = max(0, updated.actionIndex - 1)
-            case .down, .char("j"):
-                updated.actionIndex = min(PrivacyAction.allCases.count - 1, updated.actionIndex + 1)
-            case .enter:
                 updated.step = .pickPermission
-            case .char("b"):
-                updated.step = .pickApp
             default: break
             }
         case .pickPermission:
@@ -68,6 +64,18 @@ enum PrivacyWizardReducer {
                 updated.permissionIndex = max(0, updated.permissionIndex - 1)
             case .down, .char("j"):
                 updated.permissionIndex = min(PrivacyPermission.allCases.count - 1, updated.permissionIndex + 1)
+            case .enter:
+                updated.step = .pickAction
+            case .char("b"):
+                updated.step = .pickApp
+            default: break
+            }
+        case .pickAction:
+            switch key {
+            case .up, .char("k"):
+                updated.actionIndex = max(0, updated.actionIndex - 1)
+            case .down, .char("j"):
+                updated.actionIndex = min(PrivacyAction.allCases.count - 1, updated.actionIndex + 1)
             case .enter:
                 guard let app = updated.selectedApp,
                       let action = updated.selectedAction,
@@ -84,7 +92,7 @@ enum PrivacyWizardReducer {
                     )
                 ])
             case .char("b"):
-                updated.step = .pickAction
+                updated.step = .pickPermission
                 updated.error = nil
             default: break
             }

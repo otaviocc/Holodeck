@@ -163,11 +163,11 @@ struct PrivacyWizardReducerTests {
         #expect(afterDown.appIndex == wizard.apps.count - 1)
     }
 
-    @Test("It should walk back from pickPermission via b")
+    @Test("It should walk back from pickAction to pickPermission via b")
     func backStepsThroughStages() throws {
         // Given
         let device = try sim(state: .booted)
-        var wizard = PrivacyWizard(simulatorID: device.id, step: .pickPermission, allApps: sampleApps)
+        var wizard = PrivacyWizard(simulatorID: device.id, step: .pickAction, allApps: sampleApps)
         wizard.error = "boom"
         let state = AppState(simulators: [device], modal: .privacyWizard(wizard))
 
@@ -179,15 +179,33 @@ struct PrivacyWizardReducerTests {
             Issue.record("Expected privacyWizard modal")
             return
         }
-        #expect(after.step == .pickAction)
+        #expect(after.step == .pickPermission)
         #expect(after.error == nil)
     }
 
-    @Test("It should emit applyPrivacy when permission picker confirms")
+    @Test("It should walk back from pickPermission to pickApp via b")
+    func backStepsFromPermissionToApp() throws {
+        // Given
+        let device = try sim(state: .booted)
+        let wizard = PrivacyWizard(simulatorID: device.id, step: .pickPermission, allApps: sampleApps)
+        let state = AppState(simulators: [device], modal: .privacyWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.char("b")))
+
+        // Then
+        guard case let .privacyWizard(after) = out.state.modal else {
+            Issue.record("Expected privacyWizard modal")
+            return
+        }
+        #expect(after.step == .pickApp)
+    }
+
+    @Test("It should emit applyPrivacy when action picker confirms")
     func confirmEmitsApplyPrivacy() throws {
         // Given
         let device = try sim(state: .booted)
-        var wizard = PrivacyWizard(simulatorID: device.id, step: .pickPermission, allApps: sampleApps)
+        var wizard = PrivacyWizard(simulatorID: device.id, step: .pickAction, allApps: sampleApps)
         wizard.appIndex = 0
         wizard.actionIndex = 0
         wizard.permissionIndex = 0
@@ -245,7 +263,77 @@ struct PrivacyWizardReducerTests {
             Issue.record("Expected privacyWizard modal")
             return
         }
-        #expect(after.step == .pickPermission)
+        #expect(after.step == .pickAction)
         #expect(after.error == "denied")
+    }
+
+    @Test("It should scroll the app window down when the highlight crosses the edge")
+    func appColumnScrollsDownAtEdge() throws {
+        // Given
+        let device = try sim(state: .booted)
+        let manyApps = (0..<30).map {
+            InstalledApp(bundleID: "com.example.App\($0)", name: "App \($0)", isUserApp: true)
+        }
+        let viewport = PrivacyWizard.appViewport(rows: 13)
+        var wizard = PrivacyWizard(simulatorID: device.id, step: .pickApp, allApps: manyApps)
+        wizard.appIndex = viewport - 1
+        wizard.appScrollOffset = 0
+        let state = AppState(simulators: [device], rows: 13, modal: .privacyWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.down))
+
+        // Then
+        guard case let .privacyWizard(after) = out.state.modal else {
+            Issue.record("Expected privacyWizard modal")
+            return
+        }
+        #expect(after.appIndex == viewport)
+        #expect(after.appScrollOffset == 1)
+    }
+
+    @Test("It should scroll the app window up when the highlight crosses the top edge")
+    func appColumnScrollsUpAtEdge() throws {
+        // Given
+        let device = try sim(state: .booted)
+        let manyApps = (0..<30).map {
+            InstalledApp(bundleID: "com.example.App\($0)", name: "App \($0)", isUserApp: true)
+        }
+        var wizard = PrivacyWizard(simulatorID: device.id, step: .pickApp, allApps: manyApps)
+        wizard.appIndex = 5
+        wizard.appScrollOffset = 5
+        let state = AppState(simulators: [device], rows: 13, modal: .privacyWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.up))
+
+        // Then
+        guard case let .privacyWizard(after) = out.state.modal else {
+            Issue.record("Expected privacyWizard modal")
+            return
+        }
+        #expect(after.appIndex == 4)
+        #expect(after.appScrollOffset == 4)
+    }
+
+    @Test("It should reset scroll offset when toggling system apps")
+    func toggleSystemResetsScroll() throws {
+        // Given
+        let device = try sim(state: .booted)
+        var wizard = PrivacyWizard(simulatorID: device.id, step: .pickApp, allApps: sampleApps)
+        wizard.appIndex = 1
+        wizard.appScrollOffset = 1
+        let state = AppState(simulators: [device], modal: .privacyWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.char("s")))
+
+        // Then
+        guard case let .privacyWizard(after) = out.state.modal else {
+            Issue.record("Expected privacyWizard modal")
+            return
+        }
+        #expect(after.appIndex == 0)
+        #expect(after.appScrollOffset == 0)
     }
 }

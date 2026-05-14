@@ -52,6 +52,7 @@ public struct PrivacyWizard: Equatable, Sendable {
     public var step: Step
     public var allApps: [InstalledApp]
     public var appIndex: Int
+    public var appScrollOffset: Int
     public var actionIndex: Int
     public var permissionIndex: Int
     public var showSystem: Bool
@@ -64,6 +65,7 @@ public struct PrivacyWizard: Equatable, Sendable {
         step: Step = .loadingApps,
         allApps: [InstalledApp] = [],
         appIndex: Int = 0,
+        appScrollOffset: Int = 0,
         actionIndex: Int = 0,
         permissionIndex: Int = 0,
         showSystem: Bool = false,
@@ -73,6 +75,7 @@ public struct PrivacyWizard: Equatable, Sendable {
         self.step = step
         self.allApps = allApps
         self.appIndex = appIndex
+        self.appScrollOffset = appScrollOffset
         self.actionIndex = actionIndex
         self.permissionIndex = permissionIndex
         self.showSystem = showSystem
@@ -80,6 +83,10 @@ public struct PrivacyWizard: Equatable, Sendable {
     }
 
     // MARK: - Public
+
+    public static func appViewport(rows: Int) -> Int {
+        max(3, rows - 5)
+    }
 
     public var apps: [InstalledApp] {
         showSystem ? allApps : allApps.filter(\.isUserApp)
