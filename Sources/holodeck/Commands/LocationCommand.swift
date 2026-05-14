@@ -31,6 +31,8 @@ struct LocationCommand: AsyncParsableCommand {
 
     struct Set: AsyncParsableCommand {
 
+        // MARK: - Properties
+
         static let configuration = CommandConfiguration(
             commandName: "set",
             abstract: "Set the simulated GPS location."
@@ -45,6 +47,8 @@ struct LocationCommand: AsyncParsableCommand {
         @Argument(help: "Longitude (e.g. -122.4194).")
         var longitude: Double
 
+        // MARK: - Public
+
         func run() async throws {
             let service = SimulatorService()
             let sim = try await service.resolveInState(
@@ -57,6 +61,8 @@ struct LocationCommand: AsyncParsableCommand {
 
     struct Clear: AsyncParsableCommand {
 
+        // MARK: - Properties
+
         static let configuration = CommandConfiguration(
             commandName: "clear",
             abstract: "Clear the simulated GPS location."
@@ -64,6 +70,8 @@ struct LocationCommand: AsyncParsableCommand {
 
         @Argument(help: "Simulator name or UDID.")
         var query: String
+
+        // MARK: - Public
 
         func run() async throws {
             let service = SimulatorService()
@@ -74,6 +82,8 @@ struct LocationCommand: AsyncParsableCommand {
             print("Cleared location on \(sim.name).")
         }
     }
+
+    // MARK: - Properties
 
     static let configuration = CommandConfiguration(
         commandName: "location",

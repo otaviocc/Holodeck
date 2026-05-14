@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct PrivacyCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "privacy",
         abstract: "Grant, revoke, or reset a privacy permission for a bundle ID."
@@ -45,6 +47,8 @@ struct PrivacyCommand: AsyncParsableCommand {
 
     @Argument(help: "Bundle identifier (required for grant/revoke; optional for reset).")
     var bundleID: String?
+
+    // MARK: - Public
 
     func validate() throws {
         if action != .reset, bundleID == nil {

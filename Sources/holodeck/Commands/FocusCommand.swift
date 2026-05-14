@@ -27,6 +27,8 @@ import HolodeckServices
 
 struct FocusCommand: AsyncParsableCommand {
 
+    // MARK: - Properties
+
     static let configuration = CommandConfiguration(
         commandName: "focus",
         abstract: "Bring Simulator.app to the front, focused on the selected device."
@@ -34,6 +36,8 @@ struct FocusCommand: AsyncParsableCommand {
 
     @Argument(help: "Simulator name or UDID.")
     var query: String
+
+    // MARK: - Public
 
     func run() async throws {
         let service = SimulatorService()

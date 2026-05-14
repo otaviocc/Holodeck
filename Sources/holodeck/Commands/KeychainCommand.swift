@@ -31,6 +31,8 @@ struct KeychainCommand: AsyncParsableCommand {
 
     struct Reset: AsyncParsableCommand {
 
+        // MARK: - Properties
+
         static let configuration = CommandConfiguration(
             commandName: "reset",
             abstract: "Reset the simulator's keychain."
@@ -38,6 +40,8 @@ struct KeychainCommand: AsyncParsableCommand {
 
         @Argument(help: "Simulator name or UDID.")
         var query: String
+
+        // MARK: - Public
 
         func run() async throws {
             let service = SimulatorService()
@@ -48,6 +52,8 @@ struct KeychainCommand: AsyncParsableCommand {
             print("Reset keychain on \(sim.name).")
         }
     }
+
+    // MARK: - Properties
 
     static let configuration = CommandConfiguration(
         commandName: "keychain",
