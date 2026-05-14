@@ -54,12 +54,12 @@ public enum SimulatorListView {
         let listSlice = bodyHeight > 0 ? Array(state.simulators.prefix(bodyHeight)) : []
 
         if listSlice.isEmpty {
-            lines.append(pad("  (no simulators)", width: cols))
+            lines.append(ViewSupport.pad("  (no simulators)", width: cols))
         } else {
             var currentRuntime: Runtime?
             for (index, sim) in listSlice.enumerated() {
                 if sim.runtime != currentRuntime {
-                    lines.append(pad(
+                    lines.append(ViewSupport.pad(
                         "\(ANSI.bold)\(ANSI.cyan)\(sim.runtime.displayName)\(ANSI.reset)",
                         width: cols,
                         visibleWidth: sim.runtime.displayName.count
@@ -76,10 +76,10 @@ public enum SimulatorListView {
         }
 
         while lines.count < rows - 1 {
-            lines.append(pad("", width: cols))
+            lines.append(ViewSupport.pad("", width: cols))
         }
 
-        lines.append(statusBar(state: state, width: cols))
+        lines.append(ViewSupport.statusBar(state: state, width: cols))
         return lines.joined(separator: "\r\n")
     }
 
@@ -118,11 +118,11 @@ public enum SimulatorListView {
         case let .createWizard(wizard):
             text = createWizardBanner(wizard: wizard)
         case .privacyWizard:
-            return ""
+            preconditionFailure("privacyWizard renders full-screen via PrivacyWizardView; not reachable here")
         case .help:
             text = "Help — press any key to dismiss"
         }
-        let truncated = text.count > width ? String(text.prefix(width)) : text
+        let truncated = ViewSupport.truncate(text, to: width)
         let space = max(0, width - truncated.count)
         return "\(ANSI.cyan)\(ANSI.bold)\(truncated)\(ANSI.reset)\(String(repeating: " ", count: space))"
     }
@@ -149,7 +149,7 @@ public enum SimulatorListView {
         let name = state.recordingDeviceID.flatMap { id in state.simulators.first { $0.id == id }?.name } ?? "?"
         let path = state.recordingPath?.path ?? ""
         let text = "● REC \(name) → \(path)  (r/q to stop)"
-        let truncated = text.count > width ? String(text.prefix(width)) : text
+        let truncated = ViewSupport.truncate(text, to: width)
         let space = max(0, width - truncated.count)
         return "\(ANSI.red)\(ANSI.bold)\(truncated)\(ANSI.reset)\(String(repeating: " ", count: space))"
     }
@@ -178,29 +178,6 @@ public enum SimulatorListView {
         return raw
     }
 
-    static func statusBar(state: AppState, width: Int) -> String {
-        let left = if let err = state.lastError {
-            "\(ANSI.red)\(err)\(ANSI.reset)"
-        } else if let msg = state.statusMessage {
-            "\(ANSI.yellow)\(msg)\(ANSI.reset)"
-        } else if let sim = state.selectedSimulator {
-            "\(sim.name) — \(sim.id.uuidString)"
-        } else {
-            ""
-        }
-        let leftVisible = ANSI.stripEscapes(from: left)
-        let available = max(0, width - 1)
-        let truncated = leftVisible.count > available ? String(leftVisible.prefix(available)) : leftVisible
-        let padding = max(0, available - truncated.count)
-        return "\(ANSI.inverse) \(left)\(String(repeating: " ", count: padding))\(ANSI.reset)"
-    }
-
-    static func pad(_ text: String, width: Int, visibleWidth: Int? = nil) -> String {
-        let visible = visibleWidth ?? ANSI.stripEscapes(from: text).count
-        let space = max(0, width - visible)
-        return "\(text)\(String(repeating: " ", count: space))"
-    }
-
     private static func renderHelp(state: AppState) -> String {
         let cols = max(40, state.cols)
         let rows = max(8, state.rows)
@@ -221,18 +198,18 @@ public enum SimulatorListView {
         ]
         var lines: [String] = []
         lines.append(header(width: cols))
-        lines.append(pad("", width: cols))
-        lines.append(pad("  \(ANSI.bold)Keybindings\(ANSI.reset)", width: cols, visibleWidth: 13))
-        lines.append(pad("", width: cols))
+        lines.append(ViewSupport.pad("", width: cols))
+        lines.append(ViewSupport.pad("  \(ANSI.bold)Keybindings\(ANSI.reset)", width: cols, visibleWidth: 13))
+        lines.append(ViewSupport.pad("", width: cols))
         let keyWidth = entries.map(\.0.count).max() ?? 0
         for (key, description) in entries {
             let padded = key.padding(toLength: keyWidth, withPad: " ", startingAt: 0)
-            lines.append(pad("  \(ANSI.cyan)\(padded)\(ANSI.reset)   \(description)", width: cols))
+            lines.append(ViewSupport.pad("  \(ANSI.cyan)\(padded)\(ANSI.reset)   \(description)", width: cols))
         }
         while lines.count < rows - 1 {
-            lines.append(pad("", width: cols))
+            lines.append(ViewSupport.pad("", width: cols))
         }
-        lines.append(statusBar(state: state, width: cols))
+        lines.append(ViewSupport.statusBar(state: state, width: cols))
         return lines.joined(separator: "\r\n")
     }
 }

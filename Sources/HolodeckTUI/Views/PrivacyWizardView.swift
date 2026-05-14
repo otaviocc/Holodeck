@@ -31,49 +31,59 @@ enum PrivacyWizardView {
         let cols = max(40, state.cols)
         let rows = max(8, state.rows)
         let simName = state.simulators.first { $0.id == wizard.simulatorID }?.name ?? "?"
+        let apps = wizard.apps
+        let selectedApp = appAt(apps: apps, index: wizard.appIndex)
 
         var lines: [String] = []
-        lines.append(header(width: cols, simName: simName, wizard: wizard))
-        lines.append(SimulatorListView.pad("", width: cols))
+        lines.append(header(width: cols, simName: simName, wizard: wizard, selectedApp: selectedApp))
+        lines.append(ViewSupport.pad("", width: cols))
 
         let bodyHeight = PrivacyWizard.appViewport(rows: rows)
-        let body = renderBody(wizard: wizard, bodyHeight: bodyHeight, width: cols)
+        let body = renderBody(wizard: wizard, apps: apps, selectedApp: selectedApp, bodyHeight: bodyHeight, width: cols)
         lines.append(contentsOf: body)
 
         while lines.count < rows - 3 {
-            lines.append(SimulatorListView.pad("", width: cols))
+            lines.append(ViewSupport.pad("", width: cols))
         }
         if let error = wizard.error {
-            lines.append(SimulatorListView.pad(
+            lines.append(ViewSupport.pad(
                 "  \(ANSI.red)⚠ \(error)\(ANSI.reset)",
                 width: cols,
                 visibleWidth: error.count + 4
             ))
         } else {
-            lines.append(SimulatorListView.pad("", width: cols))
+            lines.append(ViewSupport.pad("", width: cols))
         }
-        let footer = footerKeys(wizard: wizard)
-        lines.append(SimulatorListView.pad(
-            "  \(ANSI.gray)\(footer)\(ANSI.reset)",
-            width: cols,
-            visibleWidth: footer.count + 2
-        ))
-        lines.append(SimulatorListView.statusBar(state: state, width: cols))
+        lines.append(ViewSupport.pad("  \(ANSI.gray)\(footerKeys(wizard: wizard))\(ANSI.reset)", width: cols))
+        lines.append(ViewSupport.statusBar(state: state, width: cols))
         return lines.joined(separator: "\r\n")
     }
 
     // MARK: - Private
 
-    private static func header(width: Int, simName: String, wizard: PrivacyWizard) -> String {
-        let crumbs = breadcrumb(wizard: wizard)
+    private static let permissionLabels = PrivacyPermission.allCases.map(\.rawValue)
+    private static let actionLabels = PrivacyAction.allCases.map(\.rawValue)
+
+    private static func appAt(apps: [InstalledApp], index: Int) -> InstalledApp? {
+        guard !apps.isEmpty, index >= 0, index < apps.count else { return nil }
+        return apps[index]
+    }
+
+    private static func header(
+        width: Int,
+        simName: String,
+        wizard: PrivacyWizard,
+        selectedApp: InstalledApp?
+    ) -> String {
+        let crumbs = breadcrumb(wizard: wizard, selectedApp: selectedApp)
         let text = " Privacy — \(simName)  ·  \(crumbs) "
-        let truncated = text.count > width ? String(text.prefix(width)) : text
+        let truncated = ViewSupport.truncate(text, to: width)
         let space = max(0, width - truncated.count)
         return "\(ANSI.inverse)\(truncated)\(String(repeating: " ", count: space))\(ANSI.reset)"
     }
 
-    private static func breadcrumb(wizard: PrivacyWizard) -> String {
-        let appName = wizard.selectedApp?.name ?? "—"
+    private static func breadcrumb(wizard: PrivacyWizard, selectedApp: InstalledApp?) -> String {
+        let appName = selectedApp?.name ?? "—"
         let permissionName = wizard.selectedPermission?.rawValue ?? "—"
         switch wizard.step {
         case .loadingApps:
@@ -90,60 +100,69 @@ enum PrivacyWizardView {
         }
     }
 
-    private static func renderBody(wizard: PrivacyWizard, bodyHeight: Int, width: Int) -> [String] {
+    private static func renderBody(
+        wizard: PrivacyWizard,
+        apps: [InstalledApp],
+        selectedApp: InstalledApp?,
+        bodyHeight: Int,
+        width: Int
+    ) -> [String] {
         switch wizard.step {
         case .loadingApps:
-            return [SimulatorListView.pad("  Loading installed apps…", width: width)]
+            return [ViewSupport.pad("  Loading installed apps…", width: width)]
         case .submitting:
-            let target = wizard.selectedApp?.bundleID ?? "?"
-            return [SimulatorListView.pad("  Applying privacy change to \(target)…", width: width)]
+            let target = selectedApp?.bundleID ?? "?"
+            return [ViewSupport.pad("  Applying privacy change to \(target)…", width: width)]
         case .pickApp:
-            return renderAppList(wizard: wizard, bodyHeight: bodyHeight, width: width)
+            return renderAppList(wizard: wizard, apps: apps, bodyHeight: bodyHeight, width: width)
         case .pickPermission:
-            let items = PrivacyPermission.allCases.map(\.rawValue)
-            return renderList(items: items, focusedIndex: wizard.permissionIndex, bodyHeight: bodyHeight, width: width)
+            return renderList(
+                items: permissionLabels,
+                focusedIndex: wizard.permissionIndex,
+                bodyHeight: bodyHeight,
+                width: width
+            )
         case .pickAction:
-            let items = PrivacyAction.allCases.map(\.rawValue)
-            return renderList(items: items, focusedIndex: wizard.actionIndex, bodyHeight: bodyHeight, width: width)
+            return renderList(
+                items: actionLabels,
+                focusedIndex: wizard.actionIndex,
+                bodyHeight: bodyHeight,
+                width: width
+            )
         }
     }
 
-    private static func renderAppList(wizard: PrivacyWizard, bodyHeight: Int, width: Int) -> [String] {
-        let apps = wizard.apps
+    private static func renderAppList(
+        wizard: PrivacyWizard,
+        apps: [InstalledApp],
+        bodyHeight: Int,
+        width: Int
+    ) -> [String] {
         guard !apps.isEmpty else {
-            return [SimulatorListView.pad("  (no apps installed)", width: width)]
+            return [ViewSupport.pad("  (no apps installed)", width: width)]
         }
         let offset = max(0, min(wizard.appScrollOffset, max(0, apps.count - bodyHeight)))
         let end = min(apps.count, offset + bodyHeight)
-        var lines: [String] = []
-        for index in offset..<end {
-            let selected = index == wizard.appIndex
+        return (offset..<end).map { index in
             let app = apps[index]
-            lines.append(row(label: app.name, suffix: app.bundleID, selected: selected, width: width))
+            return row(label: app.name, suffix: app.bundleID, selected: index == wizard.appIndex, width: width)
         }
-        return lines
     }
 
     private static func renderList(items: [String], focusedIndex: Int, bodyHeight: Int, width: Int) -> [String] {
-        guard !items.isEmpty else { return [SimulatorListView.pad("  (empty)", width: width)] }
+        guard !items.isEmpty else { return [ViewSupport.pad("  (empty)", width: width)] }
         let centered = max(0, focusedIndex - bodyHeight / 2)
         let offset = max(0, min(centered, max(0, items.count - bodyHeight)))
         let end = min(items.count, offset + bodyHeight)
-        var lines: [String] = []
-        for index in offset..<end {
-            let selected = index == focusedIndex
-            lines.append(row(label: items[index], suffix: nil, selected: selected, width: width))
+        return (offset..<end).map { index in
+            row(label: items[index], suffix: nil, selected: index == focusedIndex, width: width)
         }
-        return lines
     }
 
     private static func row(label: String, suffix: String?, selected: Bool, width: Int) -> String {
         let marker = selected ? "› " : "  "
         let detail = suffix.map { "  \(ANSI.gray)\($0)\(ANSI.reset)" } ?? ""
-        let detailVisible = suffix.map { "  \($0)" } ?? ""
-        let raw = "  \(marker)\(label)\(detail)"
-        let visible = "  \(marker)\(label)\(detailVisible)"
-        let padded = SimulatorListView.pad(raw, width: width, visibleWidth: visible.count)
+        let padded = ViewSupport.pad("  \(marker)\(label)\(detail)", width: width)
         if selected {
             return "\(ANSI.bold)\(ANSI.cyan)\(padded)\(ANSI.reset)"
         }

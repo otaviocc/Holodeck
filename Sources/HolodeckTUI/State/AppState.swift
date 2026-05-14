@@ -84,6 +84,8 @@ public struct PrivacyWizard: Equatable, Sendable {
 
     // MARK: - Public
 
+    /// Only the app list scrolls. PrivacyAction/PrivacyPermission lists fit
+    /// any viewport and the view auto-centers their focus at render time.
     public static func appViewport(rows: Int) -> Int {
         max(3, rows - 5)
     }
