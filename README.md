@@ -73,6 +73,7 @@ recording). User config is read once at launch from
 | `f`             | Focus Simulator.app on the selection               |
 | `e`             | Erase (shut-down sims only; `y`/`n` confirm)       |
 | `d`             | Delete (`y`/`n` confirm)                           |
+| `P`             | Privacy wizard (app → action → permission)         |
 | `?`             | Help overlay                                       |
 | `q` / `Esc`     | Quit (or cancel the active modal)                  |
 
@@ -95,6 +96,16 @@ array suitable for piping to `jq`; `--platform` filters by OS family.
 holodeck list [--platform ios|watchos|tvos|visionos] [--json]
 
 holodeck list --platform ios --json | jq '.[].name'
+```
+
+List apps installed on a booted simulator. Default filters to user apps;
+`--system` includes Apple's preinstalled bundles. `--json` emits an array of
+`{bundleID, name, version, isUserApp}` records:
+
+```bash
+holodeck apps list <name-or-udid> [--system] [--json]
+
+holodeck apps list "iPhone 17 Pro" --json | jq '.[].bundleID'
 ```
 
 ### Lifecycle

@@ -43,6 +43,10 @@ public enum AppEvent: Sendable {
     case targetsFailed(String)
     case simulatorCreated(UUID, String)
     case simulatorCreateFailed(String)
+    case appsLoaded([InstalledApp])
+    case appsLoadFailed(String)
+    case privacyApplied(bundleID: String)
+    case privacyApplyFailed(String)
 }
 
 public struct ReducerOutput: Equatable, Sendable {
@@ -63,6 +67,8 @@ public struct ReducerOutput: Equatable, Sendable {
         case loadTargets
         case createSimulator(name: String, deviceType: DeviceType, runtime: Runtime)
         case focusSimulator(UUID)
+        case loadInstalledApps(UUID)
+        case applyPrivacy(udid: UUID, action: PrivacyAction, permission: PrivacyPermission, bundleID: String)
     }
 
     // MARK: - Properties
@@ -188,6 +194,40 @@ public enum Reducer {
                 next.lastError = message
             }
             return ReducerOutput(state: next)
+
+        case let .appsLoaded(apps):
+            if case let .privacyWizard(wizard) = next.modal {
+                var updated = wizard
+                updated.allApps = apps
+                updated.appIndex = 0
+                updated.step = .pickApp
+                updated.error = nil
+                next.modal = .privacyWizard(updated)
+            }
+            return ReducerOutput(state: next)
+
+        case let .appsLoadFailed(message):
+            if case .privacyWizard = next.modal {
+                next.modal = nil
+            }
+            next.lastError = message
+            return ReducerOutput(state: next)
+
+        case let .privacyApplied(bundleID):
+            next.modal = nil
+            next.statusMessage = "Privacy updated for \(bundleID)"
+            return ReducerOutput(state: next)
+
+        case let .privacyApplyFailed(message):
+            if case let .privacyWizard(wizard) = next.modal {
+                var updated = wizard
+                updated.step = .pickPermission
+                updated.error = message
+                next.modal = .privacyWizard(updated)
+            } else {
+                next.lastError = message
+            }
+            return ReducerOutput(state: next)
         }
     }
 
@@ -273,6 +313,15 @@ public enum Reducer {
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
             next.statusMessage = "Focusing \(sim.name)…"
             return ReducerOutput(state: next, effects: [.focusSimulator(sim.id)])
+
+        case .char("P"):
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "Cannot inspect apps: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.modal = .privacyWizard(PrivacyWizard(simulatorID: sim.id))
+            return ReducerOutput(state: next, effects: [.loadInstalledApps(sim.id)])
 
         case .char("?"):
             next.modal = .help

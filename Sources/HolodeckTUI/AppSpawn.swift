@@ -172,6 +172,35 @@ enum AppSpawn {
         )
     }
 
+    static func loadInstalledApps(
+        service: SimulatorService,
+        id: UUID,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        spawn(
+            continuation: continuation,
+            work: { try await service.listApps(id) },
+            success: { .appsLoaded($0) },
+            failure: { .appsLoadFailed($0) }
+        )
+    }
+
+    static func applyPrivacy(
+        service: PrivacyService,
+        udid: UUID,
+        action: PrivacyAction,
+        permission: PrivacyPermission,
+        bundleID: String,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        spawn(
+            continuation: continuation,
+            work: { try await service.apply(udid: udid, action: action, permission: permission, bundleID: bundleID) },
+            success: { _ in .privacyApplied(bundleID: bundleID) },
+            failure: { .privacyApplyFailed($0) }
+        )
+    }
+
     static func create(
         service: SimulatorService,
         name: String,

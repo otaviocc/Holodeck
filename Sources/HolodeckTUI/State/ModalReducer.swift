@@ -38,6 +38,8 @@ enum ModalReducer {
             return confirm(state: next, id: id, key: key, status: "Deleting…", effect: .deleteSimulator(id))
         case let .createWizard(wizard):
             return WizardReducer.handle(state: next, wizard: wizard, key: key)
+        case let .privacyWizard(wizard):
+            return PrivacyWizardReducer.handle(state: next, wizard: wizard, key: key)
         case .help:
             next.modal = nil
             return ReducerOutput(state: next)

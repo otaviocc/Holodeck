@@ -29,7 +29,79 @@ public enum Modal: Equatable, Sendable {
     case confirmErase(UUID)
     case confirmDelete(UUID)
     case createWizard(CreateWizard)
+    case privacyWizard(PrivacyWizard)
     case help
+}
+
+public struct PrivacyWizard: Equatable, Sendable {
+
+    // MARK: - Nested types
+
+    public enum Step: Equatable, Sendable {
+
+        case loadingApps
+        case pickApp
+        case pickAction
+        case pickPermission
+        case submitting
+    }
+
+    // MARK: - Properties
+
+    public var simulatorID: UUID
+    public var step: Step
+    public var allApps: [InstalledApp]
+    public var appIndex: Int
+    public var actionIndex: Int
+    public var permissionIndex: Int
+    public var showSystem: Bool
+    public var error: String?
+
+    // MARK: - Lifecycle
+
+    public init(
+        simulatorID: UUID,
+        step: Step = .loadingApps,
+        allApps: [InstalledApp] = [],
+        appIndex: Int = 0,
+        actionIndex: Int = 0,
+        permissionIndex: Int = 0,
+        showSystem: Bool = false,
+        error: String? = nil
+    ) {
+        self.simulatorID = simulatorID
+        self.step = step
+        self.allApps = allApps
+        self.appIndex = appIndex
+        self.actionIndex = actionIndex
+        self.permissionIndex = permissionIndex
+        self.showSystem = showSystem
+        self.error = error
+    }
+
+    // MARK: - Public
+
+    public var apps: [InstalledApp] {
+        showSystem ? allApps : allApps.filter(\.isUserApp)
+    }
+
+    public var selectedApp: InstalledApp? {
+        let list = apps
+        guard !list.isEmpty, appIndex >= 0, appIndex < list.count else { return nil }
+        return list[appIndex]
+    }
+
+    public var selectedAction: PrivacyAction? {
+        let all = PrivacyAction.allCases
+        guard !all.isEmpty, actionIndex >= 0, actionIndex < all.count else { return nil }
+        return all[actionIndex]
+    }
+
+    public var selectedPermission: PrivacyPermission? {
+        let all = PrivacyPermission.allCases
+        guard !all.isEmpty, permissionIndex >= 0, permissionIndex < all.count else { return nil }
+        return all[permissionIndex]
+    }
 }
 
 public struct CreateWizard: Equatable, Sendable {

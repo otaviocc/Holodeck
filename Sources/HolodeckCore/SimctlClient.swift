@@ -113,6 +113,15 @@ public struct SimctlClient: Sendable {
         }
     }
 
+    public func listApps(udid: UUID) async throws -> [InstalledApp] {
+        let result = try await runSimctl(["listapps", udid.uuidString])
+        do {
+            return try AppListDecoder.decode(result.stdout)
+        } catch {
+            throw SimctlError.decodingFailed(underlying: error)
+        }
+    }
+
     public func create(name: String, deviceTypeIdentifier: String, runtimeIdentifier: String) async throws -> UUID {
         let result = try await runSimctl(["create", name, deviceTypeIdentifier, runtimeIdentifier])
         let stdout = String(data: result.stdout, encoding: .utf8) ?? ""

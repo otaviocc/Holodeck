@@ -87,7 +87,7 @@ public enum SimulatorListView {
     // MARK: - Private
 
     private static let headerTitle = " holodeck "
-    private static let headerFullHint = " ⏎ toggle  f focus  r rec  p shot  a appear  n new  e erase  d delete  ? help  q quit "
+    private static let headerFullHint = " ⏎ toggle  f focus  r rec  p shot  a appear  n new  e erase  d delete  P privacy  ? help  q quit "
     private static let headerShortHint = " ⏎ toggle  ? help  q quit "
     private static let headerTitleCount = headerTitle.count
     private static let headerFullHintCount = headerFullHint.count
@@ -114,6 +114,8 @@ public enum SimulatorListView {
             text = "Delete \(name)?  y = confirm    n / Esc = cancel"
         case let .createWizard(wizard):
             text = createWizardBanner(wizard: wizard)
+        case let .privacyWizard(wizard):
+            text = privacyWizardBanner(wizard: wizard)
         case .help:
             text = "Help — press any key to dismiss"
         }
@@ -137,6 +139,30 @@ public enum SimulatorListView {
             return "Confirm: create \"\(wizard.defaultName)\"?  y/⏎ create  b back  Esc cancel\(suffix)"
         case .submitting:
             return "Creating \(wizard.defaultName)…"
+        }
+    }
+
+    private static func privacyWizardBanner(wizard: PrivacyWizard) -> String {
+        switch wizard.step {
+        case .loadingApps:
+            return "Privacy: loading installed apps…"
+        case .pickApp:
+            let count = wizard.apps.count
+            let current = wizard.selectedApp.map { "\($0.name) (\($0.bundleID))" } ?? "—"
+            let scope = wizard.showSystem ? "all" : "user"
+            return "Privacy — app (\(wizard.appIndex + 1)/\(count), \(scope))  ↑↓ navigate  s toggle system  ⏎ next  Esc cancel  →  \(current)"
+        case .pickAction:
+            let actions = PrivacyAction.allCases
+            let current = wizard.selectedAction?.rawValue ?? "—"
+            return "Privacy — action (\(wizard.actionIndex + 1)/\(actions.count))  ↑↓ navigate  ⏎ next  b back  Esc cancel  →  \(current)"
+        case .pickPermission:
+            let permissions = PrivacyPermission.allCases
+            let current = wizard.selectedPermission?.rawValue ?? "—"
+            let suffix = wizard.error.map { "  ⚠ \($0)" } ?? ""
+            return "Privacy — permission (\(wizard.permissionIndex + 1)/\(permissions.count))  ↑↓ navigate  ⏎ apply  b back  Esc cancel  →  \(current)\(suffix)"
+        case .submitting:
+            let target = wizard.selectedApp?.bundleID ?? "?"
+            return "Applying privacy change to \(target)…"
         }
     }
 
@@ -210,6 +236,8 @@ public enum SimulatorListView {
             ("f", "focus Simulator.app on selected"),
             ("e", "erase (shutdown sims only)"),
             ("d", "delete"),
+            ("P", "privacy wizard (app → action → permission)"),
+            ("s", "toggle system apps in privacy wizard"),
             ("?", "this help"),
             ("q / Esc", "quit (or close modal)")
         ]

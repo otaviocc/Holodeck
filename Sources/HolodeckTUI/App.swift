@@ -33,6 +33,7 @@ public final class HolodeckApp {
     private let recording: RecordingService
     private let screenshots: ScreenshotService
     private let appearance: AppearanceService
+    private let privacy: PrivacyService
     private let config: Config
     private let terminal = TerminalMode()
     private let parser = InputParser()
@@ -47,12 +48,14 @@ public final class HolodeckApp {
         recording: RecordingService = RecordingService(),
         screenshots: ScreenshotService = ScreenshotService(),
         appearance: AppearanceService = AppearanceService(),
+        privacy: PrivacyService = PrivacyService(),
         config: Config = (try? ConfigLoader.load()) ?? .default
     ) {
         self.service = service
         self.recording = recording
         self.screenshots = screenshots
         self.appearance = appearance
+        self.privacy = privacy
         self.config = config
     }
 
@@ -101,6 +104,7 @@ public final class HolodeckApp {
         eventContinuation.finish()
     }
 
+    // swiftlint:disable function_body_length
     private func dispatch(
         _ effect: ReducerOutput.SideEffect,
         continuation: AsyncStream<AppEvent>.Continuation
@@ -151,8 +155,20 @@ public final class HolodeckApp {
                 runtime: runtime,
                 continuation: continuation
             )
+        case let .loadInstalledApps(id):
+            AppSpawn.loadInstalledApps(service: service, id: id, continuation: continuation)
+        case let .applyPrivacy(udid, action, permission, bundleID):
+            AppSpawn.applyPrivacy(
+                service: privacy,
+                udid: udid,
+                action: action,
+                permission: permission,
+                bundleID: bundleID,
+                continuation: continuation
+            )
         }
     }
+    // swiftlint:enable function_body_length
 
     private func installResizeHandler(continuation: AsyncStream<AppEvent>.Continuation) -> Task<Void, Never> {
         signal(SIGWINCH, SIG_IGN)

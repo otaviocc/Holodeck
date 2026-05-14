@@ -53,6 +53,10 @@ public struct SimulatorService: Sendable {
         try await client.listAvailableTargets()
     }
 
+    public func listApps(_ udid: UUID) async throws -> [InstalledApp] {
+        try await client.listApps(udid: udid)
+    }
+
     public func create(name: String, deviceType: DeviceType, runtime: Runtime) async throws -> UUID {
         try await client.create(
             name: name,
