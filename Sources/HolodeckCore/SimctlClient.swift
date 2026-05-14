@@ -135,6 +135,29 @@ public struct SimctlClient: Sendable {
         _ = try await runSimctl(["delete", "unavailable"])
     }
 
+    public func setLocation(udid: UUID, latitude: Double, longitude: Double) async throws {
+        _ = try await runSimctl(["location", udid.uuidString, "set", "\(latitude),\(longitude)"])
+    }
+
+    public func clearLocation(udid: UUID) async throws {
+        _ = try await runSimctl(["location", udid.uuidString, "clear"])
+    }
+
+    public func privacy(
+        udid: UUID,
+        action: PrivacyAction,
+        permission: PrivacyPermission,
+        bundleID: String?
+    ) async throws {
+        var args = ["privacy", udid.uuidString, action.rawValue, permission.rawValue]
+        if let bundleID { args.append(bundleID) }
+        _ = try await runSimctl(args)
+    }
+
+    public func resetKeychain(udid: UUID) async throws {
+        _ = try await runSimctl(["keychain", udid.uuidString, "reset"])
+    }
+
     public func focusSimulatorApp(udid: UUID) async throws {
         let args = ["-a", "Simulator", "--args", "-CurrentDeviceUDID", udid.uuidString]
         let result: ProcessResult

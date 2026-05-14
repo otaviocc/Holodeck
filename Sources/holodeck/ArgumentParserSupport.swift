@@ -66,6 +66,20 @@ extension BatteryState: ExpressibleByArgument {
     }
 }
 
+extension PrivacyAction: ExpressibleByArgument {
+
+    public init?(argument: String) {
+        self.init(rawValue: argument.lowercased())
+    }
+}
+
+extension PrivacyPermission: ExpressibleByArgument {
+
+    public init?(argument: String) {
+        self.init(rawValue: argument.lowercased())
+    }
+}
+
 extension SimulatorService {
 
     func resolveInState(_ query: String, _ requiredState: SimulatorState, purpose: String) async throws -> Simulator {

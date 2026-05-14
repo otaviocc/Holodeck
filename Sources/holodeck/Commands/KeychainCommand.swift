@@ -21,31 +21,37 @@
 // SOFTWARE.
 
 import ArgumentParser
+import Foundation
+import HolodeckCore
+import HolodeckServices
 
-@main
-struct Holodeck: AsyncParsableCommand {
+struct KeychainCommand: AsyncParsableCommand {
+
+    // MARK: - Nested types
+
+    struct Reset: AsyncParsableCommand {
+
+        static let configuration = CommandConfiguration(
+            commandName: "reset",
+            abstract: "Reset the simulator's keychain."
+        )
+
+        @Argument(help: "Simulator name or UDID.")
+        var query: String
+
+        func run() async throws {
+            let service = SimulatorService()
+            let sim = try await service.resolveInState(
+                query, .booted, purpose: "the simulator must be booted"
+            )
+            try await KeychainService().reset(udid: sim.id)
+            print("Reset keychain on \(sim.name).")
+        }
+    }
 
     static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            CreateCommand.self,
-            EraseCommand.self,
-            DeleteCommand.self,
-            FocusCommand.self,
-            LocationCommand.self,
-            PrivacyCommand.self,
-            KeychainCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
+        commandName: "keychain",
+        abstract: "Manage the simulator's keychain.",
+        subcommands: [Reset.self]
     )
 }

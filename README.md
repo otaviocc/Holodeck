@@ -45,6 +45,9 @@ work from the repo root.
 | `erase <name-or-udid>` / `erase --all` | Prompts before erasing; `-y` skips. |
 | `delete <name-or-udid>` / `delete --unavailable` | Prompts before deleting; `-y` skips. |
 | `focus <name-or-udid>` | Brings Simulator.app forward, switched to the device. See note below. |
+| `location set <name-or-udid> <lat> <lon>` / `location clear <name-or-udid>` | Override the simulated GPS location. Booted simulators only. |
+| `privacy <name-or-udid> grant\|revoke\|reset <permission> [bundle-id]` | Manage permissions (camera, location, contacts, etc.); `bundle-id` required for grant/revoke. |
+| `keychain reset <name-or-udid>` | Wipe the simulator's keychain without erasing the device. |
 
 Run `holodeck --help` or `holodeck <sub> --help` for the authoritative usage.
 

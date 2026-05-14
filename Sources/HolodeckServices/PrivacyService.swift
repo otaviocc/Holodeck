@@ -20,32 +20,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import ArgumentParser
+import Foundation
+import HolodeckCore
 
-@main
-struct Holodeck: AsyncParsableCommand {
+public struct PrivacyService: Sendable {
 
-    static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            CreateCommand.self,
-            EraseCommand.self,
-            DeleteCommand.self,
-            FocusCommand.self,
-            LocationCommand.self,
-            PrivacyCommand.self,
-            KeychainCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
-    )
+    // MARK: - Properties
+
+    private let client: SimctlClient
+
+    // MARK: - Lifecycle
+
+    public init(client: SimctlClient = SimctlClient()) {
+        self.client = client
+    }
+
+    // MARK: - Public
+
+    public func apply(
+        udid: UUID,
+        action: PrivacyAction,
+        permission: PrivacyPermission,
+        bundleID: String?
+    ) async throws {
+        try await client.privacy(udid: udid, action: action, permission: permission, bundleID: bundleID)
+    }
 }
