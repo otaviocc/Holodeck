@@ -73,6 +73,10 @@ public struct SimulatorService: Sendable {
         try await client.deleteUnavailable()
     }
 
+    public func focus(_ udid: UUID) async throws {
+        try await client.focusSimulatorApp(udid: udid)
+    }
+
     public func resolve(query: String) async throws -> Simulator {
         let all = try await list()
         if let uuid = UUID(uuidString: query),

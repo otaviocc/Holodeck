@@ -21,28 +21,24 @@
 // SOFTWARE.
 
 import ArgumentParser
+import Foundation
+import HolodeckCore
+import HolodeckServices
 
-@main
-struct Holodeck: AsyncParsableCommand {
+struct FocusCommand: AsyncParsableCommand {
 
     static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            CreateCommand.self,
-            EraseCommand.self,
-            DeleteCommand.self,
-            FocusCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
+        commandName: "focus",
+        abstract: "Bring Simulator.app to the front, focused on the selected device."
     )
+
+    @Argument(help: "Simulator name or UDID.")
+    var query: String
+
+    func run() async throws {
+        let service = SimulatorService()
+        let sim = try await service.resolve(query: query)
+        try await service.focus(sim.id)
+        print("Focused \(sim.name) (\(sim.id.uuidString)).")
+    }
 }

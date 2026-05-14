@@ -134,4 +134,3 @@ struct SimulatorServiceTests {
         }
     }
 }
-

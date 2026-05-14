@@ -150,6 +150,16 @@ enum AppSpawn {
         )
     }
 
+    static func focus(
+        service: SimulatorService,
+        id: UUID,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        spawnPerSimulator(id: id, continuation: continuation) {
+            try await service.focus(id)
+        }
+    }
+
     static func loadTargets(
         service: SimulatorService,
         continuation: AsyncStream<AppEvent>.Continuation

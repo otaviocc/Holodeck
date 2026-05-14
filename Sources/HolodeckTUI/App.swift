@@ -141,6 +141,8 @@ public final class HolodeckApp {
             AppSpawn.delete(service: service, id: id, continuation: continuation)
         case .loadTargets:
             AppSpawn.loadTargets(service: service, continuation: continuation)
+        case let .focusSimulator(id):
+            AppSpawn.focus(service: service, id: id, continuation: continuation)
         case let .createSimulator(name, deviceType, runtime):
             AppSpawn.create(
                 service: service,

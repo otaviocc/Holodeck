@@ -62,6 +62,7 @@ public struct ReducerOutput: Equatable, Sendable {
         case deleteSimulator(UUID)
         case loadTargets
         case createSimulator(name: String, deviceType: DeviceType, runtime: Runtime)
+        case focusSimulator(UUID)
     }
 
     // MARK: - Properties
@@ -267,6 +268,11 @@ public enum Reducer {
         case .char("n"):
             next.modal = .createWizard(CreateWizard())
             return ReducerOutput(state: next, effects: [.loadTargets])
+
+        case .char("f"):
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            next.statusMessage = "Focusing \(sim.name)…"
+            return ReducerOutput(state: next, effects: [.focusSimulator(sim.id)])
 
         case .char("?"):
             next.modal = .help

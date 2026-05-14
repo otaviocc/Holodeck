@@ -59,16 +59,16 @@ public struct Config: Sendable, Equatable, Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let defaults = Config.default
-        self.init(
-            defaultPlatform: try container.decodeIfPresent(Platform.self, forKey: .defaultPlatform)
+        try self.init(
+            defaultPlatform: container.decodeIfPresent(Platform.self, forKey: .defaultPlatform)
                 ?? defaults.defaultPlatform,
-            screenshotsDirectory: try container.decodeIfPresent(String.self, forKey: .screenshotsDirectory)
+            screenshotsDirectory: container.decodeIfPresent(String.self, forKey: .screenshotsDirectory)
                 ?? defaults.screenshotsDirectory,
-            videoCodec: try container.decodeIfPresent(VideoCodec.self, forKey: .videoCodec)
+            videoCodec: container.decodeIfPresent(VideoCodec.self, forKey: .videoCodec)
                 ?? defaults.videoCodec,
-            screenshotType: try container.decodeIfPresent(ScreenshotType.self, forKey: .screenshotType)
+            screenshotType: container.decodeIfPresent(ScreenshotType.self, forKey: .screenshotType)
                 ?? defaults.screenshotType,
-            pollIntervalSeconds: try container.decodeIfPresent(Double.self, forKey: .pollIntervalSeconds)
+            pollIntervalSeconds: container.decodeIfPresent(Double.self, forKey: .pollIntervalSeconds)
                 ?? defaults.pollIntervalSeconds
         )
     }

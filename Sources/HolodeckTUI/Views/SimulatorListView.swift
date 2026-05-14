@@ -88,7 +88,7 @@ public enum SimulatorListView {
 
     private static func header(width: Int) -> String {
         let title = " holodeck "
-        let fullHint = " ⏎ toggle  r rec  p shot  a appear  n new  e erase  d delete  ? help  q quit "
+        let fullHint = " ⏎ toggle  f focus  r rec  p shot  a appear  n new  e erase  d delete  ? help  q quit "
         let shortHint = " ⏎ toggle  ? help  q quit "
         let hint = width >= title.count + fullHint.count ? fullHint : shortHint
         let space = max(0, width - title.count - hint.count)
@@ -201,6 +201,7 @@ public enum SimulatorListView {
             ("p", "screenshot"),
             ("a", "appearance (light / dark)"),
             ("n", "new simulator (wizard)"),
+            ("f", "focus Simulator.app on selected"),
             ("e", "erase (shutdown sims only)"),
             ("d", "delete"),
             ("?", "this help"),

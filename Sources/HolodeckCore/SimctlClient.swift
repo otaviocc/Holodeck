@@ -135,6 +135,27 @@ public struct SimctlClient: Sendable {
         _ = try await runSimctl(["delete", "unavailable"])
     }
 
+    public func focusSimulatorApp(udid: UUID) async throws {
+        let args = ["-a", "Simulator", "--args", "-CurrentDeviceUDID", udid.uuidString]
+        let result: ProcessResult
+        do {
+            result = try await runner.run("/usr/bin/open", args)
+        } catch {
+            throw SimctlError.commandFailed(
+                command: "open \(args.joined(separator: " "))",
+                exitCode: -1,
+                stderr: String(describing: error)
+            )
+        }
+        guard result.exitCode == 0 else {
+            throw SimctlError.commandFailed(
+                command: "open \(args.joined(separator: " "))",
+                exitCode: result.exitCode,
+                stderr: String(data: result.stderr, encoding: .utf8) ?? ""
+            )
+        }
+    }
+
     // MARK: - Private
 
     @discardableResult
