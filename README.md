@@ -1,6 +1,6 @@
 # holodeck
 
-<img width="1059" height="664" alt="" src="https://github.com/user-attachments/assets/ad98aab5-a791-476c-80b2-e2b96a57f6a4" />
+https://github.com/user-attachments/assets/f0801d42-851c-4888-b030-66eff8efeb25
 
 A macOS CLI and TUI for managing iOS simulators. A Swift replacement for ad-hoc
 `xcrun simctl` wrappers, built as a single SwiftPM binary with no external
