@@ -159,44 +159,39 @@ public struct SimctlClient: Sendable {
     }
 
     public func focusSimulatorApp(udid: UUID) async throws {
-        let args = ["-a", "Simulator", "--args", "-CurrentDeviceUDID", udid.uuidString]
-        let result: ProcessResult
-        do {
-            result = try await runner.run("/usr/bin/open", args)
-        } catch {
-            throw SimctlError.commandFailed(
-                command: "open \(args.joined(separator: " "))",
-                exitCode: -1,
-                stderr: String(describing: error)
-            )
-        }
-        guard result.exitCode == 0 else {
-            throw SimctlError.commandFailed(
-                command: "open \(args.joined(separator: " "))",
-                exitCode: result.exitCode,
-                stderr: String(data: result.stderr, encoding: .utf8) ?? ""
-            )
-        }
+        _ = try await runProcess(
+            "/usr/bin/open",
+            label: "open",
+            ["-a", "Simulator", "--args", "-CurrentDeviceUDID", udid.uuidString]
+        )
     }
 
     // MARK: - Private
 
     @discardableResult
     private func runSimctl(_ subcommand: [String]) async throws -> ProcessResult {
-        let args = ["simctl"] + subcommand
+        try await runProcess("/usr/bin/xcrun", label: "xcrun", ["simctl"] + subcommand)
+    }
+
+    @discardableResult
+    private func runProcess(
+        _ launchPath: String,
+        label: String,
+        _ arguments: [String]
+    ) async throws -> ProcessResult {
         let result: ProcessResult
         do {
-            result = try await runner.run("/usr/bin/xcrun", args)
+            result = try await runner.run(launchPath, arguments)
         } catch {
             throw SimctlError.commandFailed(
-                command: "xcrun \(args.joined(separator: " "))",
+                command: "\(label) \(arguments.joined(separator: " "))",
                 exitCode: -1,
                 stderr: String(describing: error)
             )
         }
         guard result.exitCode == 0 else {
             throw SimctlError.commandFailed(
-                command: "xcrun \(args.joined(separator: " "))",
+                command: "\(label) \(arguments.joined(separator: " "))",
                 exitCode: result.exitCode,
                 stderr: String(data: result.stderr, encoding: .utf8) ?? ""
             )

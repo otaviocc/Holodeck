@@ -46,10 +46,13 @@ struct PrivacyCommand: AsyncParsableCommand {
     @Argument(help: "Bundle identifier (required for grant/revoke; optional for reset).")
     var bundleID: String?
 
-    func run() async throws {
+    func validate() throws {
         if action != .reset, bundleID == nil {
             throw ValidationError("\(action.rawValue) requires a bundle identifier.")
         }
+    }
+
+    func run() async throws {
         let service = SimulatorService()
         let sim = try await service.resolveInState(
             query, .booted, purpose: "the simulator must be booted"

@@ -86,13 +86,19 @@ public enum SimulatorListView {
 
     // MARK: - Private
 
+    private static let headerTitle = " holodeck "
+    private static let headerFullHint = " ⏎ toggle  f focus  r rec  p shot  a appear  n new  e erase  d delete  ? help  q quit "
+    private static let headerShortHint = " ⏎ toggle  ? help  q quit "
+    private static let headerTitleCount = headerTitle.count
+    private static let headerFullHintCount = headerFullHint.count
+    private static let headerShortHintCount = headerShortHint.count
+
     private static func header(width: Int) -> String {
-        let title = " holodeck "
-        let fullHint = " ⏎ toggle  f focus  r rec  p shot  a appear  n new  e erase  d delete  ? help  q quit "
-        let shortHint = " ⏎ toggle  ? help  q quit "
-        let hint = width >= title.count + fullHint.count ? fullHint : shortHint
-        let space = max(0, width - title.count - hint.count)
-        return "\(ANSI.inverse)\(title)\(String(repeating: " ", count: space))\(hint)\(ANSI.reset)"
+        let useFull = width >= headerTitleCount + headerFullHintCount
+        let hint = useFull ? headerFullHint : headerShortHint
+        let hintCount = useFull ? headerFullHintCount : headerShortHintCount
+        let space = max(0, width - headerTitleCount - hintCount)
+        return "\(ANSI.inverse)\(headerTitle)\(String(repeating: " ", count: space))\(hint)\(ANSI.reset)"
     }
 
     private static func modalBanner(modal: Modal, width: Int, state: AppState) -> String {

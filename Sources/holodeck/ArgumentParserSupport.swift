@@ -38,47 +38,21 @@ extension Platform: ExpressibleByArgument {
     }
 }
 
-extension VideoCodec: ExpressibleByArgument {
+protocol LowercasedRawArgument: ExpressibleByArgument, RawRepresentable where RawValue == String {}
+
+extension LowercasedRawArgument {
 
     public init?(argument: String) {
         self.init(rawValue: argument.lowercased())
     }
 }
 
-extension ScreenshotType: ExpressibleByArgument {
-
-    public init?(argument: String) {
-        self.init(rawValue: argument.lowercased())
-    }
-}
-
-extension Appearance: ExpressibleByArgument {
-
-    public init?(argument: String) {
-        self.init(rawValue: argument.lowercased())
-    }
-}
-
-extension BatteryState: ExpressibleByArgument {
-
-    public init?(argument: String) {
-        self.init(rawValue: argument.lowercased())
-    }
-}
-
-extension PrivacyAction: ExpressibleByArgument {
-
-    public init?(argument: String) {
-        self.init(rawValue: argument.lowercased())
-    }
-}
-
-extension PrivacyPermission: ExpressibleByArgument {
-
-    public init?(argument: String) {
-        self.init(rawValue: argument.lowercased())
-    }
-}
+extension VideoCodec: LowercasedRawArgument {}
+extension ScreenshotType: LowercasedRawArgument {}
+extension Appearance: LowercasedRawArgument {}
+extension BatteryState: LowercasedRawArgument {}
+extension PrivacyAction: LowercasedRawArgument {}
+extension PrivacyPermission: LowercasedRawArgument {}
 
 extension SimulatorService {
 
