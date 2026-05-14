@@ -44,8 +44,15 @@ work from the repo root.
 | `create <name> --device <substr> --runtime <substr>` | Substring-fuzzy matches against the live device-type / runtime catalog. |
 | `erase <name-or-udid>` / `erase --all` | Prompts before erasing; `-y` skips. |
 | `delete <name-or-udid>` / `delete --unavailable` | Prompts before deleting; `-y` skips. |
+| `focus <name-or-udid>` | Brings Simulator.app forward, switched to the device. See note below. |
 
 Run `holodeck --help` or `holodeck <sub> --help` for the authoritative usage.
+
+> **Note on `focus`.** Under the hood this runs `open -a Simulator --args
+> -CurrentDeviceUDID <udid>`, which Simulator.app persists into its preferences.
+> If you later quit Simulator.app and relaunch it (from anywhere), it will
+> start with that device focused. This is Simulator.app's own behavior, not
+> something holodeck tracks.
 
 ## TUI
 
@@ -65,6 +72,7 @@ testable.
 | `n` | New simulator wizard (pick device type → runtime → confirm) |
 | `e` | Erase (shut-down simulators only; `y`/`n` confirm) |
 | `d` | Delete (`y`/`n` confirm) |
+| `f` | Focus Simulator.app on the selection (see `focus` note above) |
 | `?` | Help overlay |
 | `q` / `Esc` | Quit (or cancel the active modal) |
 
