@@ -70,7 +70,12 @@ public enum DeviceListDecoder {
 
     public static func decodeAvailableTargets(_ data: Data) throws -> AvailableTargets {
         let raw = try decoder.decode(RawTargets.self, from: data)
-        let deviceTypes = (raw.devicetypes ?? []).map { DeviceType(identifier: $0.identifier, name: $0.name) }
+        let deviceTypes = (raw.devicetypes ?? [])
+            // Apple TV simulators aren't usable from holodeck today (the
+            // create flow only pairs with iOS/watchOS/visionOS runtimes), so
+            // omit them from the picker and from CLI substring matches.
+                .filter { !$0.identifier.contains(".Apple-TV-") }
+                .map { DeviceType(identifier: $0.identifier, name: $0.name) }
         let runtimes = (raw.runtimes ?? []).compactMap { rawRuntime -> Runtime? in
             guard rawRuntime.isAvailable ?? true else { return nil }
             return Runtime(identifier: rawRuntime.identifier, versionString: rawRuntime.version)

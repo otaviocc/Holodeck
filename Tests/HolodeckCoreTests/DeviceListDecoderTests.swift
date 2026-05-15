@@ -141,4 +141,28 @@ struct DeviceListDecoderTests {
         let displays = Set(targets.runtimes.map(\.displayName))
         #expect(displays == ["iOS 26.4", "iOS 26.4.1"])
     }
+
+    @Test("It should drop Apple TV device types from the available targets")
+    func availableTargetsExcludesAppleTV() throws {
+        // Given
+        let json = Data("""
+        { "devicetypes": [
+            { "identifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro",
+              "name": "iPhone 17 Pro" },
+            { "identifier": "com.apple.CoreSimulator.SimDeviceType.Apple-TV-4K-3rd-generation-4K",
+              "name": "Apple TV 4K (3rd generation)" },
+            { "identifier": "com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-10-46mm",
+              "name": "Apple Watch Series 10 (46mm)" }
+          ],
+          "runtimes": []
+        }
+        """.utf8)
+
+        // When
+        let targets = try DeviceListDecoder.decodeAvailableTargets(json)
+
+        // Then
+        let names = targets.deviceTypes.map(\.name)
+        #expect(names == ["iPhone 17 Pro", "Apple Watch Series 10 (46mm)"])
+    }
 }
