@@ -52,6 +52,17 @@ public struct Runtime: Sendable, Equatable, Hashable, Comparable {
         self.identifier = identifier
     }
 
+    /// Apple sometimes ships point releases under the same identifier
+    /// (e.g. iOS-26-4 hosts both 26.4 and 26.4.1). Prefer the explicit
+    /// version string from `simctl list --json runtimes` when available.
+    public init?(identifier: String, versionString: String?) {
+        guard let parsed = Runtime(identifier: identifier) else { return nil }
+        let resolvedVersion = versionString.flatMap(SemanticVersion.init(string:)) ?? parsed.version
+        platform = parsed.platform
+        version = resolvedVersion
+        self.identifier = identifier
+    }
+
     // MARK: - Public
 
     public var displayName: String {

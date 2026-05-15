@@ -115,4 +115,30 @@ struct DeviceListDecoderTests {
         #expect(result.count == 1)
         #expect(result.first?.name == "Test")
     }
+
+    @Test("It should prefer the JSON version string over the identifier-parsed version")
+    func availableTargetsUsesJSONVersion() throws {
+        // Given two runtimes sharing the same identifier — Apple does this for
+        // point releases (e.g. iOS-26-4 hosts both 26.4 and 26.4.1).
+        let json = Data("""
+        { "devicetypes": [],
+          "runtimes": [
+            { "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-4",
+              "name": "iOS 26.4", "version": "26.4", "isAvailable": true },
+            { "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-4",
+              "name": "iOS 26.4", "version": "26.4.1", "isAvailable": true }
+          ]
+        }
+        """.utf8)
+
+        // When
+        let targets = try DeviceListDecoder.decodeAvailableTargets(json)
+
+        // Then
+        #expect(targets.runtimes.count == 2)
+        let versions = targets.runtimes.map(\.version.description).sorted()
+        #expect(versions == ["26.4", "26.4.1"])
+        let displays = Set(targets.runtimes.map(\.displayName))
+        #expect(displays == ["iOS 26.4", "iOS 26.4.1"])
+    }
 }

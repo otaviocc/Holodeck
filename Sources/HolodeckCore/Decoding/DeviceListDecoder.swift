@@ -58,6 +58,7 @@ public enum DeviceListDecoder {
 
         let identifier: String
         let name: String
+        let version: String?
         let isAvailable: Bool?
     }
 
@@ -72,7 +73,7 @@ public enum DeviceListDecoder {
         let deviceTypes = (raw.devicetypes ?? []).map { DeviceType(identifier: $0.identifier, name: $0.name) }
         let runtimes = (raw.runtimes ?? []).compactMap { rawRuntime -> Runtime? in
             guard rawRuntime.isAvailable ?? true else { return nil }
-            return Runtime(identifier: rawRuntime.identifier)
+            return Runtime(identifier: rawRuntime.identifier, versionString: rawRuntime.version)
         }
         return AvailableTargets(deviceTypes: deviceTypes, runtimes: runtimes)
     }
