@@ -66,6 +66,84 @@ struct ReducerTests {
         #expect(afterClamp == 1)
     }
 
+    @Test("It should scroll the simulator window down when the highlight crosses the edge")
+    func mainListScrollsDownAtEdge() {
+        // Given
+        let sims = (0..<30).map { makeSim(name: "Sim\($0)", state: .shutdown) }
+        let rows = 13
+        let viewport = AppState.mainListViewport(rows: rows, isRecording: false, hasModal: false)
+        var state = AppState(
+            simulators: AppState.sort(sims),
+            selectedIndex: viewport - 1,
+            mainScrollOffset: 0,
+            rows: rows
+        )
+
+        // When
+        state = Reducer.reduce(state, .key(.down)).state
+
+        // Then
+        #expect(state.selectedIndex == viewport)
+        #expect(state.mainScrollOffset == 1)
+    }
+
+    @Test("It should scroll the simulator window up when the highlight crosses the top edge")
+    func mainListScrollsUpAtEdge() {
+        // Given
+        let sims = (0..<30).map { makeSim(name: "Sim\($0)", state: .shutdown) }
+        var state = AppState(
+            simulators: AppState.sort(sims),
+            selectedIndex: 5,
+            mainScrollOffset: 5,
+            rows: 13
+        )
+
+        // When
+        state = Reducer.reduce(state, .key(.up)).state
+
+        // Then
+        #expect(state.selectedIndex == 4)
+        #expect(state.mainScrollOffset == 4)
+    }
+
+    @Test("It should clamp the scroll offset when the simulator list shrinks")
+    func mainListScrollClampsOnRefresh() {
+        // Given
+        let many = (0..<30).map { makeSim(name: "Sim\($0)", state: .shutdown) }
+        var state = AppState(
+            simulators: AppState.sort(many),
+            selectedIndex: 0,
+            mainScrollOffset: 20,
+            rows: 13
+        )
+        let few = (0..<5).map { makeSim(name: "Tiny\($0)", state: .shutdown) }
+
+        // When
+        state = Reducer.reduce(state, .refreshed(few)).state
+
+        // Then
+        #expect(state.mainScrollOffset == 0)
+    }
+
+    @Test("It should clamp the scroll offset on resize")
+    func mainListScrollClampsOnResize() {
+        // Given
+        let sims = (0..<30).map { makeSim(name: "Sim\($0)", state: .shutdown) }
+        var state = AppState(
+            simulators: AppState.sort(sims),
+            selectedIndex: 0,
+            mainScrollOffset: 25,
+            rows: 13
+        )
+
+        // When (resize so viewport is huge → scroll offset should snap back)
+        state = Reducer.reduce(state, .resized(rows: 40, cols: 80)).state
+
+        // Then
+        let viewport = AppState.mainListViewport(rows: 40, isRecording: false, hasModal: false)
+        #expect(state.mainScrollOffset <= max(0, sims.count - viewport))
+    }
+
     @Test("It should set the quitting flag when q is pressed")
     func quitSetsFlag() {
         // Given

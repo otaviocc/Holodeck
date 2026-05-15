@@ -111,6 +111,7 @@ enum WizardReducer {
             next.modal = nil
             return ReducerOutput(state: next)
         }
+        let viewport = CreateWizard.viewport(rows: state.rows)
         switch wizard.step {
         case .loading:
             return ReducerOutput(state: next)
@@ -118,8 +119,14 @@ enum WizardReducer {
             switch key {
             case .up, .char("k"):
                 updated.deviceTypeIndex = max(0, updated.deviceTypeIndex - 1)
+                if updated.deviceTypeIndex < updated.deviceTypeScrollOffset {
+                    updated.deviceTypeScrollOffset = updated.deviceTypeIndex
+                }
             case .down, .char("j"):
                 updated.deviceTypeIndex = min(max(0, updated.deviceTypes.count - 1), updated.deviceTypeIndex + 1)
+                if updated.deviceTypeIndex >= updated.deviceTypeScrollOffset + viewport {
+                    updated.deviceTypeScrollOffset = updated.deviceTypeIndex - viewport + 1
+                }
             case .enter:
                 guard updated.selectedDeviceType != nil else { return ReducerOutput(state: next) }
                 updated.step = .pickRuntime
@@ -129,8 +136,14 @@ enum WizardReducer {
             switch key {
             case .up, .char("k"):
                 updated.runtimeIndex = max(0, updated.runtimeIndex - 1)
+                if updated.runtimeIndex < updated.runtimeScrollOffset {
+                    updated.runtimeScrollOffset = updated.runtimeIndex
+                }
             case .down, .char("j"):
                 updated.runtimeIndex = min(max(0, updated.runtimes.count - 1), updated.runtimeIndex + 1)
+                if updated.runtimeIndex >= updated.runtimeScrollOffset + viewport {
+                    updated.runtimeScrollOffset = updated.runtimeIndex - viewport + 1
+                }
             case .enter:
                 guard updated.selectedRuntime != nil else { return ReducerOutput(state: next) }
                 updated.step = .confirm

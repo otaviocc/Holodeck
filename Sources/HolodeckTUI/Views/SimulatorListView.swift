@@ -27,12 +27,16 @@ public enum SimulatorListView {
 
     // MARK: - Public
 
+    // swiftlint:disable function_body_length
     public static func render(_ state: AppState) -> String {
         if state.modal == .help {
             return renderHelp(state: state)
         }
         if case let .privacyWizard(wizard) = state.modal {
             return PrivacyWizardView.render(state: state, wizard: wizard)
+        }
+        if case let .createWizard(wizard) = state.modal {
+            return CreateWizardView.render(state: state, wizard: wizard)
         }
         var lines: [String] = []
         let cols = max(40, state.cols)
@@ -51,20 +55,26 @@ public enum SimulatorListView {
         }
 
         let bodyHeight = rows - 4 - bodyOffset
-        let listSlice = bodyHeight > 0 ? Array(state.simulators.prefix(bodyHeight)) : []
 
-        if listSlice.isEmpty {
+        if state.simulators.isEmpty || bodyHeight <= 0 {
             lines.append(ViewSupport.pad("  (no simulators)", width: cols))
         } else {
+            let start = max(0, min(state.mainScrollOffset, max(0, state.simulators.count - 1)))
             var currentRuntime: Runtime?
-            for (index, sim) in listSlice.enumerated() {
-                if sim.runtime != currentRuntime {
+            var used = 0
+            for index in start..<state.simulators.count {
+                let sim = state.simulators[index]
+                let headerNeeded = sim.runtime != currentRuntime
+                let headerCost = headerNeeded ? 1 : 0
+                if used + headerCost + 1 > bodyHeight { break }
+                if headerNeeded {
                     lines.append(ViewSupport.pad(
                         "\(ANSI.bold)\(ANSI.cyan)\(sim.runtime.displayName)\(ANSI.reset)",
                         width: cols,
                         visibleWidth: sim.runtime.displayName.count
                     ))
                     currentRuntime = sim.runtime
+                    used += 1
                 }
                 lines.append(renderRow(
                     sim: sim,
@@ -72,6 +82,7 @@ public enum SimulatorListView {
                     pending: state.pendingOperations.contains(sim.id),
                     width: cols
                 ))
+                used += 1
             }
         }
 
@@ -82,6 +93,8 @@ public enum SimulatorListView {
         lines.append(ViewSupport.statusBar(state: state, width: cols))
         return lines.joined(separator: "\r\n")
     }
+
+    // swiftlint:enable function_body_length
 
     static func stripANSI(_ text: String) -> String {
         ANSI.stripEscapes(from: text)
@@ -115,8 +128,8 @@ public enum SimulatorListView {
         case let .confirmDelete(id):
             let name = state.simulators.first { $0.id == id }?.name ?? "?"
             text = "Delete \(name)?  y = confirm    n / Esc = cancel"
-        case let .createWizard(wizard):
-            text = createWizardBanner(wizard: wizard)
+        case .createWizard:
+            preconditionFailure("createWizard renders full-screen via CreateWizardView; not reachable here")
         case .privacyWizard:
             preconditionFailure("privacyWizard renders full-screen via PrivacyWizardView; not reachable here")
         case .help:
@@ -125,24 +138,6 @@ public enum SimulatorListView {
         let truncated = ViewSupport.truncate(text, to: width)
         let space = max(0, width - truncated.count)
         return "\(ANSI.cyan)\(ANSI.bold)\(truncated)\(ANSI.reset)\(String(repeating: " ", count: space))"
-    }
-
-    private static func createWizardBanner(wizard: CreateWizard) -> String {
-        switch wizard.step {
-        case .loading:
-            return "Create simulator: loading device types and runtimes…"
-        case .pickDeviceType:
-            let current = wizard.selectedDeviceType?.name ?? "—"
-            return "Create — device type (\(wizard.deviceTypeIndex + 1)/\(wizard.deviceTypes.count))  ↑↓ navigate  ⏎ next  Esc cancel  →  \(current)"
-        case .pickRuntime:
-            let current = wizard.selectedRuntime?.displayName ?? "—"
-            return "Create — runtime (\(wizard.runtimeIndex + 1)/\(wizard.runtimes.count))  ↑↓ navigate  ⏎ next  b back  Esc cancel  →  \(current)"
-        case .confirm:
-            let suffix = wizard.error.map { "  ⚠ \($0)" } ?? ""
-            return "Confirm: create \"\(wizard.defaultName)\"?  y/⏎ create  b back  Esc cancel\(suffix)"
-        case .submitting:
-            return "Creating \(wizard.defaultName)…"
-        }
     }
 
     private static func recordingBanner(state: AppState, width: Int) -> String {

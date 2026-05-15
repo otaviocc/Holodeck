@@ -132,7 +132,9 @@ public struct CreateWizard: Equatable, Sendable {
     public var deviceTypes: [DeviceType]
     public var runtimes: [Runtime]
     public var deviceTypeIndex: Int
+    public var deviceTypeScrollOffset: Int
     public var runtimeIndex: Int
+    public var runtimeScrollOffset: Int
     public var error: String?
 
     // MARK: - Lifecycle
@@ -142,18 +144,26 @@ public struct CreateWizard: Equatable, Sendable {
         deviceTypes: [DeviceType] = [],
         runtimes: [Runtime] = [],
         deviceTypeIndex: Int = 0,
+        deviceTypeScrollOffset: Int = 0,
         runtimeIndex: Int = 0,
+        runtimeScrollOffset: Int = 0,
         error: String? = nil
     ) {
         self.step = step
         self.deviceTypes = deviceTypes
         self.runtimes = runtimes
         self.deviceTypeIndex = deviceTypeIndex
+        self.deviceTypeScrollOffset = deviceTypeScrollOffset
         self.runtimeIndex = runtimeIndex
+        self.runtimeScrollOffset = runtimeScrollOffset
         self.error = error
     }
 
     // MARK: - Public
+
+    public static func viewport(rows: Int) -> Int {
+        max(3, rows - 5)
+    }
 
     public var selectedDeviceType: DeviceType? {
         guard !deviceTypes.isEmpty, deviceTypeIndex < deviceTypes.count else { return nil }
@@ -179,6 +189,7 @@ public struct AppState: Equatable, Sendable {
 
     public var simulators: [Simulator]
     public var selectedIndex: Int
+    public var mainScrollOffset: Int
     public var statusMessage: String?
     public var lastError: String?
     public var pendingOperations: Set<UUID>
@@ -194,6 +205,7 @@ public struct AppState: Equatable, Sendable {
     public init(
         simulators: [Simulator] = [],
         selectedIndex: Int = 0,
+        mainScrollOffset: Int = 0,
         statusMessage: String? = nil,
         lastError: String? = nil,
         pendingOperations: Set<UUID> = [],
@@ -206,6 +218,7 @@ public struct AppState: Equatable, Sendable {
     ) {
         self.simulators = simulators
         self.selectedIndex = selectedIndex
+        self.mainScrollOffset = mainScrollOffset
         self.statusMessage = statusMessage
         self.lastError = lastError
         self.pendingOperations = pendingOperations
@@ -226,6 +239,14 @@ public struct AppState: Equatable, Sendable {
     public var selectedSimulator: Simulator? {
         guard !simulators.isEmpty, selectedIndex >= 0, selectedIndex < simulators.count else { return nil }
         return simulators[selectedIndex]
+    }
+
+    /// Conservative count of simulator rows that fit. The view walks the list
+    /// from mainScrollOffset and stops when bodyHeight is exhausted; the 2-line
+    /// headroom leaves room for runtime-group headers without exact counting.
+    public static func mainListViewport(rows: Int, isRecording: Bool, hasModal: Bool) -> Int {
+        let banner = (isRecording ? 1 : 0) + (hasModal ? 1 : 0)
+        return max(1, rows - 4 - banner - 2)
     }
 
     public static func sort(_ simulators: [Simulator]) -> [Simulator] {

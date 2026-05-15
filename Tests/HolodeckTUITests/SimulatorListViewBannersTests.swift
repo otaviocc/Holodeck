@@ -117,7 +117,7 @@ struct SimulatorListViewBannersTests {
         #expect(render(.loading).contains("loading"))
         #expect(render(.pickDeviceType).contains("device type"))
         #expect(render(.pickRuntime).contains("runtime"))
-        #expect(render(.confirm).contains("Confirm"))
+        #expect(render(.confirm).contains("confirm"))
         #expect(render(.submitting).contains("Creating"))
     }
 

@@ -234,4 +234,50 @@ struct LifecycleReducerTests {
         #expect(updated.step == .confirm)
         #expect(updated.error == "boom")
     }
+
+    @Test("It should scroll the device-type column down when the highlight crosses the edge")
+    func createWizardDeviceTypeScrollsAtEdge() {
+        // Given
+        let dtypes = (0..<30).map {
+            DeviceType(identifier: "com.example.Device\($0)", name: "Device \($0)")
+        }
+        let viewport = CreateWizard.viewport(rows: 13)
+        var wizard = CreateWizard(step: .pickDeviceType, deviceTypes: dtypes)
+        wizard.deviceTypeIndex = viewport - 1
+        let state = AppState(rows: 13, modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.down))
+
+        // Then
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.deviceTypeIndex == viewport)
+        #expect(after.deviceTypeScrollOffset == 1)
+    }
+
+    @Test("It should scroll the runtime column down when the highlight crosses the edge")
+    func createWizardRuntimeScrollsAtEdge() throws {
+        // Given
+        let runtimes = try (0..<25).map { index throws -> Runtime in
+            try #require(Runtime(identifier: "com.apple.CoreSimulator.SimRuntime.iOS-\(index)-0"))
+        }
+        let viewport = CreateWizard.viewport(rows: 13)
+        var wizard = CreateWizard(step: .pickRuntime, runtimes: runtimes)
+        wizard.runtimeIndex = viewport - 1
+        let state = AppState(rows: 13, modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.down))
+
+        // Then
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.runtimeIndex == viewport)
+        #expect(after.runtimeScrollOffset == 1)
+    }
 }
