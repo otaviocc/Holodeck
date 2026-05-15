@@ -15,9 +15,18 @@ holodeck record "iPhone 17 Pro" -o demo.mp4
 
 ## Install
 
+### Homebrew
+
+```bash
+brew install otaviocc/apps/holodeck
+```
+
+Builds from source on your machine — no signing or notarization involved.
+Needs Xcode 26+ with Swift 6.2+.
+
 ### Mint
 
-[Mint](https://github.com/yonaskolb/Mint) is the easiest path:
+[Mint](https://github.com/yonaskolb/Mint) also works:
 
 ```bash
 mint install otaviocc/Holodeck
