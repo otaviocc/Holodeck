@@ -247,21 +247,20 @@ public enum Reducer {
         switch key {
         case .up, .char("k"):
             if count > 0 { next.selectedIndex = max(0, next.selectedIndex - 1) }
-            if next.selectedIndex < next.mainScrollOffset {
-                next.mainScrollOffset = next.selectedIndex
-            }
+            next.mainScrollOffset = AppState.scroll(
+                offset: next.mainScrollOffset,
+                index: next.selectedIndex,
+                viewport: next.mainListViewport
+            )
             return ReducerOutput(state: next)
 
         case .down, .char("j"):
             if count > 0 { next.selectedIndex = min(count - 1, next.selectedIndex + 1) }
-            let viewport = AppState.mainListViewport(
-                rows: next.rows,
-                isRecording: next.isRecording,
-                hasModal: next.modal != nil
+            next.mainScrollOffset = AppState.scroll(
+                offset: next.mainScrollOffset,
+                index: next.selectedIndex,
+                viewport: next.mainListViewport
             )
-            if next.selectedIndex >= next.mainScrollOffset + viewport {
-                next.mainScrollOffset = next.selectedIndex - viewport + 1
-            }
             return ReducerOutput(state: next)
 
         case .char("q"), .escape:
@@ -371,12 +370,7 @@ public enum Reducer {
     private static func clampMainScroll(offset: Int, state: AppState) -> Int {
         let count = state.simulators.count
         guard count > 0 else { return 0 }
-        let viewport = AppState.mainListViewport(
-            rows: state.rows,
-            isRecording: state.isRecording,
-            hasModal: state.modal != nil
-        )
-        let maxOffset = max(0, count - viewport)
+        let maxOffset = max(0, count - state.mainListViewport)
         return max(0, min(offset, maxOffset))
     }
 }

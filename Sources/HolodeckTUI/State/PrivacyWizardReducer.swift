@@ -41,14 +41,8 @@ enum PrivacyWizardReducer {
             switch key {
             case .up, .char("k"):
                 updated.appIndex = max(0, updated.appIndex - 1)
-                if updated.appIndex < updated.appScrollOffset {
-                    updated.appScrollOffset = updated.appIndex
-                }
             case .down, .char("j"):
                 updated.appIndex = min(max(0, updated.apps.count - 1), updated.appIndex + 1)
-                if updated.appIndex >= updated.appScrollOffset + viewport {
-                    updated.appScrollOffset = updated.appIndex - viewport + 1
-                }
             case .char("s"):
                 updated.showSystem.toggle()
                 updated.appIndex = 0
@@ -58,6 +52,11 @@ enum PrivacyWizardReducer {
                 updated.step = .pickPermission
             default: break
             }
+            updated.appScrollOffset = AppState.scroll(
+                offset: updated.appScrollOffset,
+                index: updated.appIndex,
+                viewport: viewport
+            )
         case .pickPermission:
             switch key {
             case .up, .char("k"):

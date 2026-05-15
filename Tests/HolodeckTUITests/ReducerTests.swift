@@ -71,7 +71,7 @@ struct ReducerTests {
         // Given
         let sims = (0..<30).map { makeSim(name: "Sim\($0)", state: .shutdown) }
         let rows = 13
-        let viewport = AppState.mainListViewport(rows: rows, isRecording: false, hasModal: false)
+        let viewport = AppState(rows: rows).mainListViewport
         var state = AppState(
             simulators: AppState.sort(sims),
             selectedIndex: viewport - 1,
@@ -140,7 +140,7 @@ struct ReducerTests {
         state = Reducer.reduce(state, .resized(rows: 40, cols: 80)).state
 
         // Then
-        let viewport = AppState.mainListViewport(rows: 40, isRecording: false, hasModal: false)
+        let viewport = AppState(rows: 40).mainListViewport
         #expect(state.mainScrollOffset <= max(0, sims.count - viewport))
     }
 

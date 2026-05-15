@@ -29,34 +29,18 @@ enum PrivacyWizardView {
 
     static func render(state: AppState, wizard: PrivacyWizard) -> String {
         let cols = max(40, state.cols)
-        let rows = max(8, state.rows)
         let simName = state.simulators.first { $0.id == wizard.simulatorID }?.name ?? "?"
         let apps = wizard.apps
         let selectedApp = appAt(apps: apps, index: wizard.appIndex)
+        let bodyHeight = PrivacyWizard.appViewport(rows: max(8, state.rows))
 
-        var lines: [String] = []
-        lines.append(header(width: cols, simName: simName, wizard: wizard, selectedApp: selectedApp))
-        lines.append(ViewSupport.pad("", width: cols))
-
-        let bodyHeight = PrivacyWizard.appViewport(rows: rows)
-        let body = renderBody(wizard: wizard, apps: apps, selectedApp: selectedApp, bodyHeight: bodyHeight, width: cols)
-        lines.append(contentsOf: body)
-
-        while lines.count < rows - 3 {
-            lines.append(ViewSupport.pad("", width: cols))
-        }
-        if let error = wizard.error {
-            lines.append(ViewSupport.pad(
-                "  \(ANSI.red)⚠ \(error)\(ANSI.reset)",
-                width: cols,
-                visibleWidth: error.count + 4
-            ))
-        } else {
-            lines.append(ViewSupport.pad("", width: cols))
-        }
-        lines.append(ViewSupport.pad("  \(ANSI.gray)\(footerKeys(wizard: wizard))\(ANSI.reset)", width: cols))
-        lines.append(ViewSupport.statusBar(state: state, width: cols))
-        return lines.joined(separator: "\r\n")
+        return WizardChrome.render(
+            state: state,
+            breadcrumb: "Privacy — \(simName)  ·  \(breadcrumb(wizard: wizard, selectedApp: selectedApp))",
+            body: renderBody(wizard: wizard, apps: apps, selectedApp: selectedApp, bodyHeight: bodyHeight, width: cols),
+            error: wizard.error,
+            footerKeys: footerKeys(wizard: wizard)
+        )
     }
 
     // MARK: - Private
@@ -67,19 +51,6 @@ enum PrivacyWizardView {
     private static func appAt(apps: [InstalledApp], index: Int) -> InstalledApp? {
         guard !apps.isEmpty, index >= 0, index < apps.count else { return nil }
         return apps[index]
-    }
-
-    private static func header(
-        width: Int,
-        simName: String,
-        wizard: PrivacyWizard,
-        selectedApp: InstalledApp?
-    ) -> String {
-        let crumbs = breadcrumb(wizard: wizard, selectedApp: selectedApp)
-        let text = " Privacy — \(simName)  ·  \(crumbs) "
-        let truncated = ViewSupport.truncate(text, to: width)
-        let space = max(0, width - truncated.count)
-        return "\(ANSI.inverse)\(truncated)\(String(repeating: " ", count: space))\(ANSI.reset)"
     }
 
     private static func breadcrumb(wizard: PrivacyWizard, selectedApp: InstalledApp?) -> String {
@@ -145,7 +116,12 @@ enum PrivacyWizardView {
         let end = min(apps.count, offset + bodyHeight)
         return (offset..<end).map { index in
             let app = apps[index]
-            return row(label: app.name, suffix: app.bundleID, selected: index == wizard.appIndex, width: width)
+            return WizardChrome.row(
+                label: app.name,
+                suffix: app.bundleID,
+                selected: index == wizard.appIndex,
+                width: width
+            )
         }
     }
 
@@ -155,18 +131,8 @@ enum PrivacyWizardView {
         let offset = max(0, min(centered, max(0, items.count - bodyHeight)))
         let end = min(items.count, offset + bodyHeight)
         return (offset..<end).map { index in
-            row(label: items[index], suffix: nil, selected: index == focusedIndex, width: width)
+            WizardChrome.row(label: items[index], suffix: nil, selected: index == focusedIndex, width: width)
         }
-    }
-
-    private static func row(label: String, suffix: String?, selected: Bool, width: Int) -> String {
-        let marker = selected ? "› " : "  "
-        let detail = suffix.map { "  \(ANSI.gray)\($0)\(ANSI.reset)" } ?? ""
-        let padded = ViewSupport.pad("  \(marker)\(label)\(detail)", width: width)
-        if selected {
-            return "\(ANSI.bold)\(ANSI.cyan)\(padded)\(ANSI.reset)"
-        }
-        return padded
     }
 
     private static func footerKeys(wizard: PrivacyWizard) -> String {

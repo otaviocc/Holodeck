@@ -29,41 +29,18 @@ enum CreateWizardView {
 
     static func render(state: AppState, wizard: CreateWizard) -> String {
         let cols = max(40, state.cols)
-        let rows = max(8, state.rows)
+        let bodyHeight = CreateWizard.viewport(rows: max(8, state.rows))
 
-        var lines: [String] = []
-        lines.append(header(width: cols, wizard: wizard))
-        lines.append(ViewSupport.pad("", width: cols))
-
-        let bodyHeight = CreateWizard.viewport(rows: rows)
-        let body = renderBody(wizard: wizard, bodyHeight: bodyHeight, width: cols)
-        lines.append(contentsOf: body)
-
-        while lines.count < rows - 3 {
-            lines.append(ViewSupport.pad("", width: cols))
-        }
-        if let error = wizard.error {
-            lines.append(ViewSupport.pad(
-                "  \(ANSI.red)⚠ \(error)\(ANSI.reset)",
-                width: cols,
-                visibleWidth: error.count + 4
-            ))
-        } else {
-            lines.append(ViewSupport.pad("", width: cols))
-        }
-        lines.append(ViewSupport.pad("  \(ANSI.gray)\(footerKeys(wizard: wizard))\(ANSI.reset)", width: cols))
-        lines.append(ViewSupport.statusBar(state: state, width: cols))
-        return lines.joined(separator: "\r\n")
+        return WizardChrome.render(
+            state: state,
+            breadcrumb: "Create simulator  ·  \(breadcrumb(wizard: wizard))",
+            body: renderBody(wizard: wizard, bodyHeight: bodyHeight, width: cols),
+            error: wizard.error,
+            footerKeys: footerKeys(wizard: wizard)
+        )
     }
 
     // MARK: - Private
-
-    private static func header(width: Int, wizard: CreateWizard) -> String {
-        let text = " Create simulator  ·  \(breadcrumb(wizard: wizard)) "
-        let truncated = ViewSupport.truncate(text, to: width)
-        let space = max(0, width - truncated.count)
-        return "\(ANSI.inverse)\(truncated)\(String(repeating: " ", count: space))\(ANSI.reset)"
-    }
 
     private static func breadcrumb(wizard: CreateWizard) -> String {
         let deviceName = wizard.selectedDeviceType?.name ?? "—"
@@ -105,7 +82,12 @@ enum CreateWizardView {
         let end = min(wizard.deviceTypes.count, offset + bodyHeight)
         return (offset..<end).map { index in
             let dtype = wizard.deviceTypes[index]
-            return row(label: dtype.name, suffix: nil, selected: index == wizard.deviceTypeIndex, width: width)
+            return WizardChrome.row(
+                label: dtype.name,
+                suffix: nil,
+                selected: index == wizard.deviceTypeIndex,
+                width: width
+            )
         }
     }
 
@@ -117,24 +99,24 @@ enum CreateWizardView {
         let end = min(wizard.runtimes.count, offset + bodyHeight)
         return (offset..<end).map { index in
             let runtime = wizard.runtimes[index]
-            return row(label: runtime.displayName, suffix: nil, selected: index == wizard.runtimeIndex, width: width)
+            return WizardChrome.row(
+                label: runtime.displayName,
+                suffix: nil,
+                selected: index == wizard.runtimeIndex,
+                width: width
+            )
         }
     }
 
     private static func renderConfirm(wizard: CreateWizard, width: Int) -> [String] {
-        [
-            ViewSupport.pad("  \(ANSI.bold)Create \"\(wizard.defaultName)\"?\(ANSI.reset)", width: width)
+        let deviceName = wizard.selectedDeviceType?.name ?? "—"
+        let runtimeName = wizard.selectedRuntime?.displayName ?? "—"
+        return [
+            ViewSupport.pad("  \(ANSI.bold)Create \"\(wizard.defaultName)\"?\(ANSI.reset)", width: width),
+            ViewSupport.pad("", width: width),
+            ViewSupport.pad("  \(ANSI.gray)Device:\(ANSI.reset)  \(deviceName)", width: width),
+            ViewSupport.pad("  \(ANSI.gray)Runtime:\(ANSI.reset) \(runtimeName)", width: width)
         ]
-    }
-
-    private static func row(label: String, suffix: String?, selected: Bool, width: Int) -> String {
-        let marker = selected ? "› " : "  "
-        let detail = suffix.map { "  \(ANSI.gray)\($0)\(ANSI.reset)" } ?? ""
-        let padded = ViewSupport.pad("  \(marker)\(label)\(detail)", width: width)
-        if selected {
-            return "\(ANSI.bold)\(ANSI.cyan)\(padded)\(ANSI.reset)"
-        }
-        return padded
     }
 
     private static func footerKeys(wizard: CreateWizard) -> String {

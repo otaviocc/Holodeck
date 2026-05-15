@@ -66,6 +66,7 @@ public enum SimulatorListView {
                 let sim = state.simulators[index]
                 let headerNeeded = sim.runtime != currentRuntime
                 let headerCost = headerNeeded ? 1 : 0
+                // Reserve room for the runtime header (if needed) plus the sim row.
                 if used + headerCost + 1 > bodyHeight { break }
                 if headerNeeded {
                     lines.append(ViewSupport.pad(

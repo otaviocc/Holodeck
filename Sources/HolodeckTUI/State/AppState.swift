@@ -244,9 +244,17 @@ public struct AppState: Equatable, Sendable {
     /// Conservative count of simulator rows that fit. The view walks the list
     /// from mainScrollOffset and stops when bodyHeight is exhausted; the 2-line
     /// headroom leaves room for runtime-group headers without exact counting.
-    public static func mainListViewport(rows: Int, isRecording: Bool, hasModal: Bool) -> Int {
-        let banner = (isRecording ? 1 : 0) + (hasModal ? 1 : 0)
+    public var mainListViewport: Int {
+        let banner = (isRecording ? 1 : 0) + (modal != nil ? 1 : 0)
         return max(1, rows - 4 - banner - 2)
+    }
+
+    /// Scroll-on-edge offset for a windowed list. Returns the new top-visible
+    /// index given the current offset, the focused index, and the viewport.
+    public static func scroll(offset: Int, index: Int, viewport: Int) -> Int {
+        if index < offset { return index }
+        if index >= offset + viewport { return index - viewport + 1 }
+        return offset
     }
 
     public static func sort(_ simulators: [Simulator]) -> [Simulator] {
