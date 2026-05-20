@@ -81,6 +81,10 @@ public struct SimulatorService: Sendable {
         try await client.focusSimulatorApp(udid: udid)
     }
 
+    public func openURL(_ udid: UUID, url: String) async throws {
+        try await client.openURL(udid: udid, url: url)
+    }
+
     public func resolve(query: String) async throws -> Simulator {
         let all = try await list()
         if let uuid = UUID(uuidString: query),

@@ -25,6 +25,7 @@ import Foundation
 import HolodeckCore
 import HolodeckServices
 
+// swiftlint:disable type_body_length
 enum AppSpawn {
 
     // MARK: - Public
@@ -158,6 +159,33 @@ enum AppSpawn {
         spawnPerSimulator(id: id, continuation: continuation) {
             try await service.focus(id)
         }
+    }
+
+    static func loadURLHistory(
+        store: URLHistoryStore,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        Task.detached {
+            continuation.yield(.urlHistoryLoaded(store.load()))
+        }
+    }
+
+    static func openURL(
+        service: SimulatorService,
+        store: URLHistoryStore,
+        udid: UUID,
+        url: String,
+        continuation: AsyncStream<AppEvent>.Continuation
+    ) {
+        spawn(
+            continuation: continuation,
+            work: { () throws -> [String] in
+                try await service.openURL(udid, url: url)
+                return (try? store.record(url)) ?? store.load()
+            },
+            success: { .urlOpened(url: url, history: $0) },
+            failure: { .urlOpenFailed($0) }
+        )
     }
 
     static func loadTargets(
@@ -298,3 +326,4 @@ enum AppSpawn {
         }
     }
 }
+// swiftlint:enable type_body_length

@@ -47,6 +47,9 @@ public enum AppEvent: Sendable {
     case appsLoadFailed(String)
     case privacyApplied(bundleID: String)
     case privacyApplyFailed(String)
+    case urlHistoryLoaded([String])
+    case urlOpened(url: String, history: [String])
+    case urlOpenFailed(String)
 }
 
 public struct ReducerOutput: Equatable, Sendable {
@@ -69,6 +72,8 @@ public struct ReducerOutput: Equatable, Sendable {
         case focusSimulator(UUID)
         case loadInstalledApps(UUID)
         case applyPrivacy(udid: UUID, action: PrivacyAction, permission: PrivacyPermission, bundleID: String)
+        case loadURLHistory
+        case openURL(udid: UUID, url: String)
     }
 
     // MARK: - Properties
@@ -236,6 +241,27 @@ public enum Reducer {
                 next.lastError = message
             }
             return ReducerOutput(state: next)
+
+        case let .urlHistoryLoaded(history):
+            next.urlHistory = history
+            return ReducerOutput(state: next)
+
+        case let .urlOpened(url, history):
+            next.modal = nil
+            next.urlHistory = history
+            next.statusMessage = "Opened \(url)"
+            return ReducerOutput(state: next)
+
+        case let .urlOpenFailed(message):
+            if case let .openURL(prompt) = next.modal {
+                var updated = prompt
+                updated.isSubmitting = false
+                updated.error = message
+                next.modal = .openURL(updated)
+            } else {
+                next.lastError = message
+            }
+            return ReducerOutput(state: next)
         }
     }
 
@@ -282,6 +308,15 @@ public enum Reducer {
         case .char("i"):
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
             next.modal = .inspector(sim.id)
+            return ReducerOutput(state: next)
+
+        case .char("o"):
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "Cannot open URL: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.modal = .openURL(OpenURLPrompt(simulatorID: sim.id))
             return ReducerOutput(state: next)
 
         case .char("q"), .escape:
@@ -414,7 +449,7 @@ public enum Reducer {
         return ReducerOutput(state: next)
     }
 
-    private static func isFilterPrintable(_ character: Character) -> Bool {
+    static func isFilterPrintable(_ character: Character) -> Bool {
         guard !character.isNewline else { return false }
         return character.unicodeScalars.allSatisfy { scalar in
             scalar.value >= 0x20 && scalar.value != 0x7F

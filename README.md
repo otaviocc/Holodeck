@@ -85,6 +85,7 @@ recording). User config is read once at launch from
 | `P`             | Privacy wizard (app → action → permission)         |
 | `/`             | Filter simulators by name (Esc clears, Enter commits) |
 | `i`             | Inspect the selected simulator (UDID, paths, …)    |
+| `o`             | Open a URL / deep link on the selected booted sim  |
 | `?`             | Help overlay                                       |
 | `q` / `Esc`     | Quit (or cancel the active modal)                  |
 
@@ -283,6 +284,16 @@ holodeck focus "iPhone 17 Pro"
 > preferences. If you later quit Simulator.app and relaunch it (from
 > anywhere), it will start with that device focused. This is Simulator.app's
 > own behavior, not something holodeck tracks.
+
+Open a URL or deep link on a booted simulator. The TUI's `o` key opens a
+modal with history recall via `↑`/`↓`; the CLI is a one-shot:
+
+```bash
+holodeck openurl <name-or-udid> <url>
+
+holodeck openurl "iPhone 17 Pro" "https://apple.com"
+holodeck openurl "iPhone 17 Pro" "myapp://settings/account"
+```
 
 ## Configuration
 

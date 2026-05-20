@@ -43,6 +43,8 @@ enum ModalReducer {
         case .inspector:
             next.modal = nil
             return ReducerOutput(state: next)
+        case let .openURL(prompt):
+            return OpenURLModalReducer.handle(state: next, prompt: prompt, key: key)
         case .help:
             next.modal = nil
             return ReducerOutput(state: next)

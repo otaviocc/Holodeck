@@ -21,33 +21,36 @@
 // SOFTWARE.
 
 import ArgumentParser
+import Foundation
+import HolodeckCore
+import HolodeckServices
 
-@main
-struct Holodeck: AsyncParsableCommand {
+struct OpenURLCommand: AsyncParsableCommand {
+
+    // MARK: - Properties
 
     static let configuration = CommandConfiguration(
-        commandName: "holodeck",
-        abstract: "iOS Simulator management TUI/CLI",
-        subcommands: [
-            ListCommand.self,
-            BootCommand.self,
-            ShutdownCommand.self,
-            RecordCommand.self,
-            ScreenshotCommand.self,
-            AppearanceCommand.self,
-            StatusBarCommand.self,
-            LocaleCommand.self,
-            CreateCommand.self,
-            EraseCommand.self,
-            DeleteCommand.self,
-            FocusCommand.self,
-            LocationCommand.self,
-            PrivacyCommand.self,
-            KeychainCommand.self,
-            AppsCommand.self,
-            OpenURLCommand.self,
-            TUICommand.self
-        ],
-        defaultSubcommand: TUICommand.self
+        commandName: "openurl",
+        abstract: "Open a URL or deep link on a booted simulator."
     )
+
+    @Argument(help: "Simulator name or UDID.")
+    var query: String
+
+    @Argument(help: "URL to open (e.g. https://apple.com or myapp://deep/link).")
+    var url: String
+
+    // MARK: - Public
+
+    func run() async throws {
+        guard !url.isEmpty else {
+            throw ValidationError("URL must not be empty.")
+        }
+        let service = SimulatorService()
+        let sim = try await service.resolveInState(
+            query, .booted, purpose: "URLs only open on booted simulators"
+        )
+        try await service.openURL(sim.id, url: url)
+        print("Opened \(url) on \(sim.name).")
+    }
 }

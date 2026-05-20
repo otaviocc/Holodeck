@@ -31,6 +31,7 @@ public enum Modal: Equatable, Sendable {
     case createWizard(CreateWizard)
     case privacyWizard(PrivacyWizard)
     case inspector(UUID)
+    case openURL(OpenURLPrompt)
     case help
 
     /// Some modals reference a specific simulator by UDID. If that sim disappears
@@ -39,9 +40,36 @@ public enum Modal: Equatable, Sendable {
         switch self {
         case let .confirmErase(id), let .confirmDelete(id), let .inspector(id):
             id
-        case .appearance, .createWizard, .privacyWizard, .help:
+        case .appearance, .createWizard, .privacyWizard, .openURL, .help:
             nil
         }
+    }
+}
+
+public struct OpenURLPrompt: Equatable, Sendable {
+
+    // MARK: - Properties
+
+    public var simulatorID: UUID
+    public var url: String
+    public var historyIndex: Int
+    public var isSubmitting: Bool
+    public var error: String?
+
+    // MARK: - Lifecycle
+
+    public init(
+        simulatorID: UUID,
+        url: String = "",
+        historyIndex: Int = -1,
+        isSubmitting: Bool = false,
+        error: String? = nil
+    ) {
+        self.simulatorID = simulatorID
+        self.url = url
+        self.historyIndex = historyIndex
+        self.isSubmitting = isSubmitting
+        self.error = error
     }
 }
 
@@ -213,6 +241,7 @@ public struct AppState: Equatable, Sendable {
     public var recordingDeviceID: UUID?
     public var recordingPath: URL?
     public var modal: Modal?
+    public var urlHistory: [String]
 
     // MARK: - Lifecycle
 
@@ -230,7 +259,8 @@ public struct AppState: Equatable, Sendable {
         cols: Int = 80,
         recordingDeviceID: UUID? = nil,
         recordingPath: URL? = nil,
-        modal: Modal? = nil
+        modal: Modal? = nil,
+        urlHistory: [String] = []
     ) {
         self.simulators = simulators
         self.selectedIndex = selectedIndex
@@ -246,6 +276,7 @@ public struct AppState: Equatable, Sendable {
         self.recordingDeviceID = recordingDeviceID
         self.recordingPath = recordingPath
         self.modal = modal
+        self.urlHistory = urlHistory
     }
 
     // MARK: - Public

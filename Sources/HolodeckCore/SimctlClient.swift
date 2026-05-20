@@ -167,6 +167,10 @@ public struct SimctlClient: Sendable {
         _ = try await runSimctl(["keychain", udid.uuidString, "reset"])
     }
 
+    public func openURL(udid: UUID, url: String) async throws {
+        _ = try await runSimctl(["openurl", udid.uuidString, url])
+    }
+
     public func focusSimulatorApp(udid: UUID) async throws {
         _ = try await runProcess(
             "/usr/bin/open",

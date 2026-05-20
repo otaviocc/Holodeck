@@ -34,6 +34,7 @@ public final class HolodeckApp {
     private let screenshots: ScreenshotService
     private let appearance: AppearanceService
     private let privacy: PrivacyService
+    private let urlHistoryStore: URLHistoryStore
     private let config: Config
     private let terminal = TerminalMode()
     private let parser = InputParser()
@@ -49,6 +50,7 @@ public final class HolodeckApp {
         screenshots: ScreenshotService = ScreenshotService(),
         appearance: AppearanceService = AppearanceService(),
         privacy: PrivacyService = PrivacyService(),
+        urlHistoryStore: URLHistoryStore = URLHistoryStore(),
         config: Config = (try? ConfigLoader.load()) ?? .default
     ) {
         self.service = service
@@ -56,6 +58,7 @@ public final class HolodeckApp {
         self.screenshots = screenshots
         self.appearance = appearance
         self.privacy = privacy
+        self.urlHistoryStore = urlHistoryStore
         self.config = config
     }
 
@@ -81,6 +84,7 @@ public final class HolodeckApp {
         let resizeTask = installResizeHandler(continuation: eventContinuation)
 
         await AppSpawn.kickoffRefresh(service: service, continuation: eventContinuation)
+        AppSpawn.loadURLHistory(store: urlHistoryStore, continuation: eventContinuation)
 
         render()
 
@@ -164,6 +168,16 @@ public final class HolodeckApp {
                 action: action,
                 permission: permission,
                 bundleID: bundleID,
+                continuation: continuation
+            )
+        case .loadURLHistory:
+            AppSpawn.loadURLHistory(store: urlHistoryStore, continuation: continuation)
+        case let .openURL(udid, url):
+            AppSpawn.openURL(
+                service: service,
+                store: urlHistoryStore,
+                udid: udid,
+                url: url,
                 continuation: continuation
             )
         }

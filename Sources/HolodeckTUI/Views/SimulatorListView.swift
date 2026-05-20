@@ -41,6 +41,9 @@ public enum SimulatorListView {
         if case let .inspector(udid) = state.modal {
             return InspectorView.render(state: state, udid: udid)
         }
+        if case let .openURL(prompt) = state.modal {
+            return OpenURLView.render(state: state, prompt: prompt)
+        }
         var lines: [String] = []
         let cols = max(40, state.cols)
         let rows = max(8, state.rows)
@@ -113,7 +116,7 @@ public enum SimulatorListView {
     // MARK: - Private
 
     private static let headerTitle = " holodeck "
-    private static let headerFullHint = " ⏎ toggle  / filter  i info  f focus  r rec  p shot  a appear  n new  e erase  d delete  P privacy  ? help  q quit "
+    private static let headerFullHint = " ⏎ toggle  / filter  i info  o url  f focus  r rec  p shot  a appear  n new  e erase  d delete  P privacy  ? help  q quit "
     private static let headerShortHint = " ⏎ toggle  ? help  q quit "
     private static let headerTitleCount = headerTitle.count
     private static let headerFullHintCount = headerFullHint.count
@@ -144,6 +147,8 @@ public enum SimulatorListView {
             preconditionFailure("privacyWizard renders full-screen via PrivacyWizardView; not reachable here")
         case .inspector:
             preconditionFailure("inspector renders full-screen via InspectorView; not reachable here")
+        case .openURL:
+            preconditionFailure("openURL renders full-screen via OpenURLView; not reachable here")
         case .help:
             text = "Help — press any key to dismiss"
         }
@@ -212,6 +217,7 @@ public enum SimulatorListView {
             ("P", "privacy wizard (app → permission → action)"),
             ("/", "filter simulators by name"),
             ("i", "inspect selected simulator"),
+            ("o", "open URL / deep link on selected"),
             ("?", "this help"),
             ("q / Esc", "quit (or close modal)")
         ]
