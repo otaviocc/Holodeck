@@ -326,4 +326,5 @@ enum AppSpawn {
         }
     }
 }
+
 // swiftlint:enable type_body_length

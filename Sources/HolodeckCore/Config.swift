@@ -83,10 +83,7 @@ public enum ConfigLoader {
     // MARK: - Public
 
     public static var defaultPath: URL {
-        let base = ProcessInfo.processInfo.environment["XDG_CONFIG_HOME"].map {
-            URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath)
-        } ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config")
-        return base.appendingPathComponent("holodeck").appendingPathComponent("config.json")
+        HolodeckConfigDir.file("config.json")
     }
 
     public static func load(from url: URL = defaultPath) throws -> Config {

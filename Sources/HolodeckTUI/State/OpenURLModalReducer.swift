@@ -71,7 +71,7 @@ enum OpenURLModalReducer {
             }
             updated.error = nil
 
-        case let .char(character) where Reducer.isFilterPrintable(character):
+        case let .char(character) where TextInput.isPrintable(character):
             updated.url.append(character)
             updated.historyIndex = -1
             updated.error = nil

@@ -40,7 +40,9 @@ public enum Modal: Equatable, Sendable {
         switch self {
         case let .confirmErase(id), let .confirmDelete(id), let .inspector(id):
             id
-        case .appearance, .createWizard, .privacyWizard, .openURL, .help:
+        case let .openURL(prompt):
+            prompt.simulatorID
+        case .appearance, .createWizard, .privacyWizard, .help:
             nil
         }
     }

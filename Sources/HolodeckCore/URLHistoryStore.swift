@@ -39,10 +39,7 @@ public struct URLHistoryStore: Sendable {
     // MARK: - Public
 
     public static var defaultPath: URL {
-        let base = ProcessInfo.processInfo.environment["XDG_CONFIG_HOME"].map {
-            URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath)
-        } ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config")
-        return base.appendingPathComponent("holodeck").appendingPathComponent("url-history.json")
+        HolodeckConfigDir.file("url-history.json")
     }
 
     public func load() -> [String] {

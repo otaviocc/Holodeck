@@ -247,9 +247,14 @@ public enum Reducer {
             return ReducerOutput(state: next)
 
         case let .urlOpened(url, history):
-            next.modal = nil
+            // Update history regardless (the simctl call already succeeded), but
+            // only surface the modal close + status message if the user is still
+            // on the open-URL modal. Esc during submission drops the modal first.
             next.urlHistory = history
-            next.statusMessage = "Opened \(url)"
+            if case .openURL = next.modal {
+                next.modal = nil
+                next.statusMessage = "Opened \(url)"
+            }
             return ReducerOutput(state: next)
 
         case let .urlOpenFailed(message):
@@ -258,8 +263,6 @@ public enum Reducer {
                 updated.isSubmitting = false
                 updated.error = message
                 next.modal = .openURL(updated)
-            } else {
-                next.lastError = message
             }
             return ReducerOutput(state: next)
         }
@@ -439,7 +442,7 @@ public enum Reducer {
             }
             next.selectedIndex = 0
             next.mainScrollOffset = 0
-        case let .char(character) where isFilterPrintable(character):
+        case let .char(character) where TextInput.isPrintable(character):
             next.filterQuery.append(character)
             next.selectedIndex = 0
             next.mainScrollOffset = 0
@@ -447,13 +450,6 @@ public enum Reducer {
             break
         }
         return ReducerOutput(state: next)
-    }
-
-    static func isFilterPrintable(_ character: Character) -> Bool {
-        guard !character.isNewline else { return false }
-        return character.unicodeScalars.allSatisfy { scalar in
-            scalar.value >= 0x20 && scalar.value != 0x7F
-        }
     }
 
     private static func clampMainScroll(offset: Int, state: AppState) -> Int {
