@@ -32,6 +32,17 @@ public enum Modal: Equatable, Sendable {
     case privacyWizard(PrivacyWizard)
     case inspector(UUID)
     case help
+
+    /// Some modals reference a specific simulator by UDID. If that sim disappears
+    /// between the modal opening and the next refresh, the reducer drops the modal.
+    public var referencedSimulator: UUID? {
+        switch self {
+        case let .confirmErase(id), let .confirmDelete(id), let .inspector(id):
+            id
+        case .appearance, .createWizard, .privacyWizard, .help:
+            nil
+        }
+    }
 }
 
 public struct PrivacyWizard: Equatable, Sendable {
@@ -249,6 +260,12 @@ public struct AppState: Equatable, Sendable {
     }
 
     public var selectedSimulator: Simulator? {
+        // Skip the filter rebuild on the unfiltered path — selectedIndex
+        // already indexes directly into `simulators`.
+        if filterQuery.isEmpty {
+            guard !simulators.isEmpty, selectedIndex >= 0, selectedIndex < simulators.count else { return nil }
+            return simulators[selectedIndex]
+        }
         let list = visibleSimulators
         guard !list.isEmpty, selectedIndex >= 0, selectedIndex < list.count else { return nil }
         return list[selectedIndex]

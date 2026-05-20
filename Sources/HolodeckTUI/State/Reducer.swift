@@ -102,8 +102,8 @@ public enum Reducer {
                 next.selectedIndex = visibleCount - 1
             }
             next.mainScrollOffset = clampMainScroll(offset: next.mainScrollOffset, state: next)
-            if case let .inspector(udid) = next.modal,
-               !next.simulators.contains(where: { $0.id == udid })
+            if let referenced = next.modal?.referencedSimulator,
+               !next.simulators.contains(where: { $0.id == referenced })
             {
                 next.modal = nil
             }
@@ -404,9 +404,7 @@ public enum Reducer {
             }
             next.selectedIndex = 0
             next.mainScrollOffset = 0
-        case let .char(character) where character.isLetter || character.isNumber
-            || character == " " || character == "-" || character == "_" || character == "."
-            || character == "/":
+        case let .char(character) where isFilterPrintable(character):
             next.filterQuery.append(character)
             next.selectedIndex = 0
             next.mainScrollOffset = 0
@@ -416,6 +414,13 @@ public enum Reducer {
         return ReducerOutput(state: next)
     }
 
+    private static func isFilterPrintable(_ character: Character) -> Bool {
+        guard !character.isNewline else { return false }
+        return character.unicodeScalars.allSatisfy { scalar in
+            scalar.value >= 0x20 && scalar.value != 0x7F
+        }
+    }
+
     private static func clampMainScroll(offset: Int, state: AppState) -> Int {
         let count = state.visibleSimulators.count
         guard count > 0 else { return 0 }
@@ -423,4 +428,5 @@ public enum Reducer {
         return max(0, min(offset, maxOffset))
     }
 }
+
 // swiftlint:enable file_length type_body_length

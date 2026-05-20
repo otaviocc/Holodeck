@@ -44,6 +44,7 @@ public enum SimulatorListView {
         var lines: [String] = []
         let cols = max(40, state.cols)
         let rows = max(8, state.rows)
+        let visible = state.visibleSimulators
 
         lines.append(header(width: cols))
 
@@ -57,12 +58,11 @@ public enum SimulatorListView {
             bodyOffset += 1
         }
         if state.isFilterFocused || !state.filterQuery.isEmpty {
-            lines.append(filterBanner(state: state, width: cols))
+            lines.append(filterBanner(state: state, visibleCount: visible.count, width: cols))
             bodyOffset += 1
         }
 
         let bodyHeight = rows - 4 - bodyOffset
-        let visible = state.visibleSimulators
 
         if visible.isEmpty || bodyHeight <= 0 {
             let placeholder = state.simulators.isEmpty ? "  (no simulators)" : "  (no matches)"
@@ -152,12 +152,11 @@ public enum SimulatorListView {
         return "\(ANSI.cyan)\(ANSI.bold)\(truncated)\(ANSI.reset)\(String(repeating: " ", count: space))"
     }
 
-    private static func filterBanner(state: AppState, width: Int) -> String {
+    private static func filterBanner(state: AppState, visibleCount: Int, width: Int) -> String {
         let cursor = state.isFilterFocused ? "▌" : ""
-        let count = state.visibleSimulators.count
         let total = state.simulators.count
         let left = " Filter: \(state.filterQuery)\(cursor)"
-        let right = "\(count)/\(total) "
+        let right = "\(visibleCount)/\(total) "
         let gap = max(1, width - left.count - right.count)
         let visible = "\(left)\(String(repeating: " ", count: gap))\(right)"
         return "\(ANSI.cyan)\(ANSI.bold)\(visible)\(ANSI.reset)"
