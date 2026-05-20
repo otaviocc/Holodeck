@@ -82,7 +82,7 @@ recording). User config is read once at launch from
 | `f`             | Focus Simulator.app on the selection               |
 | `e`             | Erase (shut-down sims only; `y`/`n` confirm)       |
 | `d`             | Delete (`y`/`n` confirm)                           |
-| `P`             | Privacy wizard (app → action → permission)         |
+| `P`             | Privacy wizard (app → permission → action)         |
 | `/`             | Filter simulators by name (Esc clears, Enter commits) |
 | `i`             | Inspect the selected simulator (UDID, paths, …)    |
 | `o`             | Open a URL / deep link on the selected booted sim  |
@@ -346,7 +346,7 @@ CLI flags always win over config; config wins over hard-coded defaults.
 ## Development
 
 ```bash
-swift test                   # run the suite (Swift Testing, ~140 tests)
+swift test                   # run the suite (Swift Testing, ~190 tests)
 swiftformat Sources Tests    # apply formatting (.swiftformat)
 swiftlint --quiet            # apply lint (.swiftlint.yml)
 ```
