@@ -83,6 +83,8 @@ recording). User config is read once at launch from
 | `e`             | Erase (shut-down sims only; `y`/`n` confirm)       |
 | `d`             | Delete (`y`/`n` confirm)                           |
 | `P`             | Privacy wizard (app → action → permission)         |
+| `/`             | Filter simulators by name (Esc clears, Enter commits) |
+| `i`             | Inspect the selected simulator (UDID, paths, …)    |
 | `?`             | Help overlay                                       |
 | `q` / `Esc`     | Quit (or cancel the active modal)                  |
 

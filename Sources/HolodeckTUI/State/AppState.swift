@@ -30,6 +30,7 @@ public enum Modal: Equatable, Sendable {
     case confirmDelete(UUID)
     case createWizard(CreateWizard)
     case privacyWizard(PrivacyWizard)
+    case inspector(UUID)
     case help
 }
 
@@ -190,6 +191,8 @@ public struct AppState: Equatable, Sendable {
     public var simulators: [Simulator]
     public var selectedIndex: Int
     public var mainScrollOffset: Int
+    public var filterQuery: String
+    public var isFilterFocused: Bool
     public var statusMessage: String?
     public var lastError: String?
     public var pendingOperations: Set<UUID>
@@ -206,6 +209,8 @@ public struct AppState: Equatable, Sendable {
         simulators: [Simulator] = [],
         selectedIndex: Int = 0,
         mainScrollOffset: Int = 0,
+        filterQuery: String = "",
+        isFilterFocused: Bool = false,
         statusMessage: String? = nil,
         lastError: String? = nil,
         pendingOperations: Set<UUID> = [],
@@ -219,6 +224,8 @@ public struct AppState: Equatable, Sendable {
         self.simulators = simulators
         self.selectedIndex = selectedIndex
         self.mainScrollOffset = mainScrollOffset
+        self.filterQuery = filterQuery
+        self.isFilterFocused = isFilterFocused
         self.statusMessage = statusMessage
         self.lastError = lastError
         self.pendingOperations = pendingOperations
@@ -236,9 +243,15 @@ public struct AppState: Equatable, Sendable {
         recordingDeviceID != nil
     }
 
+    public var visibleSimulators: [Simulator] {
+        guard !filterQuery.isEmpty else { return simulators }
+        return simulators.filter { $0.name.localizedCaseInsensitiveContains(filterQuery) }
+    }
+
     public var selectedSimulator: Simulator? {
-        guard !simulators.isEmpty, selectedIndex >= 0, selectedIndex < simulators.count else { return nil }
-        return simulators[selectedIndex]
+        let list = visibleSimulators
+        guard !list.isEmpty, selectedIndex >= 0, selectedIndex < list.count else { return nil }
+        return list[selectedIndex]
     }
 
     /// Conservative count of simulator rows that fit. The view walks the list

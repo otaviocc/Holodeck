@@ -38,6 +38,9 @@ public enum SimulatorListView {
         if case let .createWizard(wizard) = state.modal {
             return CreateWizardView.render(state: state, wizard: wizard)
         }
+        if case let .inspector(udid) = state.modal {
+            return InspectorView.render(state: state, udid: udid)
+        }
         var lines: [String] = []
         let cols = max(40, state.cols)
         let rows = max(8, state.rows)
@@ -53,17 +56,23 @@ public enum SimulatorListView {
             lines.append(modalBanner(modal: modal, width: cols, state: state))
             bodyOffset += 1
         }
+        if state.isFilterFocused || !state.filterQuery.isEmpty {
+            lines.append(filterBanner(state: state, width: cols))
+            bodyOffset += 1
+        }
 
         let bodyHeight = rows - 4 - bodyOffset
+        let visible = state.visibleSimulators
 
-        if state.simulators.isEmpty || bodyHeight <= 0 {
-            lines.append(ViewSupport.pad("  (no simulators)", width: cols))
+        if visible.isEmpty || bodyHeight <= 0 {
+            let placeholder = state.simulators.isEmpty ? "  (no simulators)" : "  (no matches)"
+            lines.append(ViewSupport.pad(placeholder, width: cols))
         } else {
-            let start = max(0, min(state.mainScrollOffset, max(0, state.simulators.count - 1)))
+            let start = max(0, min(state.mainScrollOffset, max(0, visible.count - 1)))
             var currentRuntime: Runtime?
             var used = 0
-            for index in start..<state.simulators.count {
-                let sim = state.simulators[index]
+            for index in start..<visible.count {
+                let sim = visible[index]
                 let headerNeeded = sim.runtime != currentRuntime
                 let headerCost = headerNeeded ? 1 : 0
                 // Reserve room for the runtime header (if needed) plus the sim row.
@@ -104,7 +113,7 @@ public enum SimulatorListView {
     // MARK: - Private
 
     private static let headerTitle = " holodeck "
-    private static let headerFullHint = " ⏎ toggle  f focus  r rec  p shot  a appear  n new  e erase  d delete  P privacy  ? help  q quit "
+    private static let headerFullHint = " ⏎ toggle  / filter  i info  f focus  r rec  p shot  a appear  n new  e erase  d delete  P privacy  ? help  q quit "
     private static let headerShortHint = " ⏎ toggle  ? help  q quit "
     private static let headerTitleCount = headerTitle.count
     private static let headerFullHintCount = headerFullHint.count
@@ -133,12 +142,25 @@ public enum SimulatorListView {
             preconditionFailure("createWizard renders full-screen via CreateWizardView; not reachable here")
         case .privacyWizard:
             preconditionFailure("privacyWizard renders full-screen via PrivacyWizardView; not reachable here")
+        case .inspector:
+            preconditionFailure("inspector renders full-screen via InspectorView; not reachable here")
         case .help:
             text = "Help — press any key to dismiss"
         }
         let truncated = ViewSupport.truncate(text, to: width)
         let space = max(0, width - truncated.count)
         return "\(ANSI.cyan)\(ANSI.bold)\(truncated)\(ANSI.reset)\(String(repeating: " ", count: space))"
+    }
+
+    private static func filterBanner(state: AppState, width: Int) -> String {
+        let cursor = state.isFilterFocused ? "▌" : ""
+        let count = state.visibleSimulators.count
+        let total = state.simulators.count
+        let left = " Filter: \(state.filterQuery)\(cursor)"
+        let right = "\(count)/\(total) "
+        let gap = max(1, width - left.count - right.count)
+        let visible = "\(left)\(String(repeating: " ", count: gap))\(right)"
+        return "\(ANSI.cyan)\(ANSI.bold)\(visible)\(ANSI.reset)"
     }
 
     private static func recordingBanner(state: AppState, width: Int) -> String {
@@ -189,6 +211,8 @@ public enum SimulatorListView {
             ("e", "erase (shutdown sims only)"),
             ("d", "delete"),
             ("P", "privacy wizard (app → permission → action)"),
+            ("/", "filter simulators by name"),
+            ("i", "inspect selected simulator"),
             ("?", "this help"),
             ("q / Esc", "quit (or close modal)")
         ]

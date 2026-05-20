@@ -40,6 +40,9 @@ enum ModalReducer {
             return WizardReducer.handle(state: next, wizard: wizard, key: key)
         case let .privacyWizard(wizard):
             return PrivacyWizardReducer.handle(state: next, wizard: wizard, key: key)
+        case .inspector:
+            next.modal = nil
+            return ReducerOutput(state: next)
         case .help:
             next.modal = nil
             return ReducerOutput(state: next)

@@ -84,6 +84,7 @@ public struct ReducerOutput: Equatable, Sendable {
     }
 }
 
+// swiftlint:disable file_length type_body_length
 public enum Reducer {
 
     // MARK: - Public
@@ -94,13 +95,18 @@ public enum Reducer {
         switch event {
         case let .refreshed(sims):
             next.simulators = AppState.sort(sims)
-            let count = next.simulators.count
-            if count == 0 {
+            let visibleCount = next.visibleSimulators.count
+            if visibleCount == 0 {
                 next.selectedIndex = 0
-            } else if next.selectedIndex >= count {
-                next.selectedIndex = count - 1
+            } else if next.selectedIndex >= visibleCount {
+                next.selectedIndex = visibleCount - 1
             }
             next.mainScrollOffset = clampMainScroll(offset: next.mainScrollOffset, state: next)
+            if case let .inspector(udid) = next.modal,
+               !next.simulators.contains(where: { $0.id == udid })
+            {
+                next.modal = nil
+            }
             next.lastError = nil
             return ReducerOutput(state: next)
 
@@ -239,11 +245,14 @@ public enum Reducer {
 
     // swiftlint:disable function_body_length
     private static func handleKey(state: AppState, key: Key) -> ReducerOutput {
+        if state.isFilterFocused {
+            return handleFilterKey(state: state, key: key)
+        }
         if state.modal != nil {
             return handleModalKey(state: state, key: key)
         }
         var next = state
-        let count = next.simulators.count
+        let count = next.visibleSimulators.count
         switch key {
         case .up, .char("k"):
             if count > 0 { next.selectedIndex = max(0, next.selectedIndex - 1) }
@@ -261,6 +270,18 @@ public enum Reducer {
                 index: next.selectedIndex,
                 viewport: next.mainListViewport
             )
+            return ReducerOutput(state: next)
+
+        case .char("/"):
+            next.isFilterFocused = true
+            next.filterQuery = ""
+            next.selectedIndex = 0
+            next.mainScrollOffset = 0
+            return ReducerOutput(state: next)
+
+        case .char("i"):
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            next.modal = .inspector(sim.id)
             return ReducerOutput(state: next)
 
         case .char("q"), .escape:
@@ -367,10 +388,39 @@ public enum Reducer {
         ModalReducer.handle(state: state, key: key)
     }
 
+    private static func handleFilterKey(state: AppState, key: Key) -> ReducerOutput {
+        var next = state
+        switch key {
+        case .escape:
+            next.isFilterFocused = false
+            next.filterQuery = ""
+            next.selectedIndex = 0
+            next.mainScrollOffset = 0
+        case .enter:
+            next.isFilterFocused = false
+        case .backspace:
+            if !next.filterQuery.isEmpty {
+                next.filterQuery.removeLast()
+            }
+            next.selectedIndex = 0
+            next.mainScrollOffset = 0
+        case let .char(character) where character.isLetter || character.isNumber
+            || character == " " || character == "-" || character == "_" || character == "."
+            || character == "/":
+            next.filterQuery.append(character)
+            next.selectedIndex = 0
+            next.mainScrollOffset = 0
+        default:
+            break
+        }
+        return ReducerOutput(state: next)
+    }
+
     private static func clampMainScroll(offset: Int, state: AppState) -> Int {
-        let count = state.simulators.count
+        let count = state.visibleSimulators.count
         guard count > 0 else { return 0 }
         let maxOffset = max(0, count - state.mainListViewport)
         return max(0, min(offset, maxOffset))
     }
 }
+// swiftlint:enable file_length type_body_length
