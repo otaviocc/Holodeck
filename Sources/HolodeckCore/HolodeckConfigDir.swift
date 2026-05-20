@@ -24,16 +24,40 @@ import Foundation
 
 /// Resolves the on-disk directory where holodeck stores user state, honoring
 /// `$XDG_CONFIG_HOME` when set and falling back to `~/.config`.
-public enum HolodeckConfigDir {
+struct HolodeckConfigResolver {
 
-    public static var base: URL {
-        let parent = ProcessInfo.processInfo.environment["XDG_CONFIG_HOME"].map {
+    // MARK: - Nested types
+
+    enum FileName: String {
+        case history = "url-history.json"
+        case config = "config.json"
+    }
+
+    // MARK: - Properties
+
+    private let processInfo: ProcessInfo
+    private let fileManager: FileManager
+
+    // MARK: - Lifecycle
+
+    init(
+        processInfo: ProcessInfo = .processInfo,
+        fileManager: FileManager = .default
+    ) {
+        self.processInfo = processInfo
+        self.fileManager = fileManager
+    }
+
+    // MARK: - Public
+
+    var base: URL {
+        let parent = processInfo.environment["XDG_CONFIG_HOME"].map {
             URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath)
-        } ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config")
+        } ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".config")
         return parent.appendingPathComponent("holodeck")
     }
 
-    public static func file(_ name: String) -> URL {
-        base.appendingPathComponent(name)
+    func file(_ fileName: FileName) -> URL {
+        base.appendingPathComponent(fileName.rawValue)
     }
 }

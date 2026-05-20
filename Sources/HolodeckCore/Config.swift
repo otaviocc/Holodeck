@@ -83,7 +83,7 @@ public enum ConfigLoader {
     // MARK: - Public
 
     public static var defaultPath: URL {
-        HolodeckConfigDir.file("config.json")
+        HolodeckConfigResolver().file(.config)
     }
 
     public static func load(from url: URL = defaultPath) throws -> Config {

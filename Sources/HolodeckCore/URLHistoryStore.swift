@@ -32,14 +32,16 @@ public struct URLHistoryStore: Sendable {
 
     // MARK: - Lifecycle
 
-    public init(path: URL = URLHistoryStore.defaultPath) {
+    public init(
+        path: URL = URLHistoryStore.defaultPath
+    ) {
         self.path = path
     }
 
     // MARK: - Public
 
     public static var defaultPath: URL {
-        HolodeckConfigDir.file("url-history.json")
+        HolodeckConfigResolver().file(.history)
     }
 
     public func load() -> [String] {
