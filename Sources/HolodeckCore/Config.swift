@@ -108,3 +108,9 @@ public enum ConfigLoader {
 
     private static let decoder = JSONDecoder()
 }
+
+// MARK: - Private
+
+extension ConfigFileName {
+    static let config = ConfigFileName(rawValue: "config.json")
+}

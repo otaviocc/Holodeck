@@ -84,3 +84,9 @@ public struct URLHistoryStore: Sendable {
         try data.write(to: path, options: .atomic)
     }
 }
+
+// MARK: - Private
+
+private extension ConfigFileName {
+    static let history = ConfigFileName("url-history.json")
+}
