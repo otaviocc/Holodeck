@@ -21,28 +21,27 @@
 // SOFTWARE.
 
 import Foundation
-import HolodeckCore
 
-public struct RecordingService: Sendable {
+public extension HolodeckConfigResolver {
 
-    // MARK: - Properties
+    /// Resolves the on-disk directory where holodeck stores user state, honoring
+    /// `$XDG_CONFIG_HOME` when set and falling back to `~/.config`.
+    static func live(
+        processInfo: ProcessInfo = .processInfo,
+        fileManager: FileManager = .default
+    ) -> Self {
+        let xdg = processInfo.environment["XDG_CONFIG_HOME"]
+        let home = fileManager.homeDirectoryForCurrentUser
+        let parent = xdg.map {
+            URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath)
+        } ?? home.appendingPathComponent(".config")
+        let base = parent.appendingPathComponent("holodeck")
 
-    public var start: @Sendable (_ udid: UUID, _ output: URL, _ codec: VideoCodec) async throws -> URL
-    public var stop: @Sendable () async -> URL?
-    public var isRecording: @Sendable () async -> Bool
-    public var currentOutput: @Sendable () async -> URL?
-
-    // MARK: - Lifecycle
-
-    package init(
-        start: @Sendable @escaping (UUID, URL, VideoCodec) async throws -> URL,
-        stop: @Sendable @escaping () async -> URL?,
-        isRecording: @Sendable @escaping () async -> Bool,
-        currentOutput: @Sendable @escaping () async -> URL?
-    ) {
-        self.start = start
-        self.stop = stop
-        self.isRecording = isRecording
-        self.currentOutput = currentOutput
+        return Self(
+            base: { base },
+            file: { fileName in
+                base.appendingPathComponent(fileName.rawValue)
+            }
+        )
     }
 }

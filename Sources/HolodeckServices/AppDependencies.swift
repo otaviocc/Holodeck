@@ -74,22 +74,6 @@ public struct AppDependencies: Sendable {
     }
 }
 
-public extension AppDependencies {
-
-    static func live(
-        configResolver: HolodeckConfigResolver = .live(),
-        simulatorClient: SimctlClient = .live(),
-        recorder: Recorder = .live()
-    ) -> Self {
-        make(
-            configuration: (try? ConfigLoader(configResolver: configResolver).load()) ?? .default,
-            simulatorClient: simulatorClient,
-            urlHistoryStore: .live(configResolver: configResolver),
-            recordingService: .live(recorder: recorder)
-        )
-    }
-}
-
 package extension AppDependencies {
 
     static func make(

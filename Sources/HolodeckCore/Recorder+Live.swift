@@ -21,28 +21,17 @@
 // SOFTWARE.
 
 import Foundation
-import HolodeckCore
 
-public struct RecordingService: Sendable {
+public extension Recorder {
 
-    // MARK: - Properties
-
-    public var start: @Sendable (_ udid: UUID, _ output: URL, _ codec: VideoCodec) async throws -> URL
-    public var stop: @Sendable () async -> URL?
-    public var isRecording: @Sendable () async -> Bool
-    public var currentOutput: @Sendable () async -> URL?
-
-    // MARK: - Lifecycle
-
-    package init(
-        start: @Sendable @escaping (UUID, URL, VideoCodec) async throws -> URL,
-        stop: @Sendable @escaping () async -> URL?,
-        isRecording: @Sendable @escaping () async -> Bool,
-        currentOutput: @Sendable @escaping () async -> URL?
-    ) {
-        self.start = start
-        self.stop = stop
-        self.isRecording = isRecording
-        self.currentOutput = currentOutput
+    static func live() -> Self {
+        let backing = RecorderActor()
+        return Self(
+            start: { launchPath, arguments in
+                try await backing.start(launchPath: launchPath, arguments: arguments)
+            },
+            stop: { await backing.stop() },
+            isRunning: { await backing.isRunning }
+        )
     }
 }

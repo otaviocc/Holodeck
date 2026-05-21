@@ -39,27 +39,3 @@ public struct HolodeckConfigResolver: Sendable {
         self.file = file
     }
 }
-
-public extension HolodeckConfigResolver {
-
-    /// Resolves the on-disk directory where holodeck stores user state, honoring
-    /// `$XDG_CONFIG_HOME` when set and falling back to `~/.config`.
-    static func live(
-        processInfo: ProcessInfo = .processInfo,
-        fileManager: FileManager = .default
-    ) -> Self {
-        let xdg = processInfo.environment["XDG_CONFIG_HOME"]
-        let home = fileManager.homeDirectoryForCurrentUser
-        let parent = xdg.map {
-            URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath)
-        } ?? home.appendingPathComponent(".config")
-        let base = parent.appendingPathComponent("holodeck")
-
-        return Self(
-            base: { base },
-            file: { fileName in
-                base.appendingPathComponent(fileName.rawValue)
-            }
-        )
-    }
-}

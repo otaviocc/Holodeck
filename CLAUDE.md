@@ -54,12 +54,14 @@ Layer purposes:
 Every type that owns I/O is a `Sendable` struct of `@Sendable` closure properties:
 
 ```swift
+// URLHistoryStore.swift
 public struct URLHistoryStore: Sendable {
     public var load: @Sendable () -> [String]
     public var record: @Sendable (String) throws -> [String]
     package init(load: ..., record: ...) { ... }
 }
 
+// URLHistoryStore+Live.swift
 public extension URLHistoryStore {
     static func live(configResolver: HolodeckConfigResolver) -> Self { ... }
 }
@@ -69,14 +71,14 @@ Rules of the pattern as applied here:
 
 - **Closures are the public API.** No wrapper methods that forward to underscored backing properties. Callers do `store.load()`, `recorder.start(path, args)` — losing argument labels at multi-arg call sites is the accepted cost. The exception is `SimctlClient`: it kept underscore-backed wrappers in an earlier iteration but those have been removed too, so callers now use positional args at the 30+ facade-service and test sites.
 - **`.live(...)` and `.mock(...)` are the only construction paths.** The memberwise init is `package`-access, not `public`. Callers go through factories. `SimctlClient.init(runner:)` is a `package` convenience that delegates to `.live(runner:)`, kept because facade services use `SimctlClient()` as a default argument.
-- **`.live` factories live next to the type** in production source. **`.mock` factories live in `HolodeckTestSupport`** so production code never links them. Default closures in `.mock` are no-ops or empty-collection returns (`{ _ in [] }`), so a test only overrides the closures it cares about.
-- **Stateful witnesses delegate to a private actor.** `Recorder.live()` constructs a `RecorderActor` (owns the `Process`); `RecordingService.live()` constructs a `RecordingState` actor (tracks `currentOutput`). The witness's closures capture the actor and forward.
+- **`.live` factories live in a sibling `<Type>+Live.swift` file** in production source (e.g. `SimctlClient+Live.swift`, `URLHistoryStore+Live.swift`). File-private helpers that exist only to support `live` (private encoders/decoders, the `RecordingState` actor, etc.) live in the same `+Live.swift` file. **`.mock` factories live in `HolodeckTestSupport`** so production code never links them. Default closures in `.mock` are no-ops or empty-collection returns (`{ _ in [] }`), so a test only overrides the closures it cares about.
+- **Stateful witnesses delegate to a private actor.** `Recorder.live()` constructs a `RecorderActor` (owns the `Process`, lives in its own `RecorderActor.swift` since it's an internal sibling type reused beyond a single factory); `RecordingService.live()` constructs a `RecordingState` actor (tracks `currentOutput`, lives in `RecordingService+Live.swift` since it's private to the live factory). The witness's closures capture the actor and forward.
 
 ### Dependency injection via `AppDependencies`
 
 `Sources/HolodeckServices/AppDependencies.swift` is the composition root. It's a `Sendable` struct holding `configuration`, `simulatorClient`, `urlHistoryStore`, and all eight facade services. Two public factories:
 
-- `.live(configResolver:simulatorClient:recorder:)` — defaults wire the real graph. The internal `make(configuration:simulatorClient:urlHistoryStore:recordingService:)` helper constructs all eight facade services from one `SimctlClient`.
+- `.live(configResolver:simulatorClient:recorder:)` — in `AppDependencies+Live.swift`. Defaults wire the real graph. The internal `make(configuration:simulatorClient:urlHistoryStore:recordingService:)` helper (in `AppDependencies.swift`, `package` access) constructs all eight facade services from one `SimctlClient` and is shared with the `.mock` factory.
 - `.mock(configuration:simulatorClient:urlHistoryStore:recordingService:)` — in `HolodeckTestSupport`. Each parameter defaults to its witness's `.mock()`, so `AppDependencies.mock()` is a fully fake graph with one keystroke.
 
 Tests pass a custom `AppDependencies` (or skip it entirely if they only need one witness — the `.mock()` factories work standalone).
