@@ -31,7 +31,7 @@ public struct ScreenshotService: Sendable {
 
     // MARK: - Lifecycle
 
-    public init(client: SimctlClient = SimctlClient()) {
+    package init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
 
@@ -39,7 +39,7 @@ public struct ScreenshotService: Sendable {
 
     public func capture(udid: UUID, output: URL, type: ScreenshotType = .png) async throws -> URL {
         try DefaultMediaPath.ensureDirectoryExists(for: output)
-        try await client.screenshot(udid: udid, to: output, type: type)
+        try await client.screenshot(udid, output, type)
         return output
     }
 }

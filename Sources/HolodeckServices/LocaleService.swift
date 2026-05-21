@@ -31,13 +31,13 @@ public struct LocaleService: Sendable {
 
     // MARK: - Lifecycle
 
-    public init(client: SimctlClient = SimctlClient()) {
+    package init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
 
     // MARK: - Public
 
     public func set(udid: UUID, bcp47: String) async throws {
-        try await client.setLocale(udid: udid, bcp47: bcp47)
+        try await client.setLocale(udid, bcp47)
     }
 }

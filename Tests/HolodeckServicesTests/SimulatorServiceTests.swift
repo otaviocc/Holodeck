@@ -73,7 +73,7 @@ struct SimulatorServiceTests {
         let runner = RecordingRunner(responses: [
             ProcessResult(stdout: Data(deviceListJSON().utf8), stderr: Data(), exitCode: 0)
         ])
-        return SimulatorService(client: SimctlClient(runner: runner))
+        return SimulatorService(client: SimctlClient.live(runner: runner))
     }
 
     @Test("It should resolve by exact UDID match")

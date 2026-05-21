@@ -46,16 +46,14 @@ struct ScreenshotCommand: AsyncParsableCommand {
     // MARK: - Public
 
     func run() async throws {
-        let config = ConfigLoader.loadOrDefault()
-        let imageType = type ?? config.screenshotType
-        let service = SimulatorService()
-        let sim = try await service.resolveInState(
+        let dependencies = AppDependencies.live()
+        let imageType = type ?? dependencies.configuration.screenshotType
+        let sim = try await dependencies.simulatorService.resolveInState(
             query, .booted, purpose: "only booted simulators can be captured"
         )
-        let screenshots = ScreenshotService()
         let outURL = output.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
-            ?? DefaultMediaPath.screenshot(in: config.resolvedScreenshotsDirectory, type: imageType)
-        let path = try await screenshots.capture(udid: sim.id, output: outURL, type: imageType)
+            ?? DefaultMediaPath.screenshot(in: dependencies.configuration.resolvedScreenshotsDirectory, type: imageType)
+        let path = try await dependencies.screenshotService.capture(udid: sim.id, output: outURL, type: imageType)
         print(path.path)
     }
 }

@@ -23,25 +23,44 @@
 import Foundation
 import HolodeckCore
 
-public struct LocationService: Sendable {
+public extension URLHistoryStore {
+
+    static func mock(initial: [String] = []) -> Self {
+        let storage = MockHistoryStorage(history: initial)
+        return Self(
+            load: { storage.snapshot },
+            record: { url in storage.record(url) }
+        )
+    }
+}
+
+// MARK: - Private
+
+private final class MockHistoryStorage: @unchecked Sendable {
 
     // MARK: - Properties
 
-    private let client: SimctlClient
+    private let lock = NSLock()
+    private var history: [String]
 
     // MARK: - Lifecycle
 
-    package init(client: SimctlClient = SimctlClient()) {
-        self.client = client
+    init(history: [String]) {
+        self.history = history
     }
 
     // MARK: - Public
 
-    public func set(udid: UUID, latitude: Double, longitude: Double) async throws {
-        try await client.setLocation(udid, latitude, longitude)
+    var snapshot: [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return history
     }
 
-    public func clear(udid: UUID) async throws {
-        try await client.clearLocation(udid)
+    func record(_ url: String) -> [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        history = URLHistoryStore.updated(history, inserting: url)
+        return history
     }
 }

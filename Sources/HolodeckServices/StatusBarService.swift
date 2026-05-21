@@ -31,17 +31,17 @@ public struct StatusBarService: Sendable {
 
     // MARK: - Lifecycle
 
-    public init(client: SimctlClient = SimctlClient()) {
+    package init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
 
     // MARK: - Public
 
     public func override(udid: UUID, overrides: StatusBarOverrides) async throws {
-        try await client.setStatusBar(udid: udid, overrides: overrides)
+        try await client.setStatusBar(udid, overrides)
     }
 
     public func clear(udid: UUID) async throws {
-        try await client.clearStatusBar(udid: udid)
+        try await client.clearStatusBar(udid)
     }
 }

@@ -31,13 +31,13 @@ public struct KeychainService: Sendable {
 
     // MARK: - Lifecycle
 
-    public init(client: SimctlClient = SimctlClient()) {
+    package init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
 
     // MARK: - Public
 
     public func reset(udid: UUID) async throws {
-        try await client.resetKeychain(udid: udid)
+        try await client.resetKeychain(udid)
     }
 }

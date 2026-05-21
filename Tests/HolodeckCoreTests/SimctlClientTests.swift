@@ -32,10 +32,10 @@ struct SimctlClientTests {
     func listDevicesAvailable() async throws {
         // Given
         let runner = StubProcessRunner(responses: [StubProcessRunner.ok(stdout: #"{"devices":{}}"#)])
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
-        _ = try await client.listDevices()
+        _ = try await client.listDevices(false)
 
         // Then
         let invocation = try #require(runner.invocations.first)
@@ -47,10 +47,10 @@ struct SimctlClientTests {
     func listDevicesIncludingUnavailable() async throws {
         // Given
         let runner = StubProcessRunner(responses: [StubProcessRunner.ok(stdout: #"{"devices":{}}"#)])
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
-        _ = try await client.listDevices(includeUnavailable: true)
+        _ = try await client.listDevices(true)
 
         // Then
         let invocation = try #require(runner.invocations.first)
@@ -61,11 +61,11 @@ struct SimctlClientTests {
     func listDevicesPropagatesFailure() async throws {
         // Given
         let runner = StubProcessRunner(responses: [StubProcessRunner.failure(stderr: "boom", exitCode: 2)])
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // Then
         await #expect(throws: SimctlError.self) {
-            _ = try await client.listDevices()
+            _ = try await client.listDevices(false)
         }
     }
 
@@ -73,11 +73,11 @@ struct SimctlClientTests {
     func listDevicesPropagatesDecodingFailure() async throws {
         // Given
         let runner = StubProcessRunner(responses: [StubProcessRunner.ok(stdout: "not json")])
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // Then
         await #expect(throws: SimctlError.self) {
-            _ = try await client.listDevices()
+            _ = try await client.listDevices(false)
         }
     }
 
@@ -85,7 +85,7 @@ struct SimctlClientTests {
     func bootBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
         try await client.boot(udid)
@@ -99,7 +99,7 @@ struct SimctlClientTests {
     func shutdownBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
         try await client.shutdown(udid)
@@ -113,11 +113,11 @@ struct SimctlClientTests {
     func screenshotBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
         let output = URL(fileURLWithPath: "/tmp/shot.png")
 
         // When
-        try await client.screenshot(udid: udid, to: output, type: .jpeg)
+        try await client.screenshot(udid, output, .jpeg)
 
         // Then
         let invocation = try #require(runner.invocations.first)
@@ -132,10 +132,10 @@ struct SimctlClientTests {
     func setAppearanceBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
-        try await client.setAppearance(udid: udid, appearance: .dark)
+        try await client.setAppearance(udid, .dark)
 
         // Then
         let invocation = try #require(runner.invocations.first)
@@ -146,11 +146,11 @@ struct SimctlClientTests {
     func setStatusBarBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
         let overrides = StatusBarOverrides(time: "9:41", batteryState: .charged, batteryLevel: 80)
 
         // When
-        try await client.setStatusBar(udid: udid, overrides: overrides)
+        try await client.setStatusBar(udid, overrides)
 
         // Then
         let invocation = try #require(runner.invocations.first)
@@ -166,11 +166,11 @@ struct SimctlClientTests {
     func setStatusBarRejectsEmpty() async {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // Then
         await #expect(throws: SimctlError.self) {
-            try await client.setStatusBar(udid: udid, overrides: StatusBarOverrides())
+            try await client.setStatusBar(udid, StatusBarOverrides())
         }
         #expect(runner.invocations.isEmpty)
     }
@@ -179,10 +179,10 @@ struct SimctlClientTests {
     func clearStatusBarBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
-        try await client.clearStatusBar(udid: udid)
+        try await client.clearStatusBar(udid)
 
         // Then
         let invocation = try #require(runner.invocations.first)
@@ -193,10 +193,10 @@ struct SimctlClientTests {
     func setLocaleWritesBothDefaults() async throws {
         // Given
         let runner = StubProcessRunner(responses: [StubProcessRunner.ok(), StubProcessRunner.ok()])
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
-        try await client.setLocale(udid: udid, bcp47: "pt-BR")
+        try await client.setLocale(udid, "pt-BR")
 
         // Then
         let languageArgs = runner.invocations.map(\.arguments).first { $0.contains("AppleLanguages") }
@@ -216,7 +216,7 @@ struct SimctlClientTests {
         // Given
         let stdout = #"{"devicetypes":[],"runtimes":[]}"#
         let runner = StubProcessRunner(responses: [StubProcessRunner.ok(stdout: stdout)])
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
         _ = try await client.listAvailableTargets()
@@ -231,13 +231,13 @@ struct SimctlClientTests {
         // Given
         let newUDID = UUID()
         let runner = StubProcessRunner(responses: [StubProcessRunner.ok(stdout: "\(newUDID.uuidString)\n")])
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
         let result = try await client.create(
-            name: "iPhone 16 Pro",
-            deviceTypeIdentifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro",
-            runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-2"
+            "iPhone 16 Pro",
+            "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro",
+            "com.apple.CoreSimulator.SimRuntime.iOS-18-2"
         )
 
         // Then
@@ -255,11 +255,11 @@ struct SimctlClientTests {
     func createRejectsBadOutput() async {
         // Given
         let runner = StubProcessRunner(responses: [StubProcessRunner.ok(stdout: "not a udid")])
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // Then
         await #expect(throws: SimctlError.self) {
-            _ = try await client.create(name: "x", deviceTypeIdentifier: "y", runtimeIdentifier: "z")
+            _ = try await client.create("x", "y", "z")
         }
     }
 
@@ -267,7 +267,7 @@ struct SimctlClientTests {
     func eraseBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
         try await client.erase(udid)
@@ -281,7 +281,7 @@ struct SimctlClientTests {
     func deleteBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
         try await client.delete(udid)
@@ -295,7 +295,7 @@ struct SimctlClientTests {
     func deleteUnavailableBuildsArgs() async throws {
         // Given
         let runner = StubProcessRunner()
-        let client = SimctlClient(runner: runner)
+        let client = SimctlClient.live(runner: runner)
 
         // When
         try await client.deleteUnavailable()

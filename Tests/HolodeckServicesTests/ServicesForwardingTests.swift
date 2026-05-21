@@ -30,7 +30,7 @@ struct ServicesForwardingTests {
     private let udid = UUID()
 
     private func client(_ runner: RecordingRunner) -> SimctlClient {
-        SimctlClient(runner: runner)
+        SimctlClient.live(runner: runner)
     }
 
     @Test("It should forward AppearanceService.set to simctl ui appearance")

@@ -22,26 +22,16 @@
 
 import Foundation
 import HolodeckCore
+import HolodeckServices
 
-public struct LocationService: Sendable {
+public extension RecordingService {
 
-    // MARK: - Properties
-
-    private let client: SimctlClient
-
-    // MARK: - Lifecycle
-
-    package init(client: SimctlClient = SimctlClient()) {
-        self.client = client
-    }
-
-    // MARK: - Public
-
-    public func set(udid: UUID, latitude: Double, longitude: Double) async throws {
-        try await client.setLocation(udid, latitude, longitude)
-    }
-
-    public func clear(udid: UUID) async throws {
-        try await client.clearLocation(udid)
+    static func mock(
+        start: @Sendable @escaping (UUID, URL, VideoCodec) async throws -> URL = { _, output, _ in output },
+        stop: @Sendable @escaping () async -> URL? = { nil },
+        isRecording: @Sendable @escaping () async -> Bool = { false },
+        currentOutput: @Sendable @escaping () async -> URL? = { nil }
+    ) -> Self {
+        Self(start: start, stop: stop, isRecording: isRecording, currentOutput: currentOutput)
     }
 }

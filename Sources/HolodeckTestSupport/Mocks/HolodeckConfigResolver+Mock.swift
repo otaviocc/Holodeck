@@ -23,25 +23,12 @@
 import Foundation
 import HolodeckCore
 
-public struct LocationService: Sendable {
+public extension HolodeckConfigResolver {
 
-    // MARK: - Properties
-
-    private let client: SimctlClient
-
-    // MARK: - Lifecycle
-
-    package init(client: SimctlClient = SimctlClient()) {
-        self.client = client
-    }
-
-    // MARK: - Public
-
-    public func set(udid: UUID, latitude: Double, longitude: Double) async throws {
-        try await client.setLocation(udid, latitude, longitude)
-    }
-
-    public func clear(udid: UUID) async throws {
-        try await client.clearLocation(udid)
+    static func mock(base: URL) -> Self {
+        Self(
+            base: { base },
+            file: { base.appendingPathComponent($0.rawValue) }
+        )
     }
 }

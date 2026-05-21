@@ -31,7 +31,7 @@ public struct PrivacyService: Sendable {
 
     // MARK: - Lifecycle
 
-    public init(client: SimctlClient = SimctlClient()) {
+    package init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
 
@@ -43,6 +43,6 @@ public struct PrivacyService: Sendable {
         permission: PrivacyPermission,
         bundleID: String?
     ) async throws {
-        try await client.privacy(udid: udid, action: action, permission: permission, bundleID: bundleID)
+        try await client.privacy(udid, action, permission, bundleID)
     }
 }

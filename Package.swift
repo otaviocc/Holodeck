@@ -17,6 +17,7 @@ let package = Package(
         .target(name: "HolodeckCore"),
         .target(name: "HolodeckServices", dependencies: ["HolodeckCore"]),
         .target(name: "HolodeckTUI", dependencies: ["HolodeckServices"]),
+        .target(name: "HolodeckTestSupport", dependencies: ["HolodeckCore", "HolodeckServices"]),
         .executableTarget(
             name: "holodeck",
             dependencies: [
@@ -28,16 +29,16 @@ let package = Package(
         ),
         .testTarget(
             name: "HolodeckCoreTests",
-            dependencies: ["HolodeckCore"],
+            dependencies: ["HolodeckCore", "HolodeckTestSupport"],
             resources: [.process("Resources")]
         ),
         .testTarget(
             name: "HolodeckServicesTests",
-            dependencies: ["HolodeckServices", "HolodeckCore"]
+            dependencies: ["HolodeckServices", "HolodeckCore", "HolodeckTestSupport"]
         ),
         .testTarget(
             name: "HolodeckTUITests",
-            dependencies: ["HolodeckTUI"]
+            dependencies: ["HolodeckTUI", "HolodeckTestSupport"]
         )
     ]
 )

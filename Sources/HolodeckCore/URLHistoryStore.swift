@@ -27,66 +27,76 @@ public struct URLHistoryStore: Sendable {
     // MARK: - Properties
 
     public static let capacity = 20
-
-    public let path: URL
+    public var load: @Sendable () -> [String]
+    public var record: @Sendable (String) throws -> [String]
 
     // MARK: - Lifecycle
 
-    public init(
-        path: URL = URLHistoryStore.defaultPath
+    package init(
+        load: @Sendable @escaping () -> [String],
+        record: @Sendable @escaping (String) throws -> [String]
     ) {
-        self.path = path
+        self.load = load
+        self.record = record
     }
 
     // MARK: - Public
 
-    public static var defaultPath: URL {
-        HolodeckConfigResolver().file(.history)
-    }
-
-    public func load() -> [String] {
-        guard let data = try? Data(contentsOf: path),
-              let list = try? Self.decoder.decode([String].self, from: data)
-        else {
-            return []
-        }
-        return list
-    }
-
-    @discardableResult
-    public func record(_ url: String) throws -> [String] {
-        var list = load()
+    package static func updated(_ history: [String], inserting url: String) -> [String] {
+        var list = history
         list.removeAll { $0 == url }
         list.insert(url, at: 0)
-        if list.count > Self.capacity {
-            list = Array(list.prefix(Self.capacity))
+        if list.count > capacity {
+            list = Array(list.prefix(capacity))
         }
-        try save(list)
         return list
     }
+}
 
-    // MARK: - Private
+public extension URLHistoryStore {
 
-    private static let encoder: JSONEncoder = {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return encoder
-    }()
+    static func live(configResolver: HolodeckConfigResolver) -> Self {
+        let path = configResolver.file(.history)
 
-    private static let decoder = JSONDecoder()
+        @Sendable
+        func load() -> [String] {
+            guard let data = try? Data(contentsOf: path),
+                  let list = try? liveDecoder.decode([String].self, from: data)
+            else {
+                return []
+            }
+            return list
+        }
 
-    private func save(_ list: [String]) throws {
-        try FileManager.default.createDirectory(
-            at: path.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        let data = try Self.encoder.encode(list)
-        try data.write(to: path, options: .atomic)
+        @Sendable
+        func save(_ list: [String]) throws {
+            try FileManager.default.createDirectory(
+                at: path.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            let data = try liveEncoder.encode(list)
+            try data.write(to: path, options: .atomic)
+        }
+
+        return Self(load: load) { url in
+            let list = URLHistoryStore.updated(load(), inserting: url)
+            try save(list)
+            return list
+        }
     }
 }
 
 // MARK: - Private
 
 private extension ConfigFileName {
+
     static let history = ConfigFileName("url-history.json")
 }
+
+private let liveEncoder: JSONEncoder = {
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    return encoder
+}()
+
+private let liveDecoder = JSONDecoder()

@@ -22,7 +22,47 @@
 
 import Foundation
 
-public actor Recorder {
+public struct Recorder: Sendable {
+
+    // MARK: - Properties
+
+    public var start: @Sendable (_ launchPath: String, _ arguments: [String]) async throws -> Void
+    public var stop: @Sendable () async -> Void
+    public var isRunning: @Sendable () async -> Bool
+
+    // MARK: - Lifecycle
+
+    package init(
+        start: @Sendable @escaping (String, [String]) async throws -> Void,
+        stop: @Sendable @escaping () async -> Void,
+        isRunning: @Sendable @escaping () async -> Bool
+    ) {
+        self.start = start
+        self.stop = stop
+        self.isRunning = isRunning
+    }
+}
+
+public extension Recorder {
+
+    static func live() -> Self {
+        let backing = RecorderActor()
+        return Self(
+            start: { launchPath, arguments in
+                try await backing.start(launchPath: launchPath, arguments: arguments)
+            },
+            stop: { await backing.stop() },
+            isRunning: { await backing.isRunning }
+        )
+    }
+}
+
+// MARK: - Private
+
+/// Owns the long-running child process. Sending `Process.interrupt()` (SIGINT)
+/// — not `terminate()` / `kill()` — is required for `simctl io recordVideo` to
+/// finalize a valid MP4.
+actor RecorderActor {
 
     // MARK: - Properties
 
@@ -30,17 +70,13 @@ public actor Recorder {
     private var stdoutPipe: Pipe?
     private var stderrPipe: Pipe?
 
-    public var isRunning: Bool {
+    var isRunning: Bool {
         process?.isRunning ?? false
     }
 
-    // MARK: - Lifecycle
-
-    public init() {}
-
     // MARK: - Public
 
-    public func start(launchPath: String, arguments: [String]) throws {
+    func start(launchPath: String, arguments: [String]) throws {
         guard process == nil || !(process?.isRunning ?? false) else { return }
         let proc = Process()
         proc.executableURL = URL(fileURLWithPath: launchPath)
@@ -61,7 +97,7 @@ public actor Recorder {
         stderrPipe = errPipe
     }
 
-    public func stop() async {
+    func stop() async {
         guard let proc = process, proc.isRunning else {
             cleanup()
             return

@@ -22,35 +22,44 @@
 
 import Foundation
 
-/// Resolves the on-disk directory where holodeck stores user state, honoring
-/// `$XDG_CONFIG_HOME` when set and falling back to `~/.config`.
-struct HolodeckConfigResolver {
+public struct HolodeckConfigResolver: Sendable {
 
     // MARK: - Properties
 
-    private let processInfo: ProcessInfo
-    private let fileManager: FileManager
+    package var base: @Sendable () -> URL
+    package var file: @Sendable (_ fileName: ConfigFileName) -> URL
 
     // MARK: - Lifecycle
 
-    init(
+    package init(
+        base: @Sendable @escaping () -> URL,
+        file: @Sendable @escaping (_ fileName: ConfigFileName) -> URL
+    ) {
+        self.base = base
+        self.file = file
+    }
+}
+
+public extension HolodeckConfigResolver {
+
+    /// Resolves the on-disk directory where holodeck stores user state, honoring
+    /// `$XDG_CONFIG_HOME` when set and falling back to `~/.config`.
+    static func live(
         processInfo: ProcessInfo = .processInfo,
         fileManager: FileManager = .default
-    ) {
-        self.processInfo = processInfo
-        self.fileManager = fileManager
-    }
-
-    // MARK: - Public
-
-    var base: URL {
-        let parent = processInfo.environment["XDG_CONFIG_HOME"].map {
+    ) -> Self {
+        let xdg = processInfo.environment["XDG_CONFIG_HOME"]
+        let home = fileManager.homeDirectoryForCurrentUser
+        let parent = xdg.map {
             URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath)
-        } ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent(".config")
-        return parent.appendingPathComponent("holodeck")
-    }
+        } ?? home.appendingPathComponent(".config")
+        let base = parent.appendingPathComponent("holodeck")
 
-    func file(_ fileName: ConfigFileName) -> URL {
-        base.appendingPathComponent(fileName.rawValue)
+        return Self(
+            base: { base },
+            file: { fileName in
+                base.appendingPathComponent(fileName.rawValue)
+            }
+        )
     }
 }

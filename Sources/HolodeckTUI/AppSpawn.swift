@@ -106,7 +106,7 @@ enum AppSpawn {
     ) {
         spawn(
             continuation: continuation,
-            work: { try await recording.start(udid: id, output: output, codec: codec) },
+            work: { try await recording.start(id, output, codec) },
             success: { .recordingStarted(id, $0) },
             failure: { .recordingFailed($0) }
         )

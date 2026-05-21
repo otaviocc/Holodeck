@@ -31,13 +31,13 @@ public struct AppearanceService: Sendable {
 
     // MARK: - Lifecycle
 
-    public init(client: SimctlClient = SimctlClient()) {
+    package init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
 
     // MARK: - Public
 
     public func set(udid: UUID, appearance: Appearance) async throws {
-        try await client.setAppearance(udid: udid, appearance: appearance)
+        try await client.setAppearance(udid, appearance)
     }
 }

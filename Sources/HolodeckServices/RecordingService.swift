@@ -23,38 +23,72 @@
 import Foundation
 import HolodeckCore
 
-public actor RecordingService {
+public struct RecordingService: Sendable {
 
     // MARK: - Properties
 
-    private let recorder = Recorder()
-    public private(set) var currentOutput: URL?
+    public var start: @Sendable (_ udid: UUID, _ output: URL, _ codec: VideoCodec) async throws -> URL
+    public var stop: @Sendable () async -> URL?
+    public var isRecording: @Sendable () async -> Bool
+    public var currentOutput: @Sendable () async -> URL?
 
     // MARK: - Lifecycle
 
-    public init() {}
+    package init(
+        start: @Sendable @escaping (UUID, URL, VideoCodec) async throws -> URL,
+        stop: @Sendable @escaping () async -> URL?,
+        isRecording: @Sendable @escaping () async -> Bool,
+        currentOutput: @Sendable @escaping () async -> URL?
+    ) {
+        self.start = start
+        self.stop = stop
+        self.isRecording = isRecording
+        self.currentOutput = currentOutput
+    }
+}
+
+public extension RecordingService {
+
+    static func live(recorder: Recorder = .live()) -> Self {
+        let state = RecordingState()
+        return Self(
+            start: { udid, output, codec in
+                if await recorder.isRunning() {
+                    throw SimctlError.unsupportedOperation(reason: "already recording")
+                }
+                try DefaultMediaPath.ensureDirectoryExists(for: output)
+                let command = SimctlClient.recordVideoCommand(udid: udid, output: output, codec: codec)
+                try await recorder.start(command.launchPath, command.arguments)
+                await state.set(output)
+                return output
+            },
+            stop: {
+                await recorder.stop()
+                return await state.takeCurrent()
+            },
+            isRecording: { await recorder.isRunning() },
+            currentOutput: { await state.current }
+        )
+    }
+}
+
+// MARK: - Private
+
+private actor RecordingState {
+
+    // MARK: - Properties
+
+    private(set) var current: URL?
 
     // MARK: - Public
 
-    public var isRecording: Bool {
-        get async { await recorder.isRunning }
+    func set(_ value: URL?) {
+        current = value
     }
 
-    public func start(udid: UUID, output: URL, codec: VideoCodec = .h264) async throws -> URL {
-        if await recorder.isRunning {
-            throw SimctlError.unsupportedOperation(reason: "already recording")
-        }
-        try DefaultMediaPath.ensureDirectoryExists(for: output)
-        let command = SimctlClient.recordVideoCommand(udid: udid, output: output, codec: codec)
-        try await recorder.start(launchPath: command.launchPath, arguments: command.arguments)
-        currentOutput = output
-        return output
-    }
-
-    public func stop() async -> URL? {
-        await recorder.stop()
-        let path = currentOutput
-        currentOutput = nil
-        return path
+    func takeCurrent() -> URL? {
+        let value = current
+        current = nil
+        return value
     }
 }

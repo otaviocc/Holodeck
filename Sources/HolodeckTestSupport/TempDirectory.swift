@@ -21,27 +21,27 @@
 // SOFTWARE.
 
 import Foundation
-import HolodeckCore
 
-public struct LocationService: Sendable {
+/// Creates a fresh, UUID-keyed directory under `NSTemporaryDirectory()`, runs the
+/// body with it, and removes the directory on exit (success or throw). Use for
+/// tests that need a real on-disk location without leaking it.
+public func withTemporaryDirectory<T>(_ body: (URL) throws -> T) rethrows -> T {
+    let url = makeTemporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: url) }
+    return try body(url)
+}
 
-    // MARK: - Properties
+public func withTemporaryDirectory<T>(_ body: (URL) async throws -> T) async rethrows -> T {
+    let url = makeTemporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: url) }
+    return try await body(url)
+}
 
-    private let client: SimctlClient
+// MARK: - Private
 
-    // MARK: - Lifecycle
-
-    package init(client: SimctlClient = SimctlClient()) {
-        self.client = client
-    }
-
-    // MARK: - Public
-
-    public func set(udid: UUID, latitude: Double, longitude: Double) async throws {
-        try await client.setLocation(udid, latitude, longitude)
-    }
-
-    public func clear(udid: UUID) async throws {
-        try await client.clearLocation(udid)
-    }
+private func makeTemporaryDirectory() -> URL {
+    let url = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("holodeck-test-\(UUID().uuidString)")
+    try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    return url
 }

@@ -46,9 +46,9 @@ struct ListCommand: AsyncParsableCommand {
     // MARK: - Public
 
     func run() async throws {
-        let service = SimulatorService()
-        var simulators = try await service.list()
-        let effectivePlatform = platform ?? ConfigLoader.loadOrDefault().defaultPlatform
+        let dependencies = AppDependencies.live()
+        var simulators = try await dependencies.simulatorService.list()
+        let effectivePlatform = platform ?? dependencies.configuration.defaultPlatform
         if let filter = effectivePlatform {
             simulators = simulators.filter { $0.runtime.platform == filter }
         }

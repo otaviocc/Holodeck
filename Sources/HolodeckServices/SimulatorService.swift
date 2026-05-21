@@ -31,14 +31,14 @@ public struct SimulatorService: Sendable {
 
     // MARK: - Lifecycle
 
-    public init(client: SimctlClient = SimctlClient()) {
+    package init(client: SimctlClient = SimctlClient()) {
         self.client = client
     }
 
     // MARK: - Public
 
     public func list(includeUnavailable: Bool = false) async throws -> [Simulator] {
-        try await client.listDevices(includeUnavailable: includeUnavailable)
+        try await client.listDevices(includeUnavailable)
     }
 
     public func boot(_ udid: UUID) async throws {
@@ -54,15 +54,11 @@ public struct SimulatorService: Sendable {
     }
 
     public func listApps(_ udid: UUID) async throws -> [InstalledApp] {
-        try await client.listApps(udid: udid)
+        try await client.listApps(udid)
     }
 
     public func create(name: String, deviceType: DeviceType, runtime: Runtime) async throws -> UUID {
-        try await client.create(
-            name: name,
-            deviceTypeIdentifier: deviceType.identifier,
-            runtimeIdentifier: runtime.identifier
-        )
+        try await client.create(name, deviceType.identifier, runtime.identifier)
     }
 
     public func erase(_ udid: UUID) async throws {
@@ -78,11 +74,11 @@ public struct SimulatorService: Sendable {
     }
 
     public func focus(_ udid: UUID) async throws {
-        try await client.focusSimulatorApp(udid: udid)
+        try await client.focusSimulatorApp(udid)
     }
 
     public func openURL(_ udid: UUID, url: String) async throws {
-        try await client.openURL(udid: udid, url: url)
+        try await client.openURL(udid, url)
     }
 
     public func resolve(query: String) async throws -> Simulator {

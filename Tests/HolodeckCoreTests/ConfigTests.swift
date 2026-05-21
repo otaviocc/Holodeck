@@ -21,6 +21,7 @@
 // SOFTWARE.
 
 import Foundation
+import HolodeckTestSupport
 import Testing
 @testable import HolodeckCore
 
@@ -89,34 +90,33 @@ struct ConfigTests {
 
     @Test("It should return defaults when the config file is missing")
     func missingFile() throws {
-        // Given
-        let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("holodeck-missing-\(UUID().uuidString).json")
+        try withTemporaryDirectory { dir in
+            // Given an empty directory (no config.json)
 
-        // When
-        let config = try ConfigLoader.load(from: tmp)
+            // When
+            let config = try ConfigLoader(configResolver: .mock(base: dir)).load()
 
-        // Then
-        #expect(config == .default)
+            // Then
+            #expect(config == .default)
+        }
     }
 
     @Test("It should load a config file from disk")
     func loadFromFile() throws {
-        // Given
-        let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("holodeck-test-\(UUID().uuidString).json")
-        let payload = Data("""
-        { "screenshotsDirectory": "~/Foo", "videoCodec": "hevc", "screenshotType": "png", "pollIntervalSeconds": 1 }
-        """.utf8)
-        try payload.write(to: tmp)
-        defer { try? FileManager.default.removeItem(at: tmp) }
+        try withTemporaryDirectory { dir in
+            // Given
+            let payload = Data("""
+            { "screenshotsDirectory": "~/Foo", "videoCodec": "hevc", "screenshotType": "png", "pollIntervalSeconds": 1 }
+            """.utf8)
+            try payload.write(to: dir.appendingPathComponent("config.json"))
 
-        // When
-        let config = try ConfigLoader.load(from: tmp)
+            // When
+            let config = try ConfigLoader(configResolver: .mock(base: dir)).load()
 
-        // Then
-        #expect(config.videoCodec == .hevc)
-        #expect(config.screenshotsDirectory == "~/Foo")
+            // Then
+            #expect(config.videoCodec == .hevc)
+            #expect(config.screenshotsDirectory == "~/Foo")
+        }
     }
 
     @Test("It should expand the tilde in screenshotsDirectory")

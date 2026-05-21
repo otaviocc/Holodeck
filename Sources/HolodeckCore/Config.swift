@@ -78,39 +78,43 @@ extension VideoCodec: Codable {}
 
 extension ScreenshotType: Codable {}
 
-public enum ConfigLoader {
+public struct ConfigLoader {
+
+    // MARK: - Properties
+
+    private static let decoder = JSONDecoder()
+    private let path: URL
+
+    // MARK: - Lifecycle
+
+    public init(configResolver: HolodeckConfigResolver) {
+        path = configResolver.file(.config)
+    }
 
     // MARK: - Public
 
-    public static var defaultPath: URL {
-        HolodeckConfigResolver().file(.config)
-    }
-
-    public static func load(from url: URL = defaultPath) throws -> Config {
+    public func load() throws -> Config {
         let data: Data
         do {
-            data = try Data(contentsOf: url)
+            data = try Data(contentsOf: path)
         } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
             return .default
         }
-        return try decode(data)
+        return try Self.decode(data)
     }
 
-    public static func loadOrDefault(from url: URL = defaultPath) -> Config {
-        (try? load(from: url)) ?? .default
+    public func loadOrDefault() -> Config {
+        (try? load()) ?? .default
     }
 
     public static func decode(_ data: Data) throws -> Config {
         try decoder.decode(Config.self, from: data)
     }
-
-    // MARK: - Private
-
-    private static let decoder = JSONDecoder()
 }
 
 // MARK: - Private
 
 extension ConfigFileName {
+
     static let config = ConfigFileName(rawValue: "config.json")
 }

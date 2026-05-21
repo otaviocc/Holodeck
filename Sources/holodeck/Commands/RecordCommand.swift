@@ -73,23 +73,21 @@ struct RecordCommand: AsyncParsableCommand {
     // MARK: - Public
 
     func run() async throws {
-        let config = ConfigLoader.loadOrDefault()
-        let codecValue = codec ?? config.videoCodec
-        let service = SimulatorService()
-        let sim = try await service.resolveInState(
+        let dependencies = AppDependencies.live()
+        let codecValue = codec ?? dependencies.configuration.videoCodec
+        let sim = try await dependencies.simulatorService.resolveInState(
             query, .booted, purpose: "only booted simulators can be recorded"
         )
 
-        let recording = RecordingService()
         let outURL = output.map { URL(fileURLWithPath: ($0 as NSString).expandingTildeInPath) }
-            ?? DefaultMediaPath.record(in: config.resolvedScreenshotsDirectory)
-        let path = try await recording.start(udid: sim.id, output: outURL, codec: codecValue)
+            ?? DefaultMediaPath.record(in: dependencies.configuration.resolvedScreenshotsDirectory)
+        let path = try await dependencies.recordingService.start(sim.id, outURL, codecValue)
         FileHandle.standardError.write(Data("Recording to \(path.path) — press Ctrl-C to stop.\n".utf8))
 
         await waitForSIGINT()
 
         FileHandle.standardError.write(Data("\nFinalizing…\n".utf8))
-        _ = await recording.stop()
+        _ = await dependencies.recordingService.stop()
         print(path.path)
     }
 

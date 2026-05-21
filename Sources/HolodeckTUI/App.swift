@@ -29,13 +29,7 @@ public final class HolodeckApp {
 
     // MARK: - Properties
 
-    private let service: SimulatorService
-    private let recording: RecordingService
-    private let screenshots: ScreenshotService
-    private let appearance: AppearanceService
-    private let privacy: PrivacyService
-    private let urlHistoryStore: URLHistoryStore
-    private let config: Config
+    private let dependencies: AppDependencies
     private let terminal = TerminalMode()
     private let parser = InputParser()
     private var state = AppState()
@@ -44,23 +38,11 @@ public final class HolodeckApp {
 
     // MARK: - Lifecycle
 
-    public init(
-        service: SimulatorService = SimulatorService(),
-        recording: RecordingService = RecordingService(),
-        screenshots: ScreenshotService = ScreenshotService(),
-        appearance: AppearanceService = AppearanceService(),
-        privacy: PrivacyService = PrivacyService(),
-        urlHistoryStore: URLHistoryStore = URLHistoryStore(),
-        config: Config = (try? ConfigLoader.load()) ?? .default
-    ) {
-        self.service = service
-        self.recording = recording
-        self.screenshots = screenshots
-        self.appearance = appearance
-        self.privacy = privacy
-        self.urlHistoryStore = urlHistoryStore
-        self.config = config
+    public init(dependencies: AppDependencies = .live()) {
+        self.dependencies = dependencies
     }
+
+    // MARK: - Public
 
     public func run() async {
         installSignalCleanup()
@@ -78,13 +60,13 @@ public final class HolodeckApp {
 
         let inputTask = AppSpawn.inputTask(parser: parser, continuation: eventContinuation)
         let pollTask = AppSpawn.pollTask(
-            interval: config.pollIntervalSeconds,
+            interval: dependencies.configuration.pollIntervalSeconds,
             continuation: eventContinuation
         )
         let resizeTask = installResizeHandler(continuation: eventContinuation)
 
-        await AppSpawn.kickoffRefresh(service: service, continuation: eventContinuation)
-        AppSpawn.loadURLHistory(store: urlHistoryStore, continuation: eventContinuation)
+        await AppSpawn.kickoffRefresh(service: dependencies.simulatorService, continuation: eventContinuation)
+        AppSpawn.loadURLHistory(store: dependencies.urlHistoryStore, continuation: eventContinuation)
 
         render()
 
@@ -98,8 +80,8 @@ public final class HolodeckApp {
             if state.isQuitting { break }
         }
 
-        if await recording.isRecording {
-            _ = await recording.stop()
+        if await dependencies.recordingService.isRecording() {
+            _ = await dependencies.recordingService.stop()
         }
 
         inputTask.cancel()
@@ -108,6 +90,8 @@ public final class HolodeckApp {
         eventContinuation.finish()
     }
 
+    // MARK: - Private
+
     // swiftlint:disable function_body_length
     private func dispatch(
         _ effect: ReducerOutput.SideEffect,
@@ -115,55 +99,60 @@ public final class HolodeckApp {
     ) {
         switch effect {
         case let .boot(id):
-            AppSpawn.boot(service: service, id: id, continuation: continuation)
+            AppSpawn.boot(service: dependencies.simulatorService, id: id, continuation: continuation)
         case let .shutdown(id):
-            AppSpawn.shutdown(service: service, id: id, continuation: continuation)
+            AppSpawn.shutdown(service: dependencies.simulatorService, id: id, continuation: continuation)
         case .refresh:
-            AppSpawn.refresh(service: service, continuation: continuation)
+            AppSpawn.refresh(service: dependencies.simulatorService, continuation: continuation)
         case let .startRecording(id):
             AppSpawn.startRecording(
-                recording: recording,
+                recording: dependencies.recordingService,
                 id: id,
-                output: DefaultMediaPath.record(in: config.resolvedScreenshotsDirectory),
-                codec: config.videoCodec,
+                output: DefaultMediaPath.record(in: dependencies.configuration.resolvedScreenshotsDirectory),
+                codec: dependencies.configuration.videoCodec,
                 continuation: continuation
             )
         case .stopRecording:
-            AppSpawn.stopRecording(recording: recording, continuation: continuation)
+            AppSpawn.stopRecording(recording: dependencies.recordingService, continuation: continuation)
         case let .captureScreenshot(id):
             AppSpawn.screenshot(
-                screenshots: screenshots,
+                screenshots: dependencies.screenshotService,
                 id: id,
                 output: DefaultMediaPath.screenshot(
-                    in: config.resolvedScreenshotsDirectory,
-                    type: config.screenshotType
+                    in: dependencies.configuration.resolvedScreenshotsDirectory,
+                    type: dependencies.configuration.screenshotType
                 ),
-                type: config.screenshotType,
+                type: dependencies.configuration.screenshotType,
                 continuation: continuation
             )
         case let .setAppearance(id, value):
-            AppSpawn.appearance(service: appearance, id: id, appearance: value, continuation: continuation)
+            AppSpawn.appearance(
+                service: dependencies.appearanceService,
+                id: id,
+                appearance: value,
+                continuation: continuation
+            )
         case let .eraseSimulator(id):
-            AppSpawn.erase(service: service, id: id, continuation: continuation)
+            AppSpawn.erase(service: dependencies.simulatorService, id: id, continuation: continuation)
         case let .deleteSimulator(id):
-            AppSpawn.delete(service: service, id: id, continuation: continuation)
+            AppSpawn.delete(service: dependencies.simulatorService, id: id, continuation: continuation)
         case .loadTargets:
-            AppSpawn.loadTargets(service: service, continuation: continuation)
+            AppSpawn.loadTargets(service: dependencies.simulatorService, continuation: continuation)
         case let .focusSimulator(id):
-            AppSpawn.focus(service: service, id: id, continuation: continuation)
+            AppSpawn.focus(service: dependencies.simulatorService, id: id, continuation: continuation)
         case let .createSimulator(name, deviceType, runtime):
             AppSpawn.create(
-                service: service,
+                service: dependencies.simulatorService,
                 name: name,
                 deviceType: deviceType,
                 runtime: runtime,
                 continuation: continuation
             )
         case let .loadInstalledApps(id):
-            AppSpawn.loadInstalledApps(service: service, id: id, continuation: continuation)
+            AppSpawn.loadInstalledApps(service: dependencies.simulatorService, id: id, continuation: continuation)
         case let .applyPrivacy(udid, action, permission, bundleID):
             AppSpawn.applyPrivacy(
-                service: privacy,
+                service: dependencies.privacyService,
                 udid: udid,
                 action: action,
                 permission: permission,
@@ -171,11 +160,11 @@ public final class HolodeckApp {
                 continuation: continuation
             )
         case .loadURLHistory:
-            AppSpawn.loadURLHistory(store: urlHistoryStore, continuation: continuation)
+            AppSpawn.loadURLHistory(store: dependencies.urlHistoryStore, continuation: continuation)
         case let .openURL(udid, url):
             AppSpawn.openURL(
-                service: service,
-                store: urlHistoryStore,
+                service: dependencies.simulatorService,
+                store: dependencies.urlHistoryStore,
                 udid: udid,
                 url: url,
                 continuation: continuation

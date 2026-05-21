@@ -26,42 +26,87 @@ public struct SimctlClient: Sendable {
 
     // MARK: - Properties
 
-    private let runner: any ProcessRunning
+    public var listDevices: @Sendable (_ includeUnavailable: Bool) async throws -> [Simulator]
+    public var boot: @Sendable (_ udid: UUID) async throws -> Void
+    public var shutdown: @Sendable (_ udid: UUID) async throws -> Void
+    public var screenshot: @Sendable (_ udid: UUID, _ path: URL, _ type: ScreenshotType) async throws -> Void
+    public var setAppearance: @Sendable (_ udid: UUID, _ appearance: Appearance) async throws -> Void
+    public var setStatusBar: @Sendable (_ udid: UUID, _ overrides: StatusBarOverrides) async throws -> Void
+    public var clearStatusBar: @Sendable (_ udid: UUID) async throws -> Void
+    public var setLocale: @Sendable (_ udid: UUID, _ bcp47: String) async throws -> Void
+    public var listAvailableTargets: @Sendable () async throws -> AvailableTargets
+    public var listApps: @Sendable (_ udid: UUID) async throws -> [InstalledApp]
+    public var create: @Sendable (
+        _ name: String,
+        _ deviceTypeIdentifier: String,
+        _ runtimeIdentifier: String
+    ) async throws -> UUID
+    public var erase: @Sendable (_ udid: UUID) async throws -> Void
+    public var delete: @Sendable (_ udid: UUID) async throws -> Void
+    public var deleteUnavailable: @Sendable () async throws -> Void
+    public var setLocation: @Sendable (_ udid: UUID, _ latitude: Double, _ longitude: Double) async throws -> Void
+    public var clearLocation: @Sendable (_ udid: UUID) async throws -> Void
+    public var privacy: @Sendable (
+        _ udid: UUID,
+        _ action: PrivacyAction,
+        _ permission: PrivacyPermission,
+        _ bundleID: String?
+    ) async throws -> Void
+    public var resetKeychain: @Sendable (_ udid: UUID) async throws -> Void
+    public var openURL: @Sendable (_ udid: UUID, _ url: String) async throws -> Void
+    public var focusSimulatorApp: @Sendable (_ udid: UUID) async throws -> Void
 
     // MARK: - Lifecycle
 
-    public init(runner: any ProcessRunning = ProcessRunner()) {
-        self.runner = runner
+    package init(runner: any ProcessRunning = ProcessRunner()) {
+        self = .live(runner: runner)
+    }
+
+    package init(
+        listDevices: @Sendable @escaping (Bool) async throws -> [Simulator],
+        boot: @Sendable @escaping (UUID) async throws -> Void,
+        shutdown: @Sendable @escaping (UUID) async throws -> Void,
+        screenshot: @Sendable @escaping (UUID, URL, ScreenshotType) async throws -> Void,
+        setAppearance: @Sendable @escaping (UUID, Appearance) async throws -> Void,
+        setStatusBar: @Sendable @escaping (UUID, StatusBarOverrides) async throws -> Void,
+        clearStatusBar: @Sendable @escaping (UUID) async throws -> Void,
+        setLocale: @Sendable @escaping (UUID, String) async throws -> Void,
+        listAvailableTargets: @Sendable @escaping () async throws -> AvailableTargets,
+        listApps: @Sendable @escaping (UUID) async throws -> [InstalledApp],
+        create: @Sendable @escaping (String, String, String) async throws -> UUID,
+        erase: @Sendable @escaping (UUID) async throws -> Void,
+        delete: @Sendable @escaping (UUID) async throws -> Void,
+        deleteUnavailable: @Sendable @escaping () async throws -> Void,
+        setLocation: @Sendable @escaping (UUID, Double, Double) async throws -> Void,
+        clearLocation: @Sendable @escaping (UUID) async throws -> Void,
+        privacy: @Sendable @escaping (UUID, PrivacyAction, PrivacyPermission, String?) async throws -> Void,
+        resetKeychain: @Sendable @escaping (UUID) async throws -> Void,
+        openURL: @Sendable @escaping (UUID, String) async throws -> Void,
+        focusSimulatorApp: @Sendable @escaping (UUID) async throws -> Void
+    ) {
+        self.listDevices = listDevices
+        self.boot = boot
+        self.shutdown = shutdown
+        self.screenshot = screenshot
+        self.setAppearance = setAppearance
+        self.setStatusBar = setStatusBar
+        self.clearStatusBar = clearStatusBar
+        self.setLocale = setLocale
+        self.listAvailableTargets = listAvailableTargets
+        self.listApps = listApps
+        self.create = create
+        self.erase = erase
+        self.delete = delete
+        self.deleteUnavailable = deleteUnavailable
+        self.setLocation = setLocation
+        self.clearLocation = clearLocation
+        self.privacy = privacy
+        self.resetKeychain = resetKeychain
+        self.openURL = openURL
+        self.focusSimulatorApp = focusSimulatorApp
     }
 
     // MARK: - Public
-
-    public func listDevices(includeUnavailable: Bool = false) async throws -> [Simulator] {
-        var args = ["list", "--json", "devices"]
-        if !includeUnavailable { args.append("available") }
-        let result = try await runSimctl(args)
-        do {
-            return try DeviceListDecoder.decode(result.stdout)
-        } catch {
-            throw SimctlError.decodingFailed(underlying: error)
-        }
-    }
-
-    public func boot(_ udid: UUID) async throws {
-        _ = try await runSimctl(["boot", udid.uuidString])
-    }
-
-    public func shutdown(_ udid: UUID) async throws {
-        _ = try await runSimctl(["shutdown", udid.uuidString])
-    }
-
-    public func screenshot(udid: UUID, to path: URL, type: ScreenshotType) async throws {
-        _ = try await runSimctl([
-            "io", udid.uuidString, "screenshot",
-            "--type", type.rawValue,
-            path.path
-        ])
-    }
 
     public static func recordVideoCommand(
         udid: UUID,
@@ -75,140 +120,146 @@ public struct SimctlClient: Sendable {
         ]
         return ("/usr/bin/xcrun", args)
     }
+}
 
-    public func setAppearance(udid: UUID, appearance: Appearance) async throws {
-        _ = try await runSimctl(["ui", udid.uuidString, "appearance", appearance.rawValue])
-    }
+public extension SimctlClient {
 
-    public func setStatusBar(udid: UUID, overrides: StatusBarOverrides) async throws {
-        guard !overrides.isEmpty else {
-            throw SimctlError.unsupportedOperation(reason: "no status bar overrides provided")
+    // swiftlint:disable function_body_length
+    static func live(runner: any ProcessRunning = ProcessRunner()) -> Self {
+        @Sendable
+        func runProcess(_ launchPath: String, label: String, _ arguments: [String]) async throws -> ProcessResult {
+            let result: ProcessResult
+            do {
+                result = try await runner.run(launchPath, arguments)
+            } catch {
+                throw SimctlError.commandFailed(
+                    command: "\(label) \(arguments.joined(separator: " "))",
+                    exitCode: -1,
+                    stderr: String(describing: error)
+                )
+            }
+            guard result.exitCode == 0 else {
+                throw SimctlError.commandFailed(
+                    command: "\(label) \(arguments.joined(separator: " "))",
+                    exitCode: result.exitCode,
+                    stderr: String(data: result.stderr, encoding: .utf8) ?? ""
+                )
+            }
+            return result
         }
-        _ = try await runSimctl(["status_bar", udid.uuidString, "override"] + overrides.simctlArguments)
-    }
 
-    public func clearStatusBar(udid: UUID) async throws {
-        _ = try await runSimctl(["status_bar", udid.uuidString, "clear"])
-    }
-
-    public func setLocale(udid: UUID, bcp47: String) async throws {
-        let appleLocale = bcp47.replacingOccurrences(of: "-", with: "_")
-        async let languages: ProcessResult = runSimctl([
-            "spawn", udid.uuidString,
-            "defaults", "write", "-g", "AppleLanguages", "-array", bcp47
-        ])
-        async let locale: ProcessResult = runSimctl([
-            "spawn", udid.uuidString,
-            "defaults", "write", "-g", "AppleLocale", "-string", appleLocale
-        ])
-        _ = try await (languages, locale)
-    }
-
-    public func listAvailableTargets() async throws -> AvailableTargets {
-        let result = try await runSimctl(["list", "--json", "devicetypes", "runtimes"])
-        do {
-            return try DeviceListDecoder.decodeAvailableTargets(result.stdout)
-        } catch {
-            throw SimctlError.decodingFailed(underlying: error)
+        @Sendable
+        func runSimctl(_ subcommand: [String]) async throws -> ProcessResult {
+            try await runProcess("/usr/bin/xcrun", label: "xcrun", ["simctl"] + subcommand)
         }
-    }
 
-    public func listApps(udid: UUID) async throws -> [InstalledApp] {
-        let result = try await runSimctl(["listapps", udid.uuidString])
-        do {
-            return try AppListDecoder.decode(result.stdout)
-        } catch {
-            throw SimctlError.decodingFailed(underlying: error)
-        }
-    }
-
-    public func create(name: String, deviceTypeIdentifier: String, runtimeIdentifier: String) async throws -> UUID {
-        let result = try await runSimctl(["create", name, deviceTypeIdentifier, runtimeIdentifier])
-        let stdout = String(data: result.stdout, encoding: .utf8) ?? ""
-        let trimmed = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let udid = UUID(uuidString: trimmed) else {
-            throw SimctlError.unsupportedOperation(reason: "create returned unexpected output: \(trimmed)")
-        }
-        return udid
-    }
-
-    public func erase(_ udid: UUID) async throws {
-        _ = try await runSimctl(["erase", udid.uuidString])
-    }
-
-    public func delete(_ udid: UUID) async throws {
-        _ = try await runSimctl(["delete", udid.uuidString])
-    }
-
-    public func deleteUnavailable() async throws {
-        _ = try await runSimctl(["delete", "unavailable"])
-    }
-
-    public func setLocation(udid: UUID, latitude: Double, longitude: Double) async throws {
-        _ = try await runSimctl(["location", udid.uuidString, "set", "\(latitude),\(longitude)"])
-    }
-
-    public func clearLocation(udid: UUID) async throws {
-        _ = try await runSimctl(["location", udid.uuidString, "clear"])
-    }
-
-    public func privacy(
-        udid: UUID,
-        action: PrivacyAction,
-        permission: PrivacyPermission,
-        bundleID: String?
-    ) async throws {
-        var args = ["privacy", udid.uuidString, action.rawValue, permission.rawValue]
-        if let bundleID { args.append(bundleID) }
-        _ = try await runSimctl(args)
-    }
-
-    public func resetKeychain(udid: UUID) async throws {
-        _ = try await runSimctl(["keychain", udid.uuidString, "reset"])
-    }
-
-    public func openURL(udid: UUID, url: String) async throws {
-        _ = try await runSimctl(["openurl", udid.uuidString, url])
-    }
-
-    public func focusSimulatorApp(udid: UUID) async throws {
-        _ = try await runProcess(
-            "/usr/bin/open",
-            label: "open",
-            ["-a", "Simulator", "--args", "-CurrentDeviceUDID", udid.uuidString]
+        return Self(
+            listDevices: { includeUnavailable in
+                var args = ["list", "--json", "devices"]
+                if !includeUnavailable { args.append("available") }
+                let result = try await runSimctl(args)
+                do {
+                    return try DeviceListDecoder.decode(result.stdout)
+                } catch {
+                    throw SimctlError.decodingFailed(underlying: error)
+                }
+            },
+            boot: { udid in
+                _ = try await runSimctl(["boot", udid.uuidString])
+            },
+            shutdown: { udid in
+                _ = try await runSimctl(["shutdown", udid.uuidString])
+            },
+            screenshot: { udid, path, type in
+                _ = try await runSimctl([
+                    "io", udid.uuidString, "screenshot",
+                    "--type", type.rawValue,
+                    path.path
+                ])
+            },
+            setAppearance: { udid, appearance in
+                _ = try await runSimctl(["ui", udid.uuidString, "appearance", appearance.rawValue])
+            },
+            setStatusBar: { udid, overrides in
+                guard !overrides.isEmpty else {
+                    throw SimctlError.unsupportedOperation(reason: "no status bar overrides provided")
+                }
+                _ = try await runSimctl(["status_bar", udid.uuidString, "override"] + overrides.simctlArguments)
+            },
+            clearStatusBar: { udid in
+                _ = try await runSimctl(["status_bar", udid.uuidString, "clear"])
+            },
+            setLocale: { udid, bcp47 in
+                let appleLocale = bcp47.replacingOccurrences(of: "-", with: "_")
+                async let languages: ProcessResult = runSimctl([
+                    "spawn", udid.uuidString,
+                    "defaults", "write", "-g", "AppleLanguages", "-array", bcp47
+                ])
+                async let locale: ProcessResult = runSimctl([
+                    "spawn", udid.uuidString,
+                    "defaults", "write", "-g", "AppleLocale", "-string", appleLocale
+                ])
+                _ = try await (languages, locale)
+            },
+            listAvailableTargets: {
+                let result = try await runSimctl(["list", "--json", "devicetypes", "runtimes"])
+                do {
+                    return try DeviceListDecoder.decodeAvailableTargets(result.stdout)
+                } catch {
+                    throw SimctlError.decodingFailed(underlying: error)
+                }
+            },
+            listApps: { udid in
+                let result = try await runSimctl(["listapps", udid.uuidString])
+                do {
+                    return try AppListDecoder.decode(result.stdout)
+                } catch {
+                    throw SimctlError.decodingFailed(underlying: error)
+                }
+            },
+            create: { name, deviceTypeIdentifier, runtimeIdentifier in
+                let result = try await runSimctl(["create", name, deviceTypeIdentifier, runtimeIdentifier])
+                let stdout = String(data: result.stdout, encoding: .utf8) ?? ""
+                let trimmed = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard let udid = UUID(uuidString: trimmed) else {
+                    throw SimctlError.unsupportedOperation(reason: "create returned unexpected output: \(trimmed)")
+                }
+                return udid
+            },
+            erase: { udid in
+                _ = try await runSimctl(["erase", udid.uuidString])
+            },
+            delete: { udid in
+                _ = try await runSimctl(["delete", udid.uuidString])
+            },
+            deleteUnavailable: {
+                _ = try await runSimctl(["delete", "unavailable"])
+            },
+            setLocation: { udid, latitude, longitude in
+                _ = try await runSimctl(["location", udid.uuidString, "set", "\(latitude),\(longitude)"])
+            },
+            clearLocation: { udid in
+                _ = try await runSimctl(["location", udid.uuidString, "clear"])
+            },
+            privacy: { udid, action, permission, bundleID in
+                var args = ["privacy", udid.uuidString, action.rawValue, permission.rawValue]
+                if let bundleID { args.append(bundleID) }
+                _ = try await runSimctl(args)
+            },
+            resetKeychain: { udid in
+                _ = try await runSimctl(["keychain", udid.uuidString, "reset"])
+            },
+            openURL: { udid, url in
+                _ = try await runSimctl(["openurl", udid.uuidString, url])
+            },
+            focusSimulatorApp: { udid in
+                _ = try await runProcess(
+                    "/usr/bin/open",
+                    label: "open",
+                    ["-a", "Simulator", "--args", "-CurrentDeviceUDID", udid.uuidString]
+                )
+            }
         )
     }
-
-    // MARK: - Private
-
-    @discardableResult
-    private func runSimctl(_ subcommand: [String]) async throws -> ProcessResult {
-        try await runProcess("/usr/bin/xcrun", label: "xcrun", ["simctl"] + subcommand)
-    }
-
-    @discardableResult
-    private func runProcess(
-        _ launchPath: String,
-        label: String,
-        _ arguments: [String]
-    ) async throws -> ProcessResult {
-        let result: ProcessResult
-        do {
-            result = try await runner.run(launchPath, arguments)
-        } catch {
-            throw SimctlError.commandFailed(
-                command: "\(label) \(arguments.joined(separator: " "))",
-                exitCode: -1,
-                stderr: String(describing: error)
-            )
-        }
-        guard result.exitCode == 0 else {
-            throw SimctlError.commandFailed(
-                command: "\(label) \(arguments.joined(separator: " "))",
-                exitCode: result.exitCode,
-                stderr: String(data: result.stderr, encoding: .utf8) ?? ""
-            )
-        }
-        return result
-    }
+    // swiftlint:enable function_body_length
 }

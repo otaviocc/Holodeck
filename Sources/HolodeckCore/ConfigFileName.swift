@@ -22,19 +22,19 @@
 
 import Foundation
 
-struct ConfigFileName {
+package struct ConfigFileName {
 
     // MARK: - Properties
 
-    let rawValue: String
+    package let rawValue: String
 
     // MARK: - Lifecycle
 
-    init(_ rawValue: String) {
+    package init(_ rawValue: String) {
         self.rawValue = rawValue
     }
 
-    init(rawValue: String) {
+    package init(rawValue: String) {
         self.rawValue = rawValue
     }
 }
