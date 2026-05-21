@@ -327,34 +327,46 @@ CLI flags always win over config; config wins over hard-coded defaults.
 ┌─────────────────────────────────────────┐
 │  Presentation (HolodeckTUI + holodeck)  │  ← argument-parser subcommands, raw-mode TUI
 ├─────────────────────────────────────────┤
-│  HolodeckServices                       │  ← SimulatorService, RecordingService, etc.
+│  HolodeckServices                       │  ← facade services + AppDependencies
 ├─────────────────────────────────────────┤
-│  HolodeckCore                           │  ← models, SimctlClient, ProcessRunner
+│  HolodeckCore                           │  ← models, witnesses, ProcessRunner
 └─────────────────────────────────────────┘
+                  ▲
+                  │
+        HolodeckTestSupport  (test-only, hosts every .mock(...) factory)
 ```
 
+- I/O-owning types (`SimctlClient`, `Recorder`, `RecordingService`,
+  `URLHistoryStore`, `HolodeckConfigResolver`) are protocol witnesses —
+  `Sendable` structs of `@Sendable` closure properties with `.live(...)` /
+  `.mock(...)` factories. Construction goes through the factories; the
+  memberwise inits are `package`-access.
 - `SimctlClient` shells out to `xcrun simctl` and decodes `--json` output with
-  `Codable` — no regex parsing of the human-readable form.
-- `ProcessRunner` is an injectable protocol so services can be unit-tested with
-  stubs.
+  `Codable` — no regex parsing of the human-readable form. The underlying
+  `ProcessRunning` protocol stays injectable for shell-level testing.
+- `AppDependencies` is the composition root in `HolodeckServices`. CLI
+  subcommands and the TUI build `AppDependencies.live()` at the entry point
+  and read everything (config, services) from it. Tests build
+  `AppDependencies.mock(...)` with per-witness overrides.
 - The TUI is pure-data-driven: `Reducer.reduce` returns the next `AppState`
-  plus a list of `SideEffect` values; `HolodeckApp` dispatches each effect on a
-  detached `Task` and feeds responses back into the event stream.
+  plus a list of `SideEffect` values; `HolodeckApp` dispatches each effect on
+  a detached `Task` and feeds responses back into the event stream.
 - Recording uses `Process.interrupt()` (SIGINT) to stop `simctl io recordVideo`
   so the MP4 finalizes cleanly. SIGKILL would corrupt the file.
 
 ## Development
 
 ```bash
-swift test                   # run the suite (Swift Testing, ~190 tests)
+swift test                   # run the suite (Swift Testing, ~200 tests)
 swiftformat Sources Tests    # apply formatting (.swiftformat)
 swiftlint --quiet            # apply lint (.swiftlint.yml)
 ```
 
 Both format and lint should run clean on a fresh checkout. Tests cover JSON
 decoding, input parsing, the full reducer (navigation, recording, lifecycle
-modals, wizard), terminal-mode basics, the config loader, and `Recorder`'s
-interrupt-and-wait semantics.
+modals, wizard), terminal-mode basics, the config loader, `Recorder`'s
+interrupt-and-wait semantics, `RecordingService`'s orchestration (via
+witness mocks, no real process), and `AppDependencies` wiring sanity.
 
 ## License
 
