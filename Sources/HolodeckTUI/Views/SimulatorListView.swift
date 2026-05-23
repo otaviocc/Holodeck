@@ -106,11 +106,14 @@ public enum SimulatorListView {
         }
 
         if case let .commandPalette(palette) = state.modal {
+            // Header (1 line) plus any banner rows reserved above the body.
+            let topReserve = 1 + bodyOffset
             lines = CommandPaletteView.overlay(
                 listLines: lines,
                 palette: palette,
                 state: state,
-                width: cols
+                width: cols,
+                topReserve: topReserve
             )
         }
 

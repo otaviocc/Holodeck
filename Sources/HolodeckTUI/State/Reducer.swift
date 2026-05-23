@@ -309,7 +309,7 @@ public enum Reducer {
             return ReducerOutput(state: next)
 
         case .char(":"):
-            next.modal = .commandPalette(CommandPalette())
+            next.modal = .commandPalette(CommandPalette(simulatorID: next.selectedSimulator?.id))
             return ReducerOutput(state: next)
 
         case .char("i"):
@@ -482,9 +482,12 @@ public enum Reducer {
 
         case .boot:
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
+            guard !next.pendingOperations.contains(sim.id) else {
+                next.statusMessage = "\(sim.name) has a pending operation"
+                return ReducerOutput(state: next)
+            }
             guard sim.state == .shutdown else {
-                next.statusMessage = "\(sim.name) is \(sim.state.rawValue)"
+                next.statusMessage = "Cannot boot: \(sim.name) is \(sim.state.rawValue)"
                 return ReducerOutput(state: next)
             }
             next.pendingOperations.insert(sim.id)
@@ -493,9 +496,12 @@ public enum Reducer {
 
         case .shutdown:
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
+            guard !next.pendingOperations.contains(sim.id) else {
+                next.statusMessage = "\(sim.name) has a pending operation"
+                return ReducerOutput(state: next)
+            }
             guard sim.state == .booted else {
-                next.statusMessage = "\(sim.name) is \(sim.state.rawValue)"
+                next.statusMessage = "Cannot shut down: \(sim.name) is \(sim.state.rawValue)"
                 return ReducerOutput(state: next)
             }
             next.pendingOperations.insert(sim.id)

@@ -43,7 +43,9 @@ public enum Modal: Equatable, Sendable {
             id
         case let .openURL(prompt):
             prompt.simulatorID
-        case .appearance, .createWizard, .privacyWizard, .commandPalette, .help:
+        case let .commandPalette(palette):
+            palette.simulatorID
+        case .appearance, .createWizard, .privacyWizard, .help:
             nil
         }
     }
@@ -53,11 +55,17 @@ public struct CommandPalette: Equatable, Sendable {
 
     // MARK: - Properties
 
+    /// Simulator selected when the palette was opened. Nil when no sim was
+    /// selected (only the `new` command is applicable). Used so a refresh that
+    /// drops the underlying sim auto-dismisses the palette before it can run
+    /// a command against the wrong target.
+    public var simulatorID: UUID?
     public var query: String
 
     // MARK: - Lifecycle
 
-    public init(query: String = "") {
+    public init(simulatorID: UUID? = nil, query: String = "") {
+        self.simulatorID = simulatorID
         self.query = query
     }
 }
@@ -322,7 +330,14 @@ public struct AppState: Equatable, Sendable {
     /// from mainScrollOffset and stops when bodyHeight is exhausted; the 2-line
     /// headroom leaves room for runtime-group headers without exact counting.
     public var mainListViewport: Int {
-        let banner = (isRecording ? 1 : 0) + (modal != nil ? 1 : 0)
+        let modalBanner = if case .commandPalette = modal {
+            0
+        } else if modal != nil {
+            1
+        } else {
+            0
+        }
+        let banner = (isRecording ? 1 : 0) + modalBanner
         return max(1, rows - 4 - banner - 2)
     }
 

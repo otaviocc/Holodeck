@@ -29,17 +29,20 @@ enum CommandPaletteView {
 
     /// Splices a centered 5-line palette box into pre-rendered list lines.
     /// `listLines` are the main-list rows (excluding the status bar), already
-    /// padded to `width`. The status bar is appended by the caller.
+    /// padded to `width`. `topReserve` is the count of header+banner rows the
+    /// overlay must not overwrite. The status bar is appended by the caller.
     static func overlay(
         listLines: [String],
         palette: CommandPalette,
         state: AppState,
-        width: Int
+        width: Int,
+        topReserve: Int = 0
     ) -> [String] {
         let box = renderBox(palette: palette, state: state, width: width)
         guard !listLines.isEmpty else { return box }
         let boxHeight = box.count
-        let top = max(0, (listLines.count - boxHeight) / 2)
+        let centered = max(0, (listLines.count - boxHeight) / 2)
+        let top = max(topReserve, centered)
         var out = listLines
         for offset in 0..<boxHeight where top + offset < out.count {
             out[top + offset] = box[offset]
@@ -83,12 +86,28 @@ enum CommandPaletteView {
         innerWidth: Int
     ) -> String {
         let prompt = " : "
-        let query = palette.query
-        let ghost = ghostSuffix(query: query, topMatch: topMatch)
-        let visible = prompt.count + query.count + ghost.count
-        let space = max(0, innerWidth - visible)
-        let ghostAnsi = ghost.isEmpty ? "" : "\(ANSI.dim)\(ghost)\(ANSI.reset)"
-        return "\(prompt)\(query)\(ghostAnsi)\(String(repeating: " ", count: space))"
+        let available = max(0, innerWidth - prompt.count)
+        let fullQuery = palette.query
+        let fullGhost = ghostSuffix(query: fullQuery, topMatch: topMatch)
+
+        // When the query alone overflows, show its tail so the cursor stays
+        // visible and drop the ghost suffix. Otherwise show as much of the
+        // ghost as still fits.
+        let visibleQuery: String
+        let visibleGhost: String
+        if fullQuery.count >= available {
+            visibleQuery = String(fullQuery.suffix(available))
+            visibleGhost = ""
+        } else {
+            visibleQuery = fullQuery
+            let remaining = available - visibleQuery.count
+            visibleGhost = String(fullGhost.prefix(remaining))
+        }
+
+        let used = visibleQuery.count + visibleGhost.count
+        let space = max(0, available - used)
+        let ghostAnsi = visibleGhost.isEmpty ? "" : "\(ANSI.dim)\(visibleGhost)\(ANSI.reset)"
+        return "\(prompt)\(visibleQuery)\(ghostAnsi)\(String(repeating: " ", count: space))"
     }
 
     private static func hintContent(

@@ -51,7 +51,12 @@ enum CommandPaletteReducer {
 
         case .tab:
             guard let command = topMatch(for: updated.query, state: next) else { break }
-            updated.query = command.displayName
+            // Preserve the user's typed casing; only append the unmatched suffix.
+            let name = command.displayName
+            let suffix = name.count > updated.query.count
+                ? String(name.dropFirst(updated.query.count))
+                : ""
+            updated.query.append(suffix)
 
         case .backspace:
             if !updated.query.isEmpty {
