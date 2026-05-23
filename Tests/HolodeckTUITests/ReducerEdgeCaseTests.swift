@@ -92,13 +92,13 @@ struct ReducerEdgeCaseTests {
     func operationFailedTriggersRefresh() {
         // Given
         let id = UUID()
-        let state = AppState(pendingOperations: [id])
+        let state = AppState(pendingOperations: [id: .boot])
 
         // When
         let out = Reducer.reduce(state, .operationFailed(id, "boom"))
 
         // Then
-        #expect(!out.state.pendingOperations.contains(id))
+        #expect(out.state.pendingOperations[id] == nil)
         #expect(out.state.lastError == "boom")
         #expect(out.effects == [.refresh])
     }

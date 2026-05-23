@@ -78,7 +78,7 @@ struct LifecycleReducerTests {
         // Then
         #expect(out.effects == [.eraseSimulator(device.id)])
         #expect(out.state.modal == nil)
-        #expect(out.state.pendingOperations.contains(device.id))
+        #expect(out.state.pendingOperations[device.id] == .erase)
     }
 
     @Test("It should cancel the delete modal when n is pressed")

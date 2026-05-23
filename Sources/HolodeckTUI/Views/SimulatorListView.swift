@@ -94,7 +94,7 @@ public enum SimulatorListView {
                 lines.append(renderRow(
                     sim: sim,
                     selected: index == state.selectedIndex,
-                    pending: state.pendingOperations.contains(sim.id),
+                    pending: state.pendingOperations[sim.id] != nil,
                     width: cols
                 ))
                 used += 1

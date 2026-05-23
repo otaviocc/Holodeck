@@ -139,7 +139,7 @@ struct SimulatorListViewBannersTests {
     func pendingRowMarker() throws {
         // Given
         let sim = try booted()
-        let state = AppState(simulators: [sim], pendingOperations: [sim.id], rows: 12, cols: 120)
+        let state = AppState(simulators: [sim], pendingOperations: [sim.id: .shutdown], rows: 12, cols: 120)
 
         // When
         let plain = SimulatorListView.stripANSI(SimulatorListView.render(state))

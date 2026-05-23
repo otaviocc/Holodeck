@@ -167,7 +167,7 @@ struct ReducerTests {
 
         // Then
         #expect(out.effects == [.boot(sim.id)])
-        #expect(out.state.pendingOperations.contains(sim.id))
+        #expect(out.state.pendingOperations[sim.id] == .boot)
     }
 
     @Test("It should emit a shutdown effect when Enter hits a booted simulator")
@@ -187,7 +187,7 @@ struct ReducerTests {
     func enterIgnoredWhilePending() {
         // Given
         let sim = makeSim(name: "A", state: .shutdown)
-        let state = AppState(simulators: [sim], pendingOperations: [sim.id])
+        let state = AppState(simulators: [sim], pendingOperations: [sim.id: .boot])
 
         // When
         let out = Reducer.reduce(state, .key(.enter))
@@ -200,14 +200,54 @@ struct ReducerTests {
     func operationCompletedTriggersRefresh() {
         // Given
         let id = UUID()
-        let state = AppState(pendingOperations: [id])
+        let state = AppState(pendingOperations: [id: .boot])
 
         // When
         let out = Reducer.reduce(state, .operationCompleted(id))
 
         // Then
-        #expect(!out.state.pendingOperations.contains(id))
+        #expect(out.state.pendingOperations[id] == nil)
         #expect(out.effects == [.refresh])
+    }
+
+    @Test("It should drop a pending shutdown when the refresh shows the sim as shutdown")
+    func refreshClearsPendingShutdownReached() {
+        // Given — simctl shutdown can hang after CoreSimulator already marked
+        // the sim shutdown; refresh should reconcile the pending entry away.
+        let sim = makeSim(name: "A", state: .shutdown)
+        let state = AppState(simulators: [sim], pendingOperations: [sim.id: .shutdown])
+
+        // When
+        let out = Reducer.reduce(state, .refreshed([sim]))
+
+        // Then
+        #expect(out.state.pendingOperations[sim.id] == nil)
+    }
+
+    @Test("It should keep a pending boot when the refresh still shows the sim as shutdown")
+    func refreshKeepsPendingBootUnreached() {
+        // Given — boot just kicked off; refresh hasn't observed the transition yet
+        let sim = makeSim(name: "A", state: .shutdown)
+        let state = AppState(simulators: [sim], pendingOperations: [sim.id: .boot])
+
+        // When
+        let out = Reducer.reduce(state, .refreshed([sim]))
+
+        // Then
+        #expect(out.state.pendingOperations[sim.id] == .boot)
+    }
+
+    @Test("It should drop a pending delete when the refreshed list no longer contains the sim")
+    func refreshClearsPendingDeleteForVanishedSim() {
+        // Given
+        let sim = makeSim(name: "A", state: .shutdown)
+        let state = AppState(simulators: [sim], pendingOperations: [sim.id: .delete])
+
+        // When
+        let out = Reducer.reduce(state, .refreshed([]))
+
+        // Then
+        #expect(out.state.pendingOperations[sim.id] == nil)
     }
 
     @Test("It should clamp the selection when the refreshed list shrinks")

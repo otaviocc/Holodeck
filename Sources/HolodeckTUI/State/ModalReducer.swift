@@ -33,9 +33,23 @@ enum ModalReducer {
         case .appearance:
             return appearance(state: next, key: key)
         case let .confirmErase(id):
-            return confirm(state: next, id: id, key: key, status: "Erasing…", effect: .eraseSimulator(id))
+            return confirm(
+                state: next,
+                id: id,
+                key: key,
+                status: "Erasing…",
+                operation: .erase,
+                effect: .eraseSimulator(id)
+            )
         case let .confirmDelete(id):
-            return confirm(state: next, id: id, key: key, status: "Deleting…", effect: .deleteSimulator(id))
+            return confirm(
+                state: next,
+                id: id,
+                key: key,
+                status: "Deleting…",
+                operation: .delete,
+                effect: .deleteSimulator(id)
+            )
         case let .createWizard(wizard):
             return WizardReducer.handle(state: next, wizard: wizard, key: key)
         case let .privacyWizard(wizard):
@@ -90,6 +104,7 @@ enum ModalReducer {
         id: UUID,
         key: Key,
         status: String,
+        operation: PendingOperation,
         effect: ReducerOutput.SideEffect
     ) -> ReducerOutput {
         var next = state
@@ -97,7 +112,7 @@ enum ModalReducer {
         case .char("y"), .char("Y"):
             next.modal = nil
             next.statusMessage = status
-            next.pendingOperations.insert(id)
+            next.pendingOperations[id] = operation
             return ReducerOutput(state: next, effects: [effect])
         case .char("n"), .char("N"), .escape, .char("q"):
             next.modal = nil

@@ -263,7 +263,7 @@ struct CommandPaletteReducerTests {
         let device = try sim(state: .shutdown)
         let state = AppState(
             simulators: [device],
-            pendingOperations: [device.id],
+            pendingOperations: [device.id: .boot],
             modal: .commandPalette(CommandPalette(query: "boot"))
         )
 

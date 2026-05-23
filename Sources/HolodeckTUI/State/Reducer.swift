@@ -112,6 +112,7 @@ public enum Reducer {
             {
                 next.modal = nil
             }
+            next.pendingOperations = reconcilePending(next.pendingOperations, with: next.simulators)
             next.lastError = nil
             return ReducerOutput(state: next)
 
@@ -133,12 +134,12 @@ public enum Reducer {
             return handleKey(state: next, key: key)
 
         case let .operationCompleted(id):
-            next.pendingOperations.remove(id)
+            next.pendingOperations.removeValue(forKey: id)
             next.statusMessage = nil
             return ReducerOutput(state: next, effects: [.refresh])
 
         case let .operationFailed(id, message):
-            next.pendingOperations.remove(id)
+            next.pendingOperations.removeValue(forKey: id)
             next.statusMessage = nil
             next.lastError = message
             return ReducerOutput(state: next, effects: [.refresh])
@@ -482,7 +483,7 @@ public enum Reducer {
 
         case .boot:
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard !next.pendingOperations.contains(sim.id) else {
+            guard next.pendingOperations[sim.id] == nil else {
                 next.statusMessage = "\(sim.name) has a pending operation"
                 return ReducerOutput(state: next)
             }
@@ -490,13 +491,13 @@ public enum Reducer {
                 next.statusMessage = "Cannot boot: \(sim.name) is \(sim.state.rawValue)"
                 return ReducerOutput(state: next)
             }
-            next.pendingOperations.insert(sim.id)
+            next.pendingOperations[sim.id] = .boot
             next.statusMessage = "Booting \(sim.name)…"
             return ReducerOutput(state: next, effects: [.boot(sim.id)])
 
         case .shutdown:
             guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard !next.pendingOperations.contains(sim.id) else {
+            guard next.pendingOperations[sim.id] == nil else {
                 next.statusMessage = "\(sim.name) has a pending operation"
                 return ReducerOutput(state: next)
             }
@@ -504,7 +505,7 @@ public enum Reducer {
                 next.statusMessage = "Cannot shut down: \(sim.name) is \(sim.state.rawValue)"
                 return ReducerOutput(state: next)
             }
-            next.pendingOperations.insert(sim.id)
+            next.pendingOperations[sim.id] = .shutdown
             next.statusMessage = "Shutting down \(sim.name)…"
             return ReducerOutput(state: next, effects: [.shutdown(sim.id)])
         }
@@ -515,19 +516,44 @@ public enum Reducer {
     private static func toggleSelected(state: AppState) -> ReducerOutput {
         var next = state
         guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-        guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
+        guard next.pendingOperations[sim.id] == nil else { return ReducerOutput(state: next) }
         switch sim.state {
         case .booted:
-            next.pendingOperations.insert(sim.id)
+            next.pendingOperations[sim.id] = .shutdown
             next.statusMessage = "Shutting down \(sim.name)…"
             return ReducerOutput(state: next, effects: [.shutdown(sim.id)])
         case .shutdown:
-            next.pendingOperations.insert(sim.id)
+            next.pendingOperations[sim.id] = .boot
             next.statusMessage = "Booting \(sim.name)…"
             return ReducerOutput(state: next, effects: [.boot(sim.id)])
         default:
             next.statusMessage = "\(sim.name) is \(sim.state.rawValue)"
             return ReducerOutput(state: next)
+        }
+    }
+
+    /// Drops pending operations that have already reached their target state.
+    /// Erase entries are kept until the spawned task posts `.operationCompleted`
+    /// because `simctl erase` does not change the sim's observable state.
+    private static func reconcilePending(
+        _ pending: [UUID: PendingOperation],
+        with simulators: [Simulator]
+    ) -> [UUID: PendingOperation] {
+        var byID: [UUID: Simulator] = [:]
+        for sim in simulators {
+            byID[sim.id] = sim
+        }
+        return pending.filter { id, operation in
+            switch operation {
+            case .delete:
+                byID[id] != nil
+            case .boot:
+                byID[id]?.state != .booted
+            case .shutdown:
+                byID[id].map { $0.state != .shutdown } ?? false
+            case .erase:
+                byID[id] != nil
+            }
         }
     }
 

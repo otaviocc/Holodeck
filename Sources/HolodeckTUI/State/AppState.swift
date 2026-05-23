@@ -23,6 +23,20 @@
 import Foundation
 import HolodeckCore
 
+/// Intent behind an in-flight simctl operation. Lets the reducer reconcile
+/// `pendingOperations` against an arriving `.refreshed` listing — if the sim
+/// already reached the target state we can drop the pending entry even when
+/// the spawned `simctl` task has not yet returned (a known macOS quirk where
+/// `xcrun simctl shutdown` can block for many seconds after the simulator
+/// is already shut down).
+public enum PendingOperation: Equatable, Sendable {
+
+    case boot
+    case shutdown
+    case erase
+    case delete
+}
+
 public enum Modal: Equatable, Sendable {
 
     case appearance
@@ -258,7 +272,7 @@ public struct AppState: Equatable, Sendable {
     public var isFilterFocused: Bool
     public var statusMessage: String?
     public var lastError: String?
-    public var pendingOperations: Set<UUID>
+    public var pendingOperations: [UUID: PendingOperation]
     public var isQuitting: Bool
     public var rows: Int
     public var cols: Int
@@ -277,7 +291,7 @@ public struct AppState: Equatable, Sendable {
         isFilterFocused: Bool = false,
         statusMessage: String? = nil,
         lastError: String? = nil,
-        pendingOperations: Set<UUID> = [],
+        pendingOperations: [UUID: PendingOperation] = [:],
         isQuitting: Bool = false,
         rows: Int = 24,
         cols: Int = 80,
