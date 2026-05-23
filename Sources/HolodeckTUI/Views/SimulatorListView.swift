@@ -130,18 +130,16 @@ public enum SimulatorListView {
     // MARK: - Private
 
     private static let headerTitle = " holodeck "
-    private static let headerFullHint = " ⏎ toggle  / filter  : cmd  i info  o url  f focus  r rec  p shot  a appear  n new  e erase  d delete  P privacy  ? help  q quit "
-    private static let headerShortHint = " ⏎ toggle  ? help  q quit "
+    /// `:` opens the command palette, which is the discovery surface for every
+    /// per-sim action — so the header only advertises the keys you reach for
+    /// without looking.
+    private static let headerHint = " ⏎ toggle  : cmd  ? help  q quit "
     private static let headerTitleCount = headerTitle.count
-    private static let headerFullHintCount = headerFullHint.count
-    private static let headerShortHintCount = headerShortHint.count
+    private static let headerHintCount = headerHint.count
 
     private static func header(width: Int) -> String {
-        let useFull = width >= headerTitleCount + headerFullHintCount
-        let hint = useFull ? headerFullHint : headerShortHint
-        let hintCount = useFull ? headerFullHintCount : headerShortHintCount
-        let space = max(0, width - headerTitleCount - hintCount)
-        return "\(ANSI.inverse)\(headerTitle)\(String(repeating: " ", count: space))\(hint)\(ANSI.reset)"
+        let space = max(0, width - headerTitleCount - headerHintCount)
+        return "\(ANSI.inverse)\(headerTitle)\(String(repeating: " ", count: space))\(headerHint)\(ANSI.reset)"
     }
 
     private static func modalBanner(modal: Modal, width: Int, state: AppState) -> String {
