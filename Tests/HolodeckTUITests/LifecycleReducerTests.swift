@@ -455,6 +455,86 @@ struct LifecycleReducerTests {
         #expect(after.step == .pickDeviceType)
     }
 
+    @Test("It should scroll the device-type column accounting for the filter banner row")
+    func createWizardDeviceTypeScrollsWithFilterBanner() {
+        // Given — banner steals one row from the viewport. The reducer's
+        // scroll math must use the reduced viewport so the selected row
+        // never sits just past the visible window.
+        let dtypes = (0..<30).map {
+            DeviceType(identifier: "com.example.Device\($0)", name: "Device \($0)")
+        }
+        let viewport = CreateWizard.viewport(rows: 13)
+        var wizard = CreateWizard(
+            step: .pickDeviceType,
+            deviceTypes: dtypes,
+            deviceTypeFilter: "Device",
+            isDeviceTypeFilterFocused: false
+        )
+        // One row earlier than the unfilter-banner edge (viewport - 1 - 1).
+        wizard.deviceTypeIndex = viewport - 2
+        let state = AppState(rows: 13, modal: .createWizard(wizard))
+
+        // When — one more ↓ should already trigger a scroll, because the
+        // banner shrinks the visible list by one row.
+        let out = Reducer.reduce(state, .key(.down))
+
+        // Then
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.deviceTypeIndex == viewport - 1)
+        #expect(after.deviceTypeScrollOffset == 1)
+    }
+
+    @Test("It should clear the filter on Esc even when the input is not focused")
+    func createWizardEscClearsLiveFilterWhenDefocused() {
+        // Given — user typed a query then defocused with Enter; filter survives.
+        let dtypes = [DeviceType(identifier: "iphone-16", name: "iPhone 16")]
+        let wizard = CreateWizard(
+            step: .pickDeviceType,
+            deviceTypes: dtypes,
+            deviceTypeFilter: "iphone",
+            isDeviceTypeFilterFocused: false
+        )
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.escape))
+
+        // Then — wizard stays open, filter is cleared.
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard to stay open")
+            return
+        }
+        #expect(after.deviceTypeFilter.isEmpty)
+        #expect(after.isDeviceTypeFilterFocused == false)
+    }
+
+    @Test("It should preserve the existing filter when `/` re-focuses the input")
+    func createWizardSlashPreservesExistingFilter() {
+        // Given — filter previously typed, defocused via Enter.
+        let dtypes = [DeviceType(identifier: "ipad-pro", name: "iPad Pro")]
+        let wizard = CreateWizard(
+            step: .pickDeviceType,
+            deviceTypes: dtypes,
+            deviceTypeFilter: "pad",
+            isDeviceTypeFilterFocused: false
+        )
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When — re-press `/` to keep editing.
+        let out = Reducer.reduce(state, .key(.char("/")))
+
+        // Then — focus restored, existing query preserved.
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.isDeviceTypeFilterFocused == true)
+        #expect(after.deviceTypeFilter == "pad")
+    }
+
     @Test("It should scroll the runtime column down when the highlight crosses the edge")
     func createWizardRuntimeScrollsAtEdge() throws {
         // Given

@@ -249,6 +249,14 @@ public struct CreateWizard: Equatable, Sendable {
         max(3, rows - 5)
     }
 
+    /// Device-type list viewport accounting for the filter banner (one row).
+    /// The reducer's scroll math and the view's row clamp must agree on this
+    /// number — otherwise the selected row can sit just off the bottom edge.
+    public func deviceTypeViewport(rows: Int) -> Int {
+        let banner = (isDeviceTypeFilterFocused || !deviceTypeFilter.isEmpty) ? 1 : 0
+        return max(1, CreateWizard.viewport(rows: rows) - banner)
+    }
+
     public var visibleDeviceTypes: [DeviceType] {
         guard !deviceTypeFilter.isEmpty else { return deviceTypes }
         return deviceTypes.filter { $0.name.localizedCaseInsensitiveContains(deviceTypeFilter) }

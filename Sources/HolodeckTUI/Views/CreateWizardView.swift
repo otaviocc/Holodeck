@@ -80,6 +80,9 @@ enum CreateWizardView {
         }
         let showBanner = wizard.isDeviceTypeFilterFocused || !wizard.deviceTypeFilter.isEmpty
         let visible = wizard.visibleDeviceTypes
+        // listHeight must match the viewport the reducer's scroll math
+        // uses — see `CreateWizard.deviceTypeViewport(rows:)`. Otherwise
+        // the selected row can sit just off the bottom edge.
         let listHeight = max(1, bodyHeight - (showBanner ? 1 : 0))
         var rows: [String] = []
         if showBanner {

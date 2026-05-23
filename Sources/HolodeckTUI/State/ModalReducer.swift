@@ -137,8 +137,11 @@ enum WizardReducer {
         var next = state
         var updated = wizard
         if case .escape = key {
-            // Esc while filtering clears the filter instead of closing the modal.
-            if wizard.step == .pickDeviceType, wizard.isDeviceTypeFilterFocused {
+            // Esc clears the filter as long as it is live on the visible step
+            // (focused, or has a non-empty query). Only closes the modal when
+            // there's nothing filter-shaped left to dismiss.
+            let filterIsLive = wizard.isDeviceTypeFilterFocused || !wizard.deviceTypeFilter.isEmpty
+            if wizard.step == .pickDeviceType, filterIsLive {
                 updated.isDeviceTypeFilterFocused = false
                 updated.deviceTypeFilter = ""
                 updated.deviceTypeIndex = 0
@@ -180,9 +183,13 @@ enum WizardReducer {
                 updated.deviceTypeIndex = min(lastIndex, updated.deviceTypeIndex + 1)
             case .char("/"):
                 updated.isDeviceTypeFilterFocused = true
-                updated.deviceTypeFilter = ""
-                updated.deviceTypeIndex = 0
-                updated.deviceTypeScrollOffset = 0
+                // Preserve an existing filter so the user can keep editing —
+                // Esc is the affordance for clearing. Only reset cursor/scroll
+                // when entering edit mode fresh (no query yet).
+                if updated.deviceTypeFilter.isEmpty {
+                    updated.deviceTypeIndex = 0
+                    updated.deviceTypeScrollOffset = 0
+                }
             case .enter:
                 guard updated.selectedDeviceType != nil else { return ReducerOutput(state: next) }
                 updated.step = .pickRuntime
@@ -191,7 +198,7 @@ enum WizardReducer {
             updated.deviceTypeScrollOffset = AppState.scroll(
                 offset: updated.deviceTypeScrollOffset,
                 index: updated.deviceTypeIndex,
-                viewport: viewport
+                viewport: updated.deviceTypeViewport(rows: state.rows)
             )
         case .pickRuntime:
             switch key {
