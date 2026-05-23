@@ -112,7 +112,14 @@ public enum Reducer {
             {
                 next.modal = nil
             }
-            next.pendingOperations = reconcilePending(next.pendingOperations, with: next.simulators)
+            let reconciled = reconcilePending(next.pendingOperations, with: next.simulators)
+            if reconciled.count != next.pendingOperations.count, reconciled.isEmpty {
+                // Every tracked operation reached its target; the status banner
+                // that announced it ('Booting A…', 'Shutting down A…') would
+                // otherwise outlive the operation it described.
+                next.statusMessage = nil
+            }
+            next.pendingOperations = reconciled
             next.lastError = nil
             return ReducerOutput(state: next)
 
@@ -134,12 +141,23 @@ public enum Reducer {
             return handleKey(state: next, key: key)
 
         case let .operationCompleted(id):
-            next.pendingOperations.removeValue(forKey: id)
+            // If reconcilePending already dropped the entry on an earlier
+            // .refreshed, the user has moved on (possibly issued another op)
+            // and clobbering statusMessage here would wipe the newer op's
+            // banner. Only respond to events for still-tracked operations.
+            guard next.pendingOperations.removeValue(forKey: id) != nil else {
+                return ReducerOutput(state: next)
+            }
             next.statusMessage = nil
             return ReducerOutput(state: next, effects: [.refresh])
 
         case let .operationFailed(id, message):
-            next.pendingOperations.removeValue(forKey: id)
+            guard next.pendingOperations.removeValue(forKey: id) != nil else {
+                // The op visibly succeeded as far as the user is concerned
+                // (state reached target before the simctl process returned).
+                // Don't paint a red error banner over a clean outcome.
+                return ReducerOutput(state: next)
+            }
             next.statusMessage = nil
             next.lastError = message
             return ReducerOutput(state: next, effects: [.refresh])
@@ -545,14 +563,15 @@ public enum Reducer {
         }
         return pending.filter { id, operation in
             switch operation {
-            case .delete:
+            case .delete, .erase:
+                // Erase / delete: drop the entry once the sim disappears.
+                // Erase doesn't change observable state, so we can't reconcile
+                // by state — but a vanished sim cannot be erased any further.
                 byID[id] != nil
             case .boot:
-                byID[id]?.state != .booted
+                byID[id].map { $0.state != .booted } ?? false
             case .shutdown:
                 byID[id].map { $0.state != .shutdown } ?? false
-            case .erase:
-                byID[id] != nil
             }
         }
     }

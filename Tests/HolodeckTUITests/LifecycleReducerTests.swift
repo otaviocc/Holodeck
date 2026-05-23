@@ -81,6 +81,27 @@ struct LifecycleReducerTests {
         #expect(out.state.pendingOperations[device.id] == .erase)
     }
 
+    @Test("It should refuse to overwrite an in-flight pending op when y confirms erase")
+    func yInConfirmEraseRefusesOverwrite() throws {
+        // Given — a boot is already in flight for the same sim
+        let device = try sim(state: .shutdown)
+        let state = AppState(
+            simulators: [device],
+            pendingOperations: [device.id: .boot],
+            modal: .confirmErase(device.id)
+        )
+
+        // When
+        let out = Reducer.reduce(state, .key(.char("y")))
+
+        // Then — the existing .boot intent must not be clobbered to .erase,
+        // and no .eraseSimulator effect is emitted.
+        #expect(out.effects.isEmpty)
+        #expect(out.state.pendingOperations[device.id] == .boot)
+        #expect(out.state.modal == nil)
+        #expect(out.state.statusMessage?.contains("pending operation") == true)
+    }
+
     @Test("It should cancel the delete modal when n is pressed")
     func nCancelsConfirmDelete() throws {
         // Given

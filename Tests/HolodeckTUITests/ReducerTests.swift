@@ -27,9 +27,9 @@ import Testing
 
 struct ReducerTests {
 
-    private func makeSim(name: String, state: SimulatorState, version: Int = 18) -> Simulator {
+    private func makeSim(name: String, state: SimulatorState, version: Int = 18, id: UUID = UUID()) -> Simulator {
         Simulator(
-            id: UUID(),
+            id: id,
             name: name,
             runtime: Runtime(
                 platform: .iOS,
@@ -248,6 +248,93 @@ struct ReducerTests {
 
         // Then
         #expect(out.state.pendingOperations[sim.id] == nil)
+    }
+
+    @Test("It should drop a pending boot when the refresh shows the sim as booted")
+    func refreshClearsPendingBootReached() {
+        // Given
+        let id = UUID()
+        let before = makeSim(name: "A", state: .shutdown, id: id)
+        let after = makeSim(name: "A", state: .booted, id: id)
+        let state = AppState(simulators: [before], pendingOperations: [id: .boot])
+
+        // When
+        let out = Reducer.reduce(state, .refreshed([after]))
+
+        // Then
+        #expect(out.state.pendingOperations[id] == nil)
+    }
+
+    @Test("It should drop a pending boot when the sim has vanished from the refreshed list")
+    func refreshClearsPendingBootForVanishedSim() {
+        // Given — symmetric with the .shutdown / .delete vanish handling
+        let sim = makeSim(name: "A", state: .shutdown)
+        let state = AppState(simulators: [sim], pendingOperations: [sim.id: .boot])
+
+        // When
+        let out = Reducer.reduce(state, .refreshed([]))
+
+        // Then
+        #expect(out.state.pendingOperations[sim.id] == nil)
+    }
+
+    @Test("It should drop a pending shutdown when the sim has vanished from the refreshed list")
+    func refreshClearsPendingShutdownForVanishedSim() {
+        // Given
+        let sim = makeSim(name: "A", state: .booted)
+        let state = AppState(simulators: [sim], pendingOperations: [sim.id: .shutdown])
+
+        // When
+        let out = Reducer.reduce(state, .refreshed([]))
+
+        // Then
+        #expect(out.state.pendingOperations[sim.id] == nil)
+    }
+
+    @Test("It should clear statusMessage when reconciliation drops the last pending entry")
+    func refreshClearsStaleStatusBanner() {
+        // Given — sim already reached .shutdown but simctl shutdown still hung
+        let sim = makeSim(name: "A", state: .shutdown)
+        let state = AppState(
+            simulators: [sim],
+            statusMessage: "Shutting down A…",
+            pendingOperations: [sim.id: .shutdown]
+        )
+
+        // When
+        let out = Reducer.reduce(state, .refreshed([sim]))
+
+        // Then
+        #expect(out.state.pendingOperations[sim.id] == nil)
+        #expect(out.state.statusMessage == nil)
+    }
+
+    @Test("It should ignore operationCompleted whose pending entry was already reconciled away")
+    func operationCompletedIgnoredAfterReconcile() {
+        // Given — a different operation has surfaced its own status banner
+        let id = UUID()
+        let state = AppState(statusMessage: "Booting B…", pendingOperations: [:])
+
+        // When — late completion for an op that's already been reconciled
+        let out = Reducer.reduce(state, .operationCompleted(id))
+
+        // Then — newer op's banner is preserved; no spurious refresh effect
+        #expect(out.state.statusMessage == "Booting B…")
+        #expect(out.effects.isEmpty)
+    }
+
+    @Test("It should ignore operationFailed whose pending entry was already reconciled away")
+    func operationFailedIgnoredAfterReconcile() {
+        // Given — the user already saw the operation visibly succeed
+        let id = UUID()
+        let state = AppState(pendingOperations: [:])
+
+        // When — simctl process throws after the fact (timeout, broken pipe)
+        let out = Reducer.reduce(state, .operationFailed(id, "boom"))
+
+        // Then — no red error banner over a clean outcome
+        #expect(out.state.lastError == nil)
+        #expect(out.effects.isEmpty)
     }
 
     @Test("It should clamp the selection when the refreshed list shrinks")

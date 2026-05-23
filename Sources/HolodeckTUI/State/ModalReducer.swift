@@ -111,6 +111,13 @@ enum ModalReducer {
         switch key {
         case .char("y"), .char("Y"):
             next.modal = nil
+            // Don't clobber an unrelated in-flight intent (e.g. a pending
+            // .boot when the user confirms .delete). The sibling reducers
+            // at Reducer.swift apply the same guard on their own paths.
+            guard next.pendingOperations[id] == nil else {
+                next.statusMessage = "Simulator already has a pending operation"
+                return ReducerOutput(state: next)
+            }
             next.statusMessage = status
             next.pendingOperations[id] = operation
             return ReducerOutput(state: next, effects: [effect])
