@@ -56,7 +56,9 @@ public enum SimulatorListView {
             lines.append(recordingBanner(state: state, width: cols))
             bodyOffset = 1
         }
-        if let modal = state.modal {
+        if let modal = state.modal, case .commandPalette = modal {
+            // Palette overlays the list at render-end; no inline banner.
+        } else if let modal = state.modal {
             lines.append(modalBanner(modal: modal, width: cols, state: state))
             bodyOffset += 1
         }
@@ -103,6 +105,15 @@ public enum SimulatorListView {
             lines.append(ViewSupport.pad("", width: cols))
         }
 
+        if case let .commandPalette(palette) = state.modal {
+            lines = CommandPaletteView.overlay(
+                listLines: lines,
+                palette: palette,
+                state: state,
+                width: cols
+            )
+        }
+
         lines.append(ViewSupport.statusBar(state: state, width: cols))
         return lines.joined(separator: "\r\n")
     }
@@ -116,7 +127,7 @@ public enum SimulatorListView {
     // MARK: - Private
 
     private static let headerTitle = " holodeck "
-    private static let headerFullHint = " ⏎ toggle  / filter  i info  o url  f focus  r rec  p shot  a appear  n new  e erase  d delete  P privacy  ? help  q quit "
+    private static let headerFullHint = " ⏎ toggle  / filter  : cmd  i info  o url  f focus  r rec  p shot  a appear  n new  e erase  d delete  P privacy  ? help  q quit "
     private static let headerShortHint = " ⏎ toggle  ? help  q quit "
     private static let headerTitleCount = headerTitle.count
     private static let headerFullHintCount = headerFullHint.count
@@ -149,6 +160,8 @@ public enum SimulatorListView {
             preconditionFailure("inspector renders full-screen via InspectorView; not reachable here")
         case .openURL:
             preconditionFailure("openURL renders full-screen via OpenURLView; not reachable here")
+        case .commandPalette:
+            preconditionFailure("commandPalette renders as overlay via CommandPaletteView; not reachable here")
         case .help:
             text = "Help — press any key to dismiss"
         }
@@ -216,6 +229,7 @@ public enum SimulatorListView {
             ("d", "delete"),
             ("P", "privacy wizard (app → permission → action)"),
             ("/", "filter simulators by name"),
+            (":", "command palette (type an action)"),
             ("i", "inspect selected simulator"),
             ("o", "open URL / deep link on selected"),
             ("?", "this help"),

@@ -45,6 +45,8 @@ enum ModalReducer {
             return ReducerOutput(state: next)
         case let .openURL(prompt):
             return OpenURLModalReducer.handle(state: next, prompt: prompt, key: key)
+        case let .commandPalette(palette):
+            return CommandPaletteReducer.handle(state: next, palette: palette, key: key)
         case .help:
             next.modal = nil
             return ReducerOutput(state: next)

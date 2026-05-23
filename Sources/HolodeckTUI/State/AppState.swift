@@ -32,6 +32,7 @@ public enum Modal: Equatable, Sendable {
     case privacyWizard(PrivacyWizard)
     case inspector(UUID)
     case openURL(OpenURLPrompt)
+    case commandPalette(CommandPalette)
     case help
 
     /// Some modals reference a specific simulator by UDID. If that sim disappears
@@ -42,9 +43,22 @@ public enum Modal: Equatable, Sendable {
             id
         case let .openURL(prompt):
             prompt.simulatorID
-        case .appearance, .createWizard, .privacyWizard, .help:
+        case .appearance, .createWizard, .privacyWizard, .commandPalette, .help:
             nil
         }
+    }
+}
+
+public struct CommandPalette: Equatable, Sendable {
+
+    // MARK: - Properties
+
+    public var query: String
+
+    // MARK: - Lifecycle
+
+    public init(query: String = "") {
+        self.query = query
     }
 }
 

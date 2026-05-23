@@ -308,19 +308,15 @@ public enum Reducer {
             next.mainScrollOffset = 0
             return ReducerOutput(state: next)
 
-        case .char("i"):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            next.modal = .inspector(sim.id)
+        case .char(":"):
+            next.modal = .commandPalette(CommandPalette())
             return ReducerOutput(state: next)
 
+        case .char("i"):
+            return runCommand(.inspect, state: next)
+
         case .char("o"):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard sim.state == .booted else {
-                next.statusMessage = "Cannot open URL: \(sim.name) is \(sim.state.rawValue)"
-                return ReducerOutput(state: next)
-            }
-            next.modal = .openURL(OpenURLPrompt(simulatorID: sim.id))
-            return ReducerOutput(state: next)
+            return runCommand(.open, state: next)
 
         case .char("q"), .escape:
             if next.isRecording { return ReducerOutput(state: next, effects: [.stopRecording]) }
@@ -336,84 +332,35 @@ public enum Reducer {
                 next.statusMessage = "Stopping recording…"
                 return ReducerOutput(state: next, effects: [.stopRecording])
             }
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard sim.state == .booted else {
-                next.statusMessage = "Cannot record: \(sim.name) is \(sim.state.rawValue)"
-                return ReducerOutput(state: next)
-            }
-            next.statusMessage = "Starting recording…"
-            return ReducerOutput(state: next, effects: [.startRecording(sim.id)])
+            return runCommand(.record, state: next)
 
         case .char("p"):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard sim.state == .booted else {
-                next.statusMessage = "Cannot capture: \(sim.name) is \(sim.state.rawValue)"
-                return ReducerOutput(state: next)
-            }
-            next.statusMessage = "Capturing screenshot…"
-            return ReducerOutput(state: next, effects: [.captureScreenshot(sim.id)])
+            return runCommand(.screenshot, state: next)
 
         case .char("a"):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard sim.state == .booted else {
-                next.statusMessage = "Cannot set appearance: \(sim.name) is \(sim.state.rawValue)"
-                return ReducerOutput(state: next)
-            }
-            next.modal = .appearance
-            return ReducerOutput(state: next)
+            return runCommand(.appearance, state: next)
 
         case .char("e"):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard sim.state == .shutdown else {
-                next.statusMessage = "Cannot erase: \(sim.name) is \(sim.state.rawValue)"
-                return ReducerOutput(state: next)
-            }
-            next.modal = .confirmErase(sim.id)
-            return ReducerOutput(state: next)
+            return runCommand(.erase, state: next)
 
         case .char("d"):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            next.modal = .confirmDelete(sim.id)
-            return ReducerOutput(state: next)
+            return runCommand(.delete, state: next)
 
         case .char("n"):
-            next.modal = .createWizard(CreateWizard())
-            return ReducerOutput(state: next, effects: [.loadTargets])
+            return runCommand(.new, state: next)
 
         case .char("f"):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            next.statusMessage = "Focusing \(sim.name)…"
-            return ReducerOutput(state: next, effects: [.focusSimulator(sim.id)])
+            return runCommand(.focus, state: next)
 
         case .char("P"):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard sim.state == .booted else {
-                next.statusMessage = "Cannot inspect apps: \(sim.name) is \(sim.state.rawValue)"
-                return ReducerOutput(state: next)
-            }
-            next.modal = .privacyWizard(PrivacyWizard(simulatorID: sim.id))
-            return ReducerOutput(state: next, effects: [.loadInstalledApps(sim.id)])
+            return runCommand(.privacy, state: next)
 
         case .char("?"):
             next.modal = .help
             return ReducerOutput(state: next)
 
         case .enter, .char(" "):
-            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
-            guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
-            switch sim.state {
-            case .booted:
-                next.pendingOperations.insert(sim.id)
-                next.statusMessage = "Shutting down \(sim.name)…"
-                return ReducerOutput(state: next, effects: [.shutdown(sim.id)])
-            case .shutdown:
-                next.pendingOperations.insert(sim.id)
-                next.statusMessage = "Booting \(sim.name)…"
-                return ReducerOutput(state: next, effects: [.boot(sim.id)])
-            default:
-                next.statusMessage = "\(sim.name) is \(sim.state.rawValue)"
-                return ReducerOutput(state: next)
-            }
+            return toggleSelected(state: next)
 
         default:
             return ReducerOutput(state: next)
@@ -450,6 +397,132 @@ public enum Reducer {
             break
         }
         return ReducerOutput(state: next)
+    }
+
+    // swiftlint:disable function_body_length
+
+    /// Executes a palette command (or the equivalent keyboard shortcut).
+    /// Preconditions match `PaletteCommand.isApplicable`; when the precondition
+    /// fails this surfaces a transient status message instead of an effect.
+    static func runCommand(_ command: PaletteCommand, state: AppState) -> ReducerOutput {
+        var next = state
+        switch command {
+        case .new:
+            next.modal = .createWizard(CreateWizard())
+            return ReducerOutput(state: next, effects: [.loadTargets])
+
+        case .inspect:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            next.modal = .inspector(sim.id)
+            return ReducerOutput(state: next)
+
+        case .focus:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            next.statusMessage = "Focusing \(sim.name)…"
+            return ReducerOutput(state: next, effects: [.focusSimulator(sim.id)])
+
+        case .delete:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            next.modal = .confirmDelete(sim.id)
+            return ReducerOutput(state: next)
+
+        case .erase:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .shutdown else {
+                next.statusMessage = "Cannot erase: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.modal = .confirmErase(sim.id)
+            return ReducerOutput(state: next)
+
+        case .appearance:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "Cannot set appearance: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.modal = .appearance
+            return ReducerOutput(state: next)
+
+        case .screenshot:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "Cannot capture: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.statusMessage = "Capturing screenshot…"
+            return ReducerOutput(state: next, effects: [.captureScreenshot(sim.id)])
+
+        case .record:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "Cannot record: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.statusMessage = "Starting recording…"
+            return ReducerOutput(state: next, effects: [.startRecording(sim.id)])
+
+        case .open:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "Cannot open URL: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.modal = .openURL(OpenURLPrompt(simulatorID: sim.id))
+            return ReducerOutput(state: next)
+
+        case .privacy:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "Cannot inspect apps: \(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.modal = .privacyWizard(PrivacyWizard(simulatorID: sim.id))
+            return ReducerOutput(state: next, effects: [.loadInstalledApps(sim.id)])
+
+        case .boot:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
+            guard sim.state == .shutdown else {
+                next.statusMessage = "\(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.pendingOperations.insert(sim.id)
+            next.statusMessage = "Booting \(sim.name)…"
+            return ReducerOutput(state: next, effects: [.boot(sim.id)])
+
+        case .shutdown:
+            guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+            guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
+            guard sim.state == .booted else {
+                next.statusMessage = "\(sim.name) is \(sim.state.rawValue)"
+                return ReducerOutput(state: next)
+            }
+            next.pendingOperations.insert(sim.id)
+            next.statusMessage = "Shutting down \(sim.name)…"
+            return ReducerOutput(state: next, effects: [.shutdown(sim.id)])
+        }
+    }
+
+    // swiftlint:enable function_body_length
+
+    private static func toggleSelected(state: AppState) -> ReducerOutput {
+        var next = state
+        guard let sim = next.selectedSimulator else { return ReducerOutput(state: next) }
+        guard !next.pendingOperations.contains(sim.id) else { return ReducerOutput(state: next) }
+        switch sim.state {
+        case .booted:
+            next.pendingOperations.insert(sim.id)
+            next.statusMessage = "Shutting down \(sim.name)…"
+            return ReducerOutput(state: next, effects: [.shutdown(sim.id)])
+        case .shutdown:
+            next.pendingOperations.insert(sim.id)
+            next.statusMessage = "Booting \(sim.name)…"
+            return ReducerOutput(state: next, effects: [.boot(sim.id)])
+        default:
+            next.statusMessage = "\(sim.name) is \(sim.state.rawValue)"
+            return ReducerOutput(state: next)
+        }
     }
 
     private static func clampMainScroll(offset: Int, state: AppState) -> Int {
