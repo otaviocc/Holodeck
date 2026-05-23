@@ -78,17 +78,39 @@ enum CreateWizardView {
         guard !wizard.deviceTypes.isEmpty else {
             return [ViewSupport.pad("  (no device types available)", width: width)]
         }
-        let offset = max(0, min(wizard.deviceTypeScrollOffset, max(0, wizard.deviceTypes.count - bodyHeight)))
-        let end = min(wizard.deviceTypes.count, offset + bodyHeight)
-        return (offset..<end).map { index in
-            let dtype = wizard.deviceTypes[index]
-            return WizardChrome.row(
+        let showBanner = wizard.isDeviceTypeFilterFocused || !wizard.deviceTypeFilter.isEmpty
+        let visible = wizard.visibleDeviceTypes
+        let listHeight = max(1, bodyHeight - (showBanner ? 1 : 0))
+        var rows: [String] = []
+        if showBanner {
+            rows.append(deviceTypeFilterBanner(wizard: wizard, visibleCount: visible.count, width: width))
+        }
+        guard !visible.isEmpty else {
+            rows.append(ViewSupport.pad("  (no matches)", width: width))
+            return rows
+        }
+        let offset = max(0, min(wizard.deviceTypeScrollOffset, max(0, visible.count - listHeight)))
+        let end = min(visible.count, offset + listHeight)
+        for index in offset..<end {
+            let dtype = visible[index]
+            rows.append(WizardChrome.row(
                 label: dtype.name,
                 suffix: nil,
                 selected: index == wizard.deviceTypeIndex,
                 width: width
-            )
+            ))
         }
+        return rows
+    }
+
+    private static func deviceTypeFilterBanner(wizard: CreateWizard, visibleCount: Int, width: Int) -> String {
+        let cursor = wizard.isDeviceTypeFilterFocused ? "▌" : ""
+        let total = wizard.deviceTypes.count
+        let left = " Filter: \(wizard.deviceTypeFilter)\(cursor)"
+        let right = "\(visibleCount)/\(total) "
+        let gap = max(1, width - left.count - right.count)
+        let visible = "\(left)\(String(repeating: " ", count: gap))\(right)"
+        return "\(ANSI.cyan)\(ANSI.bold)\(visible)\(ANSI.reset)"
     }
 
     private static func renderRuntimes(wizard: CreateWizard, bodyHeight: Int, width: Int) -> [String] {
@@ -124,7 +146,11 @@ enum CreateWizardView {
         case .loading, .submitting:
             "Esc cancel"
         case .pickDeviceType:
-            "↑↓ navigate  ⏎ next  Esc cancel"
+            if wizard.isDeviceTypeFilterFocused {
+                "type to filter  ⏎ accept  Esc clear"
+            } else {
+                "↑↓ navigate  / filter  ⏎ next  Esc cancel"
+            }
         case .pickRuntime:
             "↑↓ navigate  ⏎ next  b back  Esc cancel"
         case .confirm:

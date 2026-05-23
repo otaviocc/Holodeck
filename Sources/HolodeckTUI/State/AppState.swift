@@ -213,6 +213,8 @@ public struct CreateWizard: Equatable, Sendable {
     public var deviceTypeScrollOffset: Int
     public var runtimeIndex: Int
     public var runtimeScrollOffset: Int
+    public var deviceTypeFilter: String
+    public var isDeviceTypeFilterFocused: Bool
     public var error: String?
 
     // MARK: - Lifecycle
@@ -225,6 +227,8 @@ public struct CreateWizard: Equatable, Sendable {
         deviceTypeScrollOffset: Int = 0,
         runtimeIndex: Int = 0,
         runtimeScrollOffset: Int = 0,
+        deviceTypeFilter: String = "",
+        isDeviceTypeFilterFocused: Bool = false,
         error: String? = nil
     ) {
         self.step = step
@@ -234,6 +238,8 @@ public struct CreateWizard: Equatable, Sendable {
         self.deviceTypeScrollOffset = deviceTypeScrollOffset
         self.runtimeIndex = runtimeIndex
         self.runtimeScrollOffset = runtimeScrollOffset
+        self.deviceTypeFilter = deviceTypeFilter
+        self.isDeviceTypeFilterFocused = isDeviceTypeFilterFocused
         self.error = error
     }
 
@@ -243,9 +249,15 @@ public struct CreateWizard: Equatable, Sendable {
         max(3, rows - 5)
     }
 
+    public var visibleDeviceTypes: [DeviceType] {
+        guard !deviceTypeFilter.isEmpty else { return deviceTypes }
+        return deviceTypes.filter { $0.name.localizedCaseInsensitiveContains(deviceTypeFilter) }
+    }
+
     public var selectedDeviceType: DeviceType? {
-        guard !deviceTypes.isEmpty, deviceTypeIndex < deviceTypes.count else { return nil }
-        return deviceTypes[deviceTypeIndex]
+        let list = visibleDeviceTypes
+        guard !list.isEmpty, deviceTypeIndex >= 0, deviceTypeIndex < list.count else { return nil }
+        return list[deviceTypeIndex]
     }
 
     public var selectedRuntime: Runtime? {

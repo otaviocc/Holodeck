@@ -25,6 +25,7 @@ import HolodeckCore
 import Testing
 @testable import HolodeckTUI
 
+// swiftlint:disable file_length type_body_length
 struct LifecycleReducerTests {
 
     private func sim(state: SimulatorState, name: String = "iPhone 16") throws -> Simulator {
@@ -279,6 +280,181 @@ struct LifecycleReducerTests {
         #expect(after.deviceTypeScrollOffset == 1)
     }
 
+    @Test("It should focus the filter on `/` from pickDeviceType")
+    func createWizardFilterFocusesOnSlash() {
+        // Given
+        let dtypes = [
+            DeviceType(identifier: "iphone-16", name: "iPhone 16"),
+            DeviceType(identifier: "ipad-pro", name: "iPad Pro")
+        ]
+        let wizard = CreateWizard(step: .pickDeviceType, deviceTypes: dtypes, deviceTypeIndex: 1)
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.char("/")))
+
+        // Then
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.isDeviceTypeFilterFocused == true)
+        #expect(after.deviceTypeFilter.isEmpty)
+        #expect(after.deviceTypeIndex == 0)
+        #expect(after.deviceTypeScrollOffset == 0)
+    }
+
+    @Test("It should narrow the visible device types as the user types into the filter")
+    func createWizardFilterAppendsAndNarrows() {
+        // Given
+        let dtypes = [
+            DeviceType(identifier: "iphone-16", name: "iPhone 16"),
+            DeviceType(identifier: "ipad-pro", name: "iPad Pro"),
+            DeviceType(identifier: "appletv-4k", name: "Apple TV 4K")
+        ]
+        var wizard = CreateWizard(step: .pickDeviceType, deviceTypes: dtypes)
+        wizard.isDeviceTypeFilterFocused = true
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When — type "pad"
+        var current = state
+        for character in "pad" {
+            current = Reducer.reduce(current, .key(.char(character))).state
+        }
+
+        // Then
+        guard case let .createWizard(after) = current.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.deviceTypeFilter == "pad")
+        #expect(after.visibleDeviceTypes.map(\.name) == ["iPad Pro"])
+        #expect(after.deviceTypeIndex == 0)
+    }
+
+    @Test("It should drop the last character on backspace while the filter is focused")
+    func createWizardFilterBackspace() {
+        // Given
+        var wizard = CreateWizard(
+            step: .pickDeviceType,
+            deviceTypes: [],
+            deviceTypeFilter: "ipad",
+            isDeviceTypeFilterFocused: true
+        )
+        wizard.isDeviceTypeFilterFocused = true
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.backspace))
+
+        // Then
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.deviceTypeFilter == "ipa")
+    }
+
+    @Test("It should clear the filter and defocus on Esc instead of closing the wizard")
+    func createWizardFilterEscapeClears() {
+        // Given
+        let dtypes = [DeviceType(identifier: "iphone-16", name: "iPhone 16")]
+        let wizard = CreateWizard(
+            step: .pickDeviceType,
+            deviceTypes: dtypes,
+            deviceTypeFilter: "ipad",
+            isDeviceTypeFilterFocused: true
+        )
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.escape))
+
+        // Then — wizard stays open, filter is cleared
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard to stay open")
+            return
+        }
+        #expect(after.deviceTypeFilter.isEmpty)
+        #expect(after.isDeviceTypeFilterFocused == false)
+    }
+
+    @Test("It should defocus the filter on Enter without advancing to pickRuntime")
+    func createWizardFilterEnterDefocuses() {
+        // Given
+        let dtypes = [DeviceType(identifier: "iphone-16", name: "iPhone 16")]
+        let wizard = CreateWizard(
+            step: .pickDeviceType,
+            deviceTypes: dtypes,
+            deviceTypeFilter: "iphone",
+            isDeviceTypeFilterFocused: true
+        )
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.enter))
+
+        // Then — filter defocused, step unchanged, query preserved
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.isDeviceTypeFilterFocused == false)
+        #expect(after.deviceTypeFilter == "iphone")
+        #expect(after.step == .pickDeviceType)
+    }
+
+    @Test("It should advance to pickRuntime against the visible device type when Enter is pressed after filtering")
+    func createWizardFilterPicksFromVisibleList() {
+        // Given — three device types, filter narrows to one match
+        let dtypes = [
+            DeviceType(identifier: "iphone-16", name: "iPhone 16"),
+            DeviceType(identifier: "ipad-pro", name: "iPad Pro"),
+            DeviceType(identifier: "appletv-4k", name: "Apple TV 4K")
+        ]
+        let wizard = CreateWizard(
+            step: .pickDeviceType,
+            deviceTypes: dtypes,
+            deviceTypeFilter: "pad",
+            isDeviceTypeFilterFocused: false
+        )
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.enter))
+
+        // Then — moved to pickRuntime with iPad Pro selected (proves selectedDeviceType indexes into the filtered list)
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.step == .pickRuntime)
+        #expect(after.selectedDeviceType?.name == "iPad Pro")
+    }
+
+    @Test("It should refuse to advance from pickDeviceType when the filter matches nothing")
+    func createWizardFilterEmptyMatchBlocksAdvance() {
+        // Given
+        let dtypes = [DeviceType(identifier: "iphone-16", name: "iPhone 16")]
+        let wizard = CreateWizard(
+            step: .pickDeviceType,
+            deviceTypes: dtypes,
+            deviceTypeFilter: "zzz",
+            isDeviceTypeFilterFocused: false
+        )
+        let state = AppState(modal: .createWizard(wizard))
+
+        // When
+        let out = Reducer.reduce(state, .key(.enter))
+
+        // Then — wizard stays on pickDeviceType (selectedDeviceType is nil)
+        guard case let .createWizard(after) = out.state.modal else {
+            Issue.record("expected wizard")
+            return
+        }
+        #expect(after.step == .pickDeviceType)
+    }
+
     @Test("It should scroll the runtime column down when the highlight crosses the edge")
     func createWizardRuntimeScrollsAtEdge() throws {
         // Given
@@ -302,3 +478,5 @@ struct LifecycleReducerTests {
         #expect(after.runtimeScrollOffset == 1)
     }
 }
+
+// swiftlint:enable file_length type_body_length

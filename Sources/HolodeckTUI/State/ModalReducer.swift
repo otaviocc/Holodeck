@@ -137,6 +137,15 @@ enum WizardReducer {
         var next = state
         var updated = wizard
         if case .escape = key {
+            // Esc while filtering clears the filter instead of closing the modal.
+            if wizard.step == .pickDeviceType, wizard.isDeviceTypeFilterFocused {
+                updated.isDeviceTypeFilterFocused = false
+                updated.deviceTypeFilter = ""
+                updated.deviceTypeIndex = 0
+                updated.deviceTypeScrollOffset = 0
+                next.modal = .createWizard(updated)
+                return ReducerOutput(state: next)
+            }
             next.modal = nil
             return ReducerOutput(state: next)
         }
@@ -145,11 +154,35 @@ enum WizardReducer {
         case .loading:
             return ReducerOutput(state: next)
         case .pickDeviceType:
+            if wizard.isDeviceTypeFilterFocused {
+                switch key {
+                case .enter:
+                    updated.isDeviceTypeFilterFocused = false
+                case .backspace:
+                    if !updated.deviceTypeFilter.isEmpty { updated.deviceTypeFilter.removeLast() }
+                    updated.deviceTypeIndex = 0
+                    updated.deviceTypeScrollOffset = 0
+                case let .char(character) where TextInput.isPrintable(character):
+                    updated.deviceTypeFilter.append(character)
+                    updated.deviceTypeIndex = 0
+                    updated.deviceTypeScrollOffset = 0
+                default:
+                    break
+                }
+                next.modal = .createWizard(updated)
+                return ReducerOutput(state: next)
+            }
             switch key {
             case .up, .char("k"):
                 updated.deviceTypeIndex = max(0, updated.deviceTypeIndex - 1)
             case .down, .char("j"):
-                updated.deviceTypeIndex = min(max(0, updated.deviceTypes.count - 1), updated.deviceTypeIndex + 1)
+                let lastIndex = Swift.max(0, updated.visibleDeviceTypes.count - 1)
+                updated.deviceTypeIndex = min(lastIndex, updated.deviceTypeIndex + 1)
+            case .char("/"):
+                updated.isDeviceTypeFilterFocused = true
+                updated.deviceTypeFilter = ""
+                updated.deviceTypeIndex = 0
+                updated.deviceTypeScrollOffset = 0
             case .enter:
                 guard updated.selectedDeviceType != nil else { return ReducerOutput(state: next) }
                 updated.step = .pickRuntime
