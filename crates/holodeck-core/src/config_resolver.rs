@@ -11,6 +11,7 @@ impl ConfigResolver {
     pub fn live() -> Self {
         let parent = std::env::var("XDG_CONFIG_HOME")
             .ok()
+            .filter(|xdg| !xdg.is_empty())
             .map(|xdg| PathBuf::from(shellexpand::tilde(&xdg).into_owned()))
             .or_else(|| dirs::home_dir().map(|home| home.join(".config")))
             .unwrap_or_else(|| PathBuf::from(".config"));

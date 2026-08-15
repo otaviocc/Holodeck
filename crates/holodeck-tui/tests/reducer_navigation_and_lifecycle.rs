@@ -139,7 +139,7 @@ fn operation_failed_for_a_tracked_entry_surfaces_the_error_and_refreshes() {
 }
 
 #[test]
-fn poll_tick_refreshes_when_idle_but_not_while_recording() {
+fn poll_tick_refreshes_when_idle_and_while_recording() {
     let state = state_with(vec![]);
     let idle = reduce(&state, AppEvent::PollTick);
     assert_eq!(idle.effects, vec![SideEffect::Refresh]);
@@ -147,7 +147,7 @@ fn poll_tick_refreshes_when_idle_but_not_while_recording() {
     let mut recording = state;
     recording.recording_device_id = Some(uuid::Uuid::new_v4());
     let out = reduce(&recording, AppEvent::PollTick);
-    assert!(out.effects.is_empty());
+    assert_eq!(out.effects, vec![SideEffect::Refresh]);
 }
 
 #[test]

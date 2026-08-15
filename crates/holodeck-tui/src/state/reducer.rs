@@ -54,9 +54,10 @@ pub fn reduce(state: &AppState, event: AppEvent) -> ReducerOutput {
         }
 
         AppEvent::PollTick => {
-            if next.is_recording() {
-                return ReducerOutput::new(next);
-            }
+            // Keep polling even while recording: `simctl list` is a
+            // read-only, independent process from the recording child, and
+            // skipping it left simulator/operation state stale for the
+            // entire (potentially multi-minute) recording.
             ReducerOutput::with_effects(next, vec![SideEffect::Refresh])
         }
 

@@ -39,11 +39,18 @@ impl EraseArgs {
             let mut tasks = Vec::new();
             for sim in sims {
                 let service = service.clone();
-                tasks.push(tokio::spawn(async move { service.erase(sim.id).await.map(|_| sim.name) }));
+                tasks.push(tokio::spawn(async move { (sim.name, service.erase(sim.id).await) }));
             }
+            let mut failures = Vec::new();
             for task in tasks {
-                let name = task.await??;
-                println!("Erased {name}.");
+                let (name, result) = task.await?;
+                match result {
+                    Ok(()) => println!("Erased {name}."),
+                    Err(err) => failures.push(format!("{name}: {err}")),
+                }
+            }
+            if !failures.is_empty() {
+                anyhow::bail!("Failed to erase {} simulator(s):\n{}", failures.len(), failures.join("\n"));
             }
             return Ok(());
         }

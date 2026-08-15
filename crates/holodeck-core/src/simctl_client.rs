@@ -164,7 +164,11 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
 
     async fn set_locale(&self, udid: Uuid, bcp47: &str) -> Result<(), SimctlError> {
         let apple_locale = bcp47.replace('-', "_");
-        let languages = self.run_simctl(vec![
+        // Run sequentially, not concurrently: if AppleLocale fails after
+        // AppleLanguages already succeeded, the error must say so explicitly
+        // so the caller knows the simulator is left with a half-applied,
+        // inconsistent locale/language pairing rather than a clean failure.
+        self.run_simctl(vec![
             "spawn".to_string(),
             udid.to_string(),
             "defaults".to_string(),
@@ -173,8 +177,12 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
             "AppleLanguages".to_string(),
             "-array".to_string(),
             bcp47.to_string(),
-        ]);
-        let locale = self.run_simctl(vec![
+        ])
+        .await
+        .map_err(|err| SimctlError::UnsupportedOperation {
+            reason: format!("failed to set AppleLanguages (AppleLocale not attempted): {err}"),
+        })?;
+        self.run_simctl(vec![
             "spawn".to_string(),
             udid.to_string(),
             "defaults".to_string(),
@@ -183,8 +191,11 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
             "AppleLocale".to_string(),
             "-string".to_string(),
             apple_locale,
-        ]);
-        tokio::try_join!(languages, locale)?;
+        ])
+        .await
+        .map_err(|err| SimctlError::UnsupportedOperation {
+            reason: format!("AppleLanguages was set, but AppleLocale failed, leaving an inconsistent locale: {err}"),
+        })?;
         Ok(())
     }
 

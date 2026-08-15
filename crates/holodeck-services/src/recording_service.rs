@@ -12,6 +12,11 @@ use uuid::Uuid;
 pub struct RecordingService {
     recorder: Recorder,
     current_output: Mutex<Option<PathBuf>>,
+    // Serializes `start()` calls so the `is_recording()` precheck and the
+    // `current_output` write happen atomically with `Recorder::start()`'s own
+    // idempotent no-op, preventing two overlapping starts from leaving
+    // `current_output` pointing at a path nobody is actually recording to.
+    start_lock: Mutex<()>,
 }
 
 impl Default for RecordingService {
@@ -22,7 +27,7 @@ impl Default for RecordingService {
 
 impl RecordingService {
     pub fn new() -> Self {
-        Self { recorder: Recorder::new(), current_output: Mutex::new(None) }
+        Self { recorder: Recorder::new(), current_output: Mutex::new(None), start_lock: Mutex::new(()) }
     }
 
     pub async fn is_recording(&self) -> bool {
@@ -30,6 +35,7 @@ impl RecordingService {
     }
 
     pub async fn start(&self, udid: Uuid, output: &Path, codec: VideoCodec) -> Result<(), SimctlError> {
+        let _start_guard = self.start_lock.lock().await;
         if self.is_recording().await {
             return Err(SimctlError::UnsupportedOperation { reason: "already recording".to_string() });
         }

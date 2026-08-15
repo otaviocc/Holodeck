@@ -46,10 +46,15 @@ impl RecordArgs {
         dependencies.recording_service.start(sim.id, &out_path, codec).await?;
         eprintln!("Recording to {} — press Ctrl-C to stop.", out_path.display());
 
-        tokio::signal::ctrl_c().await?;
+        // Even if installing/awaiting the Ctrl-C handler itself errors, fall
+        // through to stop() so the spawned `simctl io recordVideo` child
+        // isn't left running (and its video unfinalized) with no signal ever
+        // sent to it.
+        let ctrl_c_result = tokio::signal::ctrl_c().await;
 
         eprintln!("\nFinalizing…");
         let _ = dependencies.recording_service.stop().await;
+        ctrl_c_result?;
         println!("{}", out_path.display());
         Ok(())
     }

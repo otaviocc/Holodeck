@@ -42,9 +42,12 @@ impl Recorder {
     }
 
     pub async fn stop(&self) {
-        let mut guard = self.child.lock().await;
-        let Some(mut child) = guard.take() else {
-            return;
+        let mut child = {
+            let mut guard = self.child.lock().await;
+            let Some(child) = guard.take() else {
+                return;
+            };
+            child
         };
         if let Some(pid) = child.id() {
             // SAFETY: `pid` is the child we just spawned and still hold; SIGINT
@@ -53,6 +56,8 @@ impl Recorder {
                 libc::kill(pid as libc::pid_t, libc::SIGINT);
             }
         }
+        // The mutex is released before this potentially-slow wait so
+        // `is_running()`/`start()` don't block on it for the whole shutdown.
         let _ = child.wait().await;
     }
 }
