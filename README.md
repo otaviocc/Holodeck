@@ -10,29 +10,37 @@ holodeck boot "iPhone 17 Pro"
 holodeck record "iPhone 17 Pro" -o demo.mp4
 ```
 
-## Status
+## Usage
 
-179 tests pass across the workspace (`cargo test --workspace`), `cargo
-clippy --workspace --all-targets -- -D warnings` is clean, and `cargo fmt
---all -- --check` is clean.
+Run `holodeck` with no arguments to launch the TUI. For scripting, every
+subcommand accepts `--help`:
 
-- **holodeck-core**: models, the 20-operation `simctl` client, JSON
-  decoders, config loading, URL history, default media paths, and the
-  SIGINT-based video recorder.
-- **holodeck-services**: `SimulatorService` (name/UDID resolution with
-  exact/substring/ambiguous matching), the stateful `RecordingService`,
-  `ScreenshotService`, and the `AppDependencies` composition root.
-- **holodeck CLI**: 18 subcommands (`list`, `boot`, `shutdown`, `record`,
-  `screenshot`, `appearance`, `statusbar override|clear`, `locale`, `create`,
-  `erase`, `delete`, `focus`, `location set|clear`, `privacy`, `keychain
-  reset`, `apps list`, `openurl`, `tui`). Bare `holodeck` defaults to `tui`.
-- **holodeck-tui**: a pure `state/` layer (`AppState`, `Modal`, `AppEvent`,
-  `SideEffect`, `PaletteCommand`, and 6 reducers) driving a ratatui rendering
-  layer (`view.rs`) across 10 screens (main list, help, inline
-  appearance/confirm banners, inspector, open-URL prompt, create wizard,
-  privacy wizard, command-palette overlay), plus an `app.rs` event loop using
-  `ratatui::init()`/`restore()` for terminal lifecycle, a background thread
-  for input, and a `tokio::time::interval` poll-tick task.
+```bash
+holodeck --help              # all subcommands
+holodeck record --help       # one subcommand's options
+```
+
+| Subcommand | What it does |
+| --- | --- |
+| `list` | List simulators |
+| `boot` / `shutdown` | Boot or shut down a simulator |
+| `create` | Create a new simulator |
+| `erase` / `delete` | Erase a simulator's contents, or delete it entirely |
+| `focus` | Bring Simulator.app to the front |
+| `record` | Record a video |
+| `screenshot` | Capture a screenshot |
+| `appearance` | Set light or dark appearance |
+| `statusbar override` / `statusbar clear` | Override or clear status bar fields |
+| `locale` | Set the simulator's locale |
+| `location set` / `location clear` | Set or clear the simulated GPS location |
+| `privacy` | Grant, revoke, or reset a privacy permission |
+| `keychain reset` | Reset the simulator's keychain |
+| `apps list` | List installed apps |
+| `openurl` | Open a URL or deep link |
+| `tui` | Launch the interactive TUI (same as bare `holodeck`) |
+
+Every command that takes a simulator accepts either its full UDID or a
+name/substring (e.g. `"iPhone 17 Pro"` or just `"17 Pro"`).
 
 ## Theming
 
