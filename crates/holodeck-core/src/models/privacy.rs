@@ -6,6 +6,8 @@ pub enum PrivacyAction {
 }
 
 impl PrivacyAction {
+    pub const ALL: [PrivacyAction; 3] = [PrivacyAction::Grant, PrivacyAction::Revoke, PrivacyAction::Reset];
+
     pub fn raw_value(self) -> &'static str {
         match self {
             PrivacyAction::Grant => "grant",
