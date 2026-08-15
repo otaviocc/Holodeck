@@ -6,6 +6,7 @@
 mod support;
 
 use holodeck_core::models::InstalledApp;
+use holodeck_tui::Theme;
 use holodeck_tui::state::{AppState, CommandPalette, CreateWizard, Modal, OpenUrlPrompt, PrivacyWizard};
 use holodeck_tui::view::render;
 use ratatui::Terminal;
@@ -13,10 +14,19 @@ use ratatui::backend::TestBackend;
 use support::{booted, shutdown, state_with};
 
 fn rendered(state: &AppState) -> String {
+    rendered_with(state, &Theme::default_plus())
+}
+
+fn rendered_with(state: &AppState, theme: &Theme) -> String {
+    let (text, _) = render_to_text_and_buffer(state, theme);
+    text
+}
+
+fn render_to_text_and_buffer(state: &AppState, theme: &Theme) -> (String, ratatui::buffer::Buffer) {
     let backend = TestBackend::new(80, 24);
     let mut terminal = Terminal::new(backend).unwrap();
-    terminal.draw(|frame| render(frame, state)).unwrap();
-    let buffer = terminal.backend().buffer();
+    terminal.draw(|frame| render(frame, state, theme)).unwrap();
+    let buffer = terminal.backend().buffer().clone();
     let area = buffer.area;
     let mut out = String::new();
     for y in 0..area.height {
@@ -25,7 +35,7 @@ fn rendered(state: &AppState) -> String {
         }
         out.push('\n');
     }
-    out
+    (out, buffer)
 }
 
 #[test]
@@ -160,4 +170,60 @@ fn command_palette_overlay_shows_query_and_ghost_suffix() {
     let text = rendered(&state);
     assert!(text.contains("Command palette"));
     assert!(text.contains("bo"));
+}
+
+// MARK: - Theme wiring
+
+#[test]
+fn booted_and_shutdown_dots_use_success_and_hint_colors() {
+    // A is selected (index 0); the list's highlight style patches over a
+    // selected row's own colors, so B and C — left unselected — are what
+    // this test checks.
+    let state = state_with(vec![booted("A"), booted("B"), shutdown("C")]);
+    let theme = Theme::default_plus();
+    let (_, buffer) = render_to_text_and_buffer(&state, &theme);
+    let dots: Vec<_> = buffer
+        .content()
+        .iter()
+        .filter(|cell| cell.symbol() == "●" || cell.symbol() == "○")
+        .collect();
+    assert_eq!(dots.len(), 3, "expected two booted dots and one shutdown dot");
+    assert!(
+        dots.iter().any(|cell| cell.symbol() == "●" && cell.fg == theme.green),
+        "an unselected booted dot should be green"
+    );
+    assert!(
+        dots.iter().any(|cell| cell.symbol() == "○" && cell.fg == theme.muted_text),
+        "the shutdown dot should be muted"
+    );
+}
+
+#[test]
+fn status_bar_uses_error_color_over_bar_background() {
+    let mut state = state_with(vec![]);
+    state.last_error = Some("boom".to_string());
+    let theme = Theme::default_plus();
+    let (_, buffer) = render_to_text_and_buffer(&state, &theme);
+    let cell = &buffer[(1, 23)]; // inside "boom" on the bottom status-bar row
+    assert_eq!(cell.fg, theme.red);
+    assert_eq!(cell.bg, theme.selection_background);
+}
+
+#[test]
+fn switching_to_the_ansi_theme_changes_rendered_colors() {
+    // Same state, same text content, different theme: the two buffers must
+    // differ (in styling — the symbols are identical), proving the theme
+    // actually reaches rendering rather than being plumbed and ignored.
+    let state = state_with(vec![booted("A"), shutdown("B")]);
+    let (default_plus_text, default_plus_buffer) = render_to_text_and_buffer(&state, &Theme::default_plus());
+    let (ansi_text, ansi_buffer) = render_to_text_and_buffer(&state, &Theme::ansi());
+
+    assert_eq!(
+        default_plus_text, ansi_text,
+        "content should be identical — only styling should differ"
+    );
+    assert_ne!(
+        default_plus_buffer, ansi_buffer,
+        "the two themes should produce visibly different styling"
+    );
 }

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::config_resolver::ConfigResolver;
-use crate::models::{Platform, ScreenshotType, VideoCodec};
+use crate::models::{Platform, ScreenshotType, ThemeName, VideoCodec};
 
 fn default_screenshots_directory() -> String {
     "~/Desktop".to_string()
@@ -26,6 +26,8 @@ pub struct Config {
     pub screenshot_type: ScreenshotType,
     #[serde(default = "default_poll_interval_seconds")]
     pub poll_interval_seconds: f64,
+    #[serde(default)]
+    pub theme: ThemeName,
 }
 
 impl Default for Config {
@@ -36,6 +38,7 @@ impl Default for Config {
             video_codec: VideoCodec::default(),
             screenshot_type: ScreenshotType::default(),
             poll_interval_seconds: default_poll_interval_seconds(),
+            theme: ThemeName::default(),
         }
     }
 }
@@ -123,5 +126,17 @@ mod tests {
     fn resolves_tilde_in_screenshots_directory() {
         let config = Config::default();
         assert!(!config.resolved_screenshots_directory().to_string_lossy().contains('~'));
+    }
+
+    #[test]
+    fn theme_defaults_to_default_plus_and_can_be_overridden() {
+        let dir = tempfile::tempdir().unwrap();
+        let resolver = ConfigResolver::mock(dir.path());
+        let default_config = ConfigLoader::new(&resolver).load().unwrap();
+        assert_eq!(default_config.theme, ThemeName::DefaultPlus);
+
+        std::fs::write(dir.path().join(CONFIG_FILE_NAME), r#"{"theme":"ansi"}"#).unwrap();
+        let overridden = ConfigLoader::new(&resolver).load().unwrap();
+        assert_eq!(overridden.theme, ThemeName::Ansi);
     }
 }

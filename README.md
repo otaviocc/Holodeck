@@ -9,11 +9,21 @@ register this crate layout follows.
 
 ## Status
 
-**All 5 phases done.** Every crate is ported and verified end-to-end against
-real `xcrun simctl` on this machine — not just unit-tested. 155 tests pass
-across the workspace (`cargo test --workspace`), `cargo clippy --workspace
---all-targets -- -D warnings` is clean, and `cargo fmt --all -- --check` is
-clean.
+**All 5 phases done, plus theming.** Every crate is ported and verified
+end-to-end against real `xcrun simctl` on this machine — not just
+unit-tested. 170 tests pass across the workspace (`cargo test --workspace`),
+`cargo clippy --workspace --all-targets -- -D warnings` is clean, and `cargo
+fmt --all -- --check` is clean.
+
+The TUI ships with [Default+](https://github.com/otaviocc/default-plus) as
+its default color theme (`crates/holodeck-tui/src/theme.rs`) — a `Theme`
+struct of named semantic `Style`s (`header`, `accent`, `success`, `warning`,
+`error`, `hint`, `bar`, ...) resolved once at startup from `Config::theme`,
+rather than `Color` literals scattered through the view layer (architecture
+borrowed from [vigia](https://github.com/breferrari/vigia)'s `theme.rs`).
+`Theme::ansi()` is kept as an alternative that inherits the reader's own
+terminal scheme instead of asserting truecolor; set `"theme": "ansi"` in
+`~/.config/holodeck/config.json` to use it.
 
 - **holodeck-core**: every model, the 20-operation `simctl` client, both JSON
   decoders, config loading, URL history, default media paths, and the
@@ -70,7 +80,7 @@ rather than left in alt-screen/hidden-cursor state.
 ```
 crates/holodeck-core/      models, SimctlClient trait + Live impl, decoders, config, recorder
 crates/holodeck-services/  SimulatorService/RecordingService/ScreenshotService + AppDependencies
-crates/holodeck-tui/       state/ (pure, 6 reducers) + app.rs (event loop) + view.rs (ratatui) + input.rs
+crates/holodeck-tui/       state/ (pure, 6 reducers) + app.rs (event loop) + view.rs (ratatui) + theme.rs + input.rs
 crates/holodeck-cli/       18 clap subcommands, bin: holodeck
 ```
 

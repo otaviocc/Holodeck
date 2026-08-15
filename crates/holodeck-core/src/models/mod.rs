@@ -10,6 +10,7 @@ mod semantic_version;
 mod simctl_identifiers;
 mod simulator;
 mod simulator_state;
+mod theme_name;
 
 pub use appearance::{Appearance, BatteryState, StatusBarOverrides};
 pub use available_targets::AvailableTargets;
@@ -22,3 +23,4 @@ pub use runtime::Runtime;
 pub use semantic_version::SemanticVersion;
 pub use simulator::Simulator;
 pub use simulator_state::SimulatorState;
+pub use theme_name::ThemeName;

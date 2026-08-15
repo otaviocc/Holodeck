@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::input::map_key_event;
 use crate::state::{self, AppEvent, AppState, SideEffect};
+use crate::theme::Theme;
 use crate::view;
 
 pub struct HolodeckApp {
@@ -61,11 +62,14 @@ impl HolodeckApp {
             cols: i64::from(size.width),
             ..AppState::default()
         };
+        // Resolved once at launch, like the Swift TUI's other config reads
+        // (`pollIntervalSeconds`) — a theme change requires a restart.
+        let theme = Theme::from_name(self.dependencies.configuration.theme);
 
         self.dispatch(SideEffect::Refresh, tx.clone());
         self.dispatch(SideEffect::LoadUrlHistory, tx.clone());
 
-        terminal.draw(|frame| view::render(frame, &state))?;
+        terminal.draw(|frame| view::render(frame, &state, &theme))?;
         let mut last_rendered = state.clone();
 
         while let Some(event) = rx.recv().await {
@@ -75,7 +79,7 @@ impl HolodeckApp {
                 self.dispatch(effect, tx.clone());
             }
             if state != last_rendered {
-                terminal.draw(|frame| view::render(frame, &state))?;
+                terminal.draw(|frame| view::render(frame, &state, &theme))?;
                 last_rendered = state.clone();
             }
             if state.is_quitting {
