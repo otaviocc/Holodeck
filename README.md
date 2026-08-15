@@ -11,7 +11,7 @@ register this crate layout follows.
 
 **All 5 phases done, plus theming.** Every crate is ported and verified
 end-to-end against real `xcrun simctl` on this machine — not just
-unit-tested. 170 tests pass across the workspace (`cargo test --workspace`),
+unit-tested. 179 tests pass across the workspace (`cargo test --workspace`),
 `cargo clippy --workspace --all-targets -- -D warnings` is clean, and `cargo
 fmt --all -- --check` is clean.
 
@@ -21,9 +21,13 @@ struct of named semantic `Style`s (`header`, `accent`, `success`, `warning`,
 `error`, `hint`, `bar`, ...) resolved once at startup from `Config::theme`,
 rather than `Color` literals scattered through the view layer (architecture
 borrowed from [vigia](https://github.com/breferrari/vigia)'s `theme.rs`).
-`Theme::ansi()` is kept as an alternative that inherits the reader's own
-terminal scheme instead of asserting truecolor; set `"theme": "ansi"` in
-`~/.config/holodeck/config.json` to use it.
+Seven more built-in themes are available, each ported from its own project's
+canonical palette: **Tokyo Night**, **Nord**, **Dracula**, **Gruvbox**,
+**Catppuccin Mocha**, **Solarized Dark**, and **Ansi** (inherits the
+terminal's own 16-color scheme instead of asserting truecolor). Set
+`"theme"` in `~/.config/holodeck/config.json` to any of `default-plus`,
+`ansi`, `tokyo-night`, `nord`, `dracula`, `gruvbox`, `catppuccin-mocha`, or
+`solarized-dark`.
 
 - **holodeck-core**: every model, the 20-operation `simctl` client, both JSON
   decoders, config loading, URL history, default media paths, and the
