@@ -10,3 +10,8 @@ holodeck-core = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 uuid = { workspace = true }
+unicase = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
+tempfile = { workspace = true }

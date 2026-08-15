@@ -15,3 +15,9 @@ holodeck-services = { workspace = true }
 holodeck-tui = { workspace = true }
 tokio = { workspace = true }
 clap = { workspace = true }
+anyhow = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+shellexpand = { workspace = true }
