@@ -1,82 +1,45 @@
-# holodeck (Rust port)
+# holodeck
 
-A Rust port of [Holodeck](https://github.com/otaviocc/Holodeck) — a macOS CLI
-and TUI for managing iOS simulators — using [ratatui](https://ratatui.rs) for
-the terminal UI instead of a hand-rolled renderer.
+A macOS CLI and TUI for managing iOS simulators, built with
+[ratatui](https://ratatui.rs).
 
-See the port plan for the full effort analysis, phase breakdown, and risk
-register this crate layout follows.
+```bash
+holodeck                                 # full-screen TUI (default)
+holodeck list                            # scripting subcommands for CI / shell composition
+holodeck boot "iPhone 17 Pro"
+holodeck record "iPhone 17 Pro" -o demo.mp4
+```
 
 ## Status
 
-**All 5 phases done, plus theming.** Every crate is ported and verified
-end-to-end against real `xcrun simctl` on this machine — not just
-unit-tested. 179 tests pass across the workspace (`cargo test --workspace`),
-`cargo clippy --workspace --all-targets -- -D warnings` is clean, and `cargo
-fmt --all -- --check` is clean.
+179 tests pass across the workspace (`cargo test --workspace`), `cargo
+clippy --workspace --all-targets -- -D warnings` is clean, and `cargo fmt
+--all -- --check` is clean.
 
-The TUI ships with 8 built-in color themes (default:
-[Default+](https://github.com/otaviocc/default-plus)) — see
-[Theming](#theming) below.
-
-- **holodeck-core**: every model, the 20-operation `simctl` client, both JSON
+- **holodeck-core**: models, the 20-operation `simctl` client, JSON
   decoders, config loading, URL history, default media paths, and the
   SIGINT-based video recorder.
-- **holodeck-services**: `SimulatorService::resolve` (exact/substring/
-  ambiguous precedence), the stateful `RecordingService`, `ScreenshotService`,
-  and the `AppDependencies` composition root. The other Swift facades
-  (appearance, locale, location, privacy, status bar, keychain) were collapsed
-  — callers hold the `SimctlClient` trait object directly instead.
-- **holodeck CLI**: all 18 subcommands (`list`, `boot`, `shutdown`, `record`,
+- **holodeck-services**: `SimulatorService` (name/UDID resolution with
+  exact/substring/ambiguous matching), the stateful `RecordingService`,
+  `ScreenshotService`, and the `AppDependencies` composition root.
+- **holodeck CLI**: 18 subcommands (`list`, `boot`, `shutdown`, `record`,
   `screenshot`, `appearance`, `statusbar override|clear`, `locale`, `create`,
   `erase`, `delete`, `focus`, `location set|clear`, `privacy`, `keychain
-  reset`, `apps list`, `openurl`, `tui`), with the bare `holodeck` invocation
-  defaulting to `tui` exactly like the Swift `defaultSubcommand`.
-- **holodeck-tui**: the pure `state/` layer (`AppState`, `Modal`, `AppEvent`,
-  `SideEffect`, `PaletteCommand`, and the 6 reducers) ported near 1:1 from the
-  Swift Elm/TEA architecture, plus a from-scratch ratatui rendering layer
-  (`view.rs`) covering all 10 render paths (main list, help, inline
+  reset`, `apps list`, `openurl`, `tui`). Bare `holodeck` defaults to `tui`.
+- **holodeck-tui**: a pure `state/` layer (`AppState`, `Modal`, `AppEvent`,
+  `SideEffect`, `PaletteCommand`, and 6 reducers) driving a ratatui rendering
+  layer (`view.rs`) across 10 screens (main list, help, inline
   appearance/confirm banners, inspector, open-URL prompt, create wizard,
-  privacy wizard, command-palette overlay) and an `app.rs` event loop —
-  `ratatui::init()`/`restore()` for terminal lifecycle, a background OS
-  thread doing blocking `crossterm::event::poll`/`read` for input (no
-  `event-stream` feature needed, and no second `crossterm` dependency
-  declaration — see the crate's `Cargo.toml` comment), a `tokio::time::interval`
-  poll-tick task, and one generic `spawn`/`spawn_per_simulator` pair replacing
-  the ~18 near-identical `AppSpawn` helpers from the Swift original.
-
-Two real-hardware risks called out in the port plan have been verified against
-actual `xcrun simctl` on this machine, not just reasoned about:
-
-- `simctl listapps` emits an OpenStep/ASCII plist with no `--json` option and
-  no pure-Rust parser reads that format. Piping through
-  `plutil -convert json -o - -` (see `SimctlClient::list_apps`) works — 42
-  apps decoded correctly against a real booted simulator, and `holodeck apps
-  list` prints them in both table and `--json` form.
-- `Recorder::stop()` sends SIGINT via `libc::kill`, not `Child::kill()`
-  (SIGKILL), because only SIGINT lets `simctl io recordVideo` finalize a valid
-  MP4. Confirmed with `ffprobe` against a real recording — valid H.264/MP4
-  container, not a truncated file.
-
-The CLI was exercised end-to-end for boot/shutdown idempotence, ambiguous-match
-and not-found errors, the `y/N` confirm prompt (erase), validation errors
-(statusbar override with no fields, privacy grant without a bundle ID,
-delete/erase with neither a query nor a flag), and a real screenshot capture.
-The TUI was driven interactively under a real PTY (via a small Python harness
-allocating a pty and setting its window size, since this environment has no
-attached terminal) — real simulator data rendered correctly (runtime grouping,
-states, status bar), `j`/`k` navigation, the `?` help overlay, and `q` all
-worked, with the terminal cleanly restored (`\x1b[?1049l\x1b[?25h`) on exit
-rather than left in alt-screen/hidden-cursor state.
+  privacy wizard, command-palette overlay), plus an `app.rs` event loop using
+  `ratatui::init()`/`restore()` for terminal lifecycle, a background thread
+  for input, and a `tokio::time::interval` poll-tick task.
 
 ## Theming
 
 The TUI's colors are a `Theme` struct of named semantic styles
 (`crates/holodeck-tui/src/theme.rs`) rather than `Color` literals scattered
-through the view layer — architecture borrowed from
-[vigia](https://github.com/breferrari/vigia)'s `theme.rs`. Set `theme` in
-`~/.config/holodeck/config.json` to any of the values below (default:
-`default-plus`):
+through the view layer. Set `theme` in `~/.config/holodeck/config.json` to
+any of the values below (default: `default-plus`):
 
 | `theme` value | Theme | Source |
 | --- | --- | --- |
@@ -101,6 +64,23 @@ canonical palette — see `Theme::default_plus()`/`Theme::nord()`/etc. in
 `theme.rs` for the exact hex values and a note on any per-theme quirks (e.g.
 Dracula has no distinct "blue" and borrows its purple for that slot, matching
 Dracula's own ANSI spec).
+
+## Configuration
+
+`~/.config/holodeck/config.json` (honors `$XDG_CONFIG_HOME`) is read once at
+launch. A missing file uses the defaults below; a malformed file errors out.
+All fields are optional.
+
+```json
+{
+  "defaultPlatform": "iOS",
+  "screenshotsDirectory": "~/Desktop",
+  "videoCodec": "h264",
+  "screenshotType": "png",
+  "pollIntervalSeconds": 2.0,
+  "theme": "default-plus"
+}
+```
 
 ## Crate layout
 
