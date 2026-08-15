@@ -1,0 +1,44 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/holodeck-core",
+    "crates/holodeck-services",
+    "crates/holodeck-tui",
+    "crates/holodeck-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "MIT"
+repository = "https://github.com/otaviocc/Holodeck"
+authors = ["Otavio C."]
+
+[workspace.dependencies]
+holodeck-core = { path = "crates/holodeck-core", version = "0.1.0" }
+holodeck-services = { path = "crates/holodeck-services", version = "0.1.0" }
+holodeck-tui = { path = "crates/holodeck-tui", version = "0.1.0" }
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "sync", "time", "signal", "io-util"] }
+async-trait = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+shellexpand = "3"
+dirs = "5"
+tempfile = "3"
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+tabled = "0.17"
+ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
+libc = "0.2"
+signal-hook = { version = "0.3", default-features = false, features = ["iterator"] }
+unicase = "2"
+insta = "1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
