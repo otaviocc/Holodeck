@@ -1,10 +1,7 @@
 # holodeck
 
-https://github.com/user-attachments/assets/f0801d42-851c-4888-b030-66eff8efeb25
-
-A macOS CLI and TUI for managing iOS simulators. A Swift replacement for ad-hoc
-`xcrun simctl` wrappers, built as a single SwiftPM binary with no external
-runtime dependencies beyond `swift-argument-parser`.
+A macOS CLI and TUI for managing iOS simulators, built with
+[ratatui](https://ratatui.rs).
 
 ```bash
 holodeck                                 # full-screen TUI (default)
@@ -13,361 +10,107 @@ holodeck boot "iPhone 17 Pro"
 holodeck record "iPhone 17 Pro" -o demo.mp4
 ```
 
-## Install
+## Usage
 
-### Homebrew
-
-```bash
-brew install otaviocc/apps/holodeck
-```
-
-Builds from source on your machine — no signing or notarization involved.
-Needs Xcode 26+ with Swift 6.2+.
-
-### Mint
-
-[Mint](https://github.com/yonaskolb/Mint) also works:
-
-```bash
-mint install otaviocc/Holodeck
-```
-
-This pulls a tagged release, builds it once, and drops `holodeck` on your
-`PATH`.
-
-### Build from source
-
-```bash
-git clone https://github.com/otaviocc/Holodeck.git
-cd Holodeck
-swift build -c release
-cp .build/release/holodeck /usr/local/bin/   # or anywhere on PATH
-```
-
-Requirements: macOS with Xcode installed (`simctl` lives there) and Swift 6.2+
-— either via [`swiftly`](https://github.com/swiftlang/swiftly) or the Xcode
-toolchain (`xcrun swift …` works).
-
-For development, `swift build`, `swift test`, and `swift run holodeck …` all
-work from the repo root.
-
-## Quick start
-
-Run `holodeck` with no arguments to launch the TUI. The list refreshes every
-two seconds; arrow keys move the selection; `Enter` boots or shuts down;
-`?` opens an overlay listing every keybinding; `q` quits.
-
-For CLI use, every subcommand accepts `--help`:
+Run `holodeck` with no arguments to launch the TUI. For scripting, every
+subcommand accepts `--help`:
 
 ```bash
 holodeck --help              # all subcommands
 holodeck record --help       # one subcommand's options
 ```
 
-## TUI
+| Subcommand | What it does |
+| --- | --- |
+| `list` | List simulators |
+| `boot` / `shutdown` | Boot or shut down a simulator |
+| `create` | Create a new simulator |
+| `erase` / `delete` | Erase a simulator's contents, or delete it entirely |
+| `focus` | Bring Simulator.app to the front |
+| `record` | Record a video |
+| `screenshot` | Capture a screenshot |
+| `appearance` | Set light or dark appearance |
+| `statusbar override` / `statusbar clear` | Override or clear status bar fields |
+| `locale` | Set the simulator's locale |
+| `location set` / `location clear` | Set or clear the simulated GPS location |
+| `privacy` | Grant, revoke, or reset a privacy permission |
+| `keychain reset` | Reset the simulator's keychain |
+| `apps list` | List installed apps |
+| `openurl` | Open a URL or deep link |
+| `tui` | Launch the interactive TUI (same as bare `holodeck`) |
 
-The TUI polls `simctl list --json` every two seconds (polling pauses while
-recording). User config is read once at launch from
-`~/.config/holodeck/config.json` — see [Configuration](#configuration).
+Every command that takes a simulator accepts either its full UDID or a
+name/substring (e.g. `"iPhone 17 Pro"` or just `"17 Pro"`).
 
-| Key             | Action                                             |
-| ---             | ---                                                |
-| `↑ ↓` / `j k`   | Navigate the simulator list                        |
-| `Enter` / Space | Boot or shut down the selection                    |
-| `R`             | Force refresh                                      |
-| `r`             | Start / stop recording (banner while active)       |
-| `p`             | Screenshot                                         |
-| `a`             | Appearance submenu (`l` light / `d` dark / Esc)    |
-| `n`             | New simulator wizard (device type → runtime)       |
-| `f`             | Focus Simulator.app on the selection               |
-| `e`             | Erase (shut-down sims only; `y`/`n` confirm)       |
-| `d`             | Delete (`y`/`n` confirm)                           |
-| `P`             | Privacy wizard (app → permission → action)         |
-| `/`             | Filter simulators by name (Esc clears, Enter commits) |
-| `i`             | Inspect the selected simulator (UDID, paths, …)    |
-| `o`             | Open a URL / deep link on the selected booted sim  |
-| `?`             | Help overlay                                       |
-| `q` / `Esc`     | Quit (or cancel the active modal)                  |
+## Theming
 
-The terminal enters the alt-screen and raw mode on launch; SIGINT, SIGTERM,
-and SIGHUP handlers restore it before exit so a crash never leaves the shell
-broken.
+The TUI's colors are a `Theme` struct of named semantic styles
+(`crates/holodeck-tui/src/theme.rs`) rather than `Color` literals scattered
+through the view layer. Set `theme` in `~/.config/holodeck/config.json` to
+any of the values below (default: `default-plus`):
 
-## CLI
+| `theme` value | Theme | Source |
+| --- | --- | --- |
+| `default-plus` | Default+ *(default)* | [otaviocc/default-plus](https://github.com/otaviocc/default-plus) |
+| `ansi` | Terminal's own 16-color scheme | — |
+| `tokyo-night` | Tokyo Night | [folke/tokyonight.nvim](https://github.com/folke/tokyonight.nvim) |
+| `nord` | Nord | [nordtheme.com](https://www.nordtheme.com) |
+| `dracula` | Dracula | [draculatheme.com](https://draculatheme.com) |
+| `gruvbox` | Gruvbox (dark) | [morhetz/gruvbox](https://github.com/morhetz/gruvbox) |
+| `catppuccin-mocha` | Catppuccin Mocha | [catppuccin.com](https://catppuccin.com) |
+| `solarized-dark` | Solarized Dark | [ethanschoonover.com/solarized](https://ethanschoonover.com/solarized/) |
 
-Every command resolves a simulator by full UDID or by name (substring-fuzzy).
-Ambiguous names error out with the matching candidates. Pass `--help` to any
-command for the authoritative usage.
-
-### Inspect
-
-List installed simulators, grouped by runtime. `--json` emits a machine-readable
-array suitable for piping to `jq`; `--platform` filters by OS family.
-
-```bash
-holodeck list [--platform ios|watchos|tvos|visionos] [--json]
-
-holodeck list --platform ios --json | jq '.[].name'
+```json
+{
+  "theme": "nord"
+}
 ```
 
-List apps installed on a booted simulator. Default filters to user apps;
-`--system` includes Apple's preinstalled bundles. `--json` emits an array of
-`{bundleID, name, version, isUserApp}` records:
-
-```bash
-holodeck apps list <name-or-udid> [--system] [--json]
-
-holodeck apps list "iPhone 17 Pro" --json | jq '.[].bundleID'
-```
-
-### Lifecycle
-
-Boot a shut-down simulator:
-
-```bash
-holodeck boot <name-or-udid>
-
-holodeck boot "iPhone 17 Pro"
-```
-
-Shut down a booted simulator:
-
-```bash
-holodeck shutdown <name-or-udid>
-
-holodeck shutdown "iPhone 17 Pro"
-```
-
-Create a new simulator. `--device` and `--runtime` accept substrings matched
-against the live `simctl` device-type and runtime catalogs:
-
-```bash
-holodeck create <name> --device <substr> --runtime <substr>
-
-holodeck create "Demo iPhone" --device "iPhone 17 Pro" --runtime "iOS 18"
-```
-
-Erase a single shut-down simulator (or all of them with `--all`). Prompts
-before erasing; `-y` skips the prompt:
-
-```bash
-holodeck erase <name-or-udid> [-y]
-holodeck erase --all [-y]
-
-holodeck erase "Demo iPhone" -y
-```
-
-Delete a simulator (or every simulator whose runtime is no longer available
-with `--unavailable`). Prompts unless `-y`:
-
-```bash
-holodeck delete <name-or-udid> [-y]
-holodeck delete --unavailable [-y]
-
-holodeck delete --unavailable -y
-```
-
-### Capture
-
-Record video from a booted simulator. Press Ctrl-C to stop — SIGINT is
-forwarded to `simctl io` so the MP4 finalizes cleanly (SIGKILL would corrupt
-it):
-
-```bash
-holodeck record <name-or-udid> [-o path] [--codec h264|hevc]
-
-holodeck record "iPhone 17 Pro" --codec hevc -o ~/Desktop/demo.mp4
-```
-
-Capture a screenshot from a booted simulator. Prints the saved path on
-success:
-
-```bash
-holodeck screenshot <name-or-udid> [-o path] [--type png|jpeg|tiff|bmp]
-
-holodeck screenshot "iPhone 17 Pro" --type png
-```
-
-### Device state
-
-Set light or dark appearance (booted simulators only):
-
-```bash
-holodeck appearance <name-or-udid> light|dark
-
-holodeck appearance "iPhone 17 Pro" dark
-```
-
-Override one or more status-bar fields. Overrides reset when the simulator
-shuts down:
-
-```bash
-holodeck statusbar override <name-or-udid> \
-  [--time <hh:mm>] [--battery-state charging|charged|discharging] \
-  [--battery-level 0-100] [--wifi-bars 0-3] [--cellular-bars 0-4] \
-  [--operator-name <string>]
-
-holodeck statusbar override "iPhone 17 Pro" --time 9:41 --battery-level 100
-```
-
-Clear status-bar overrides:
-
-```bash
-holodeck statusbar clear <name-or-udid>
-
-holodeck statusbar clear "iPhone 17 Pro"
-```
-
-Set the simulator's locale and language (BCP-47). Writes both `AppleLanguages`
-and `AppleLocale`; reboot the simulator to apply:
-
-```bash
-holodeck locale <name-or-udid> <bcp47>
-
-holodeck locale "iPhone 17 Pro" pt-BR
-```
-
-Override the simulated GPS location (booted simulators only):
-
-```bash
-holodeck location set <name-or-udid> <latitude> <longitude>
-
-holodeck location set "iPhone 17 Pro" 37.7749 -122.4194
-```
-
-Clear the simulated location:
-
-```bash
-holodeck location clear <name-or-udid>
-
-holodeck location clear "iPhone 17 Pro"
-```
-
-### Privacy & data
-
-Grant, revoke, or reset a privacy permission. The bundle ID is required for
-`grant` and `revoke`; for `reset` it's optional (omit it to reset every app's
-prompt state for that permission).
-
-Permissions: `all`, `calendar`, `contacts`, `contacts-limited`, `location`,
-`location-always`, `photos`, `photos-add`, `media-library`, `microphone`,
-`motion`, `reminders`, `siri`.
-
-```bash
-holodeck privacy <name-or-udid> grant|revoke|reset <permission> [bundle-id]
-
-holodeck privacy "iPhone 17 Pro" grant photos com.example.MyApp
-holodeck privacy "iPhone 17 Pro" reset all
-```
-
-Wipe the simulator's keychain without erasing the whole device (handy for
-clearing test credentials between runs):
-
-```bash
-holodeck keychain reset <name-or-udid>
-
-holodeck keychain reset "iPhone 17 Pro"
-```
-
-### Window
-
-Bring Simulator.app to the front, focused on the selected device:
-
-```bash
-holodeck focus <name-or-udid>
-
-holodeck focus "iPhone 17 Pro"
-```
-
-> **Note.** Under the hood this runs `open -a Simulator --args
-> -CurrentDeviceUDID <udid>`, which Simulator.app persists into its
-> preferences. If you later quit Simulator.app and relaunch it (from
-> anywhere), it will start with that device focused. This is Simulator.app's
-> own behavior, not something holodeck tracks.
-
-Open a URL or deep link on a booted simulator. The TUI's `o` key opens a
-modal with history recall via `↑`/`↓`; the CLI is a one-shot:
-
-```bash
-holodeck openurl <name-or-udid> <url>
-
-holodeck openurl "iPhone 17 Pro" "https://apple.com"
-holodeck openurl "iPhone 17 Pro" "myapp://settings/account"
-```
+Every built-in (aside from `ansi`, which intentionally inherits whatever the
+reader's terminal defines) is ported verbatim from that project's own
+canonical palette — see `Theme::default_plus()`/`Theme::nord()`/etc. in
+`theme.rs` for the exact hex values and a note on any per-theme quirks (e.g.
+Dracula has no distinct "blue" and borrows its purple for that slot, matching
+Dracula's own ANSI spec).
 
 ## Configuration
 
-holodeck reads `~/.config/holodeck/config.json` (honoring `$XDG_CONFIG_HOME`)
-at launch. A missing file uses the defaults below; a malformed file errors
-out. All fields are optional — include only the ones you want to override.
+`~/.config/holodeck/config.json` (honors `$XDG_CONFIG_HOME`) is read once at
+launch. A missing file uses the defaults below; a malformed file errors out.
+All fields are optional.
 
 ```json
 {
   "defaultPlatform": "iOS",
-  "screenshotsDirectory": "~/Captures",
-  "videoCodec": "hevc",
+  "screenshotsDirectory": "~/Desktop",
+  "videoCodec": "h264",
   "screenshotType": "png",
-  "pollIntervalSeconds": 2.0
+  "pollIntervalSeconds": 2.0,
+  "theme": "default-plus"
 }
 ```
 
-| Field                  | Default     | Affects                                             |
-| ---                    | ---         | ---                                                 |
-| `defaultPlatform`      | `null`      | `list --platform` default                           |
-| `screenshotsDirectory` | `~/Desktop` | Output dir for `record` and `screenshot`            |
-| `videoCodec`           | `h264`      | `record --codec` default                            |
-| `screenshotType`       | `png`       | `screenshot --type` default                         |
-| `pollIntervalSeconds`  | `2.0`       | TUI refresh cadence                                 |
-
-CLI flags always win over config; config wins over hard-coded defaults.
-
-## Architecture
+## Crate layout
 
 ```
-┌─────────────────────────────────────────┐
-│  Presentation (HolodeckTUI + holodeck)  │  ← argument-parser subcommands, raw-mode TUI
-├─────────────────────────────────────────┤
-│  HolodeckServices                       │  ← facade services + AppDependencies
-├─────────────────────────────────────────┤
-│  HolodeckCore                           │  ← models, witnesses, ProcessRunner
-└─────────────────────────────────────────┘
-                  ▲
-                  │
-        HolodeckTestSupport  (test-only, hosts every .mock(...) factory)
+crates/holodeck-core/      models, SimctlClient trait + Live impl, decoders, config, recorder
+crates/holodeck-services/  SimulatorService/RecordingService/ScreenshotService + AppDependencies
+crates/holodeck-tui/       state/ (pure, 6 reducers) + app.rs (event loop) + view.rs (ratatui) + theme.rs + input.rs
+crates/holodeck-cli/       18 clap subcommands, bin: holodeck
 ```
 
-- I/O-owning types (`SimctlClient`, `Recorder`, `RecordingService`,
-  `URLHistoryStore`, `HolodeckConfigResolver`) are protocol witnesses —
-  `Sendable` structs of `@Sendable` closure properties with `.live(...)` /
-  `.mock(...)` factories. Construction goes through the factories; the
-  memberwise inits are `package`-access.
-- `SimctlClient` shells out to `xcrun simctl` and decodes `--json` output with
-  `Codable` — no regex parsing of the human-readable form. The underlying
-  `ProcessRunning` protocol stays injectable for shell-level testing.
-- `AppDependencies` is the composition root in `HolodeckServices`. CLI
-  subcommands and the TUI build `AppDependencies.live()` at the entry point
-  and read everything (config, services) from it. Tests build
-  `AppDependencies.mock(...)` with per-witness overrides.
-- The TUI is pure-data-driven: `Reducer.reduce` returns the next `AppState`
-  plus a list of `SideEffect` values; `HolodeckApp` dispatches each effect on
-  a detached `Task` and feeds responses back into the event stream.
-- Recording uses `Process.interrupt()` (SIGINT) to stop `simctl io recordVideo`
-  so the MP4 finalizes cleanly. SIGKILL would corrupt the file.
-
-## Development
+## Commands
 
 ```bash
-swift test                   # run the suite (Swift Testing, ~200 tests)
-swiftformat Sources Tests    # apply formatting (.swiftformat)
-swiftlint --quiet            # apply lint (.swiftlint.yml)
+cargo build --workspace
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo fmt --all -- --check
+
+# Launch the TUI (needs a real terminal):
+cargo run -p holodeck -- tui        # or just: cargo run -p holodeck
+
+# Manual smoke tests against real xcrun simctl (not part of `cargo test`):
+cargo run -p holodeck-core --example smoke
+cargo run -p holodeck-core --example record_smoke -- <booted-udid>
 ```
-
-Both format and lint should run clean on a fresh checkout. Tests cover JSON
-decoding, input parsing, the full reducer (navigation, recording, lifecycle
-modals, wizard), terminal-mode basics, the config loader, `Recorder`'s
-interrupt-and-wait semantics, `RecordingService`'s orchestration (via
-witness mocks, no real process), and `AppDependencies` wiring sanity.
-
-## License
-
-MIT — see file headers.
