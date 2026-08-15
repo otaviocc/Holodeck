@@ -13,6 +13,26 @@ holodeck boot "iPhone 17 Pro"
 holodeck record "iPhone 17 Pro" -o demo.mp4
 ```
 
+## Install
+
+### Homebrew
+
+```bash
+brew install otaviocc/apps/holodeck
+```
+
+Builds from source on your machine — no signing or notarization involved,
+and no Gatekeeper prompt on first run.
+
+### Cargo
+
+```bash
+cargo install --git https://github.com/otaviocc/Holodeck --tag v0.4.0 holodeck --locked
+```
+
+Both require Xcode (`xcrun simctl` must be on `PATH`) and, for Cargo, a Rust
+1.88+ toolchain.
+
 ## Usage
 
 Run `holodeck` with no arguments to launch the TUI. For scripting, every
