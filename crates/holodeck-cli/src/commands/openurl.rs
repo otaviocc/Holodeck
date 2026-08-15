@@ -23,13 +23,7 @@ impl OpenUrlArgs {
             anyhow::bail!("URL must not be empty.");
         }
         let service = SimulatorService::new(Arc::new(LiveSimctlClient::new()));
-        let sim = resolve_in_state(
-            &service,
-            &self.query,
-            SimulatorState::Booted,
-            "URLs only open on booted simulators",
-        )
-        .await?;
+        let sim = resolve_in_state(&service, &self.query, SimulatorState::Booted, "URLs only open on booted simulators").await?;
         service.open_url(sim.id, &self.url).await?;
         println!("Opened {} on {}.", self.url, sim.name);
         Ok(())

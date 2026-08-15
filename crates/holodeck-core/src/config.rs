@@ -57,9 +57,7 @@ pub struct ConfigLoader {
 
 impl ConfigLoader {
     pub fn new(resolver: &ConfigResolver) -> Self {
-        Self {
-            path: resolver.file(CONFIG_FILE_NAME),
-        }
+        Self { path: resolver.file(CONFIG_FILE_NAME) }
     }
 
     pub fn load(&self) -> Result<Config, ConfigLoadError> {

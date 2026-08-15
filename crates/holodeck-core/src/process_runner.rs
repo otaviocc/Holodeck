@@ -25,10 +25,6 @@ pub struct TokioProcessRunner;
 impl ProcessRunning for TokioProcessRunner {
     async fn run(&self, launch_path: &str, arguments: &[String]) -> std::io::Result<ProcessResult> {
         let output = tokio::process::Command::new(launch_path).args(arguments).output().await?;
-        Ok(ProcessResult {
-            stdout: output.stdout,
-            stderr: output.stderr,
-            exit_code: output.status.code().unwrap_or(-1),
-        })
+        Ok(ProcessResult { stdout: output.stdout, stderr: output.stderr, exit_code: output.status.code().unwrap_or(-1) })
     }
 }

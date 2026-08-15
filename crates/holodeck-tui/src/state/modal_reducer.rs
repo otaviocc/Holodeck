@@ -13,22 +13,12 @@ pub fn handle(state: &AppState, key: Key) -> ReducerOutput {
     let mut next = state.clone();
     match state.modal.clone() {
         Some(Modal::Appearance) => appearance(&next, key),
-        Some(Modal::ConfirmErase(id)) => confirm(
-            &next,
-            id,
-            key,
-            "Erasing…",
-            PendingOperation::Erase,
-            SideEffect::EraseSimulator(id),
-        ),
-        Some(Modal::ConfirmDelete(id)) => confirm(
-            &next,
-            id,
-            key,
-            "Deleting…",
-            PendingOperation::Delete,
-            SideEffect::DeleteSimulator(id),
-        ),
+        Some(Modal::ConfirmErase(id)) => {
+            confirm(&next, id, key, "Erasing…", PendingOperation::Erase, SideEffect::EraseSimulator(id))
+        }
+        Some(Modal::ConfirmDelete(id)) => {
+            confirm(&next, id, key, "Deleting…", PendingOperation::Delete, SideEffect::DeleteSimulator(id))
+        }
         Some(Modal::CreateWizard(wizard)) => wizard_handle(&next, &wizard, key),
         Some(Modal::PrivacyWizard(wizard)) => privacy_wizard_reducer::handle(&next, &wizard, key),
         Some(Modal::Inspector(_)) => {
@@ -168,11 +158,8 @@ fn wizard_handle(state: &AppState, wizard: &CreateWizard, key: Key) -> ReducerOu
                 _ => {}
             }
             let device_type_viewport = updated.device_type_viewport(state.rows);
-            updated.device_type_scroll_offset = AppState::scroll(
-                updated.device_type_scroll_offset,
-                updated.device_type_index,
-                device_type_viewport,
-            );
+            updated.device_type_scroll_offset =
+                AppState::scroll(updated.device_type_scroll_offset, updated.device_type_index, device_type_viewport);
         }
         CreateWizardStep::PickRuntime => {
             match key {
@@ -200,11 +187,7 @@ fn wizard_handle(state: &AppState, wizard: &CreateWizard, key: Key) -> ReducerOu
                 };
                 updated.step = CreateWizardStep::Submitting;
                 updated.error = None;
-                let effect = SideEffect::CreateSimulator {
-                    name: updated.default_name(),
-                    device_type,
-                    runtime,
-                };
+                let effect = SideEffect::CreateSimulator { name: updated.default_name(), device_type, runtime };
                 next.modal = Some(Modal::CreateWizard(updated));
                 return ReducerOutput::with_effects(next, vec![effect]);
             }

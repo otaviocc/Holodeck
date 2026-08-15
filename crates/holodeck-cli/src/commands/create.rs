@@ -63,13 +63,7 @@ impl CreateArgs {
         let runtime = unique_or_throw(runtime_matches, "runtime", &self.runtime)?;
 
         let id = service.create(&self.name, device_type, runtime).await?;
-        println!(
-            "Created {} ({}) — {} / {}",
-            self.name,
-            udid(id),
-            device_type.name,
-            runtime.display_name()
-        );
+        println!("Created {} ({}) — {} / {}", self.name, udid(id), device_type.name, runtime.display_name());
         Ok(())
     }
 }

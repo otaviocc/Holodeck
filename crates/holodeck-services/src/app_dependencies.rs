@@ -86,10 +86,7 @@ mod tests {
             Ok(())
         }
         async fn list_available_targets(&self) -> Result<AvailableTargets, SimctlError> {
-            Ok(AvailableTargets {
-                device_types: Vec::new(),
-                runtimes: Vec::new(),
-            })
+            Ok(AvailableTargets { device_types: Vec::new(), runtimes: Vec::new() })
         }
         async fn list_apps(&self, _udid: uuid::Uuid) -> Result<Vec<InstalledApp>, SimctlError> {
             Ok(Vec::new())
@@ -136,11 +133,7 @@ mod tests {
     fn new_wires_all_facades_from_one_client() {
         let dir = tempfile::tempdir().unwrap();
         let resolver = ConfigResolver::mock(dir.path());
-        let deps = AppDependencies::new(
-            Config::default(),
-            Arc::new(NoopClient),
-            Arc::new(UrlHistoryStore::new(&resolver)),
-        );
+        let deps = AppDependencies::new(Config::default(), Arc::new(NoopClient), Arc::new(UrlHistoryStore::new(&resolver)));
         assert_eq!(deps.configuration, Config::default());
     }
 }

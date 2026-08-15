@@ -28,10 +28,5 @@ pub fn shutdown(name: &str) -> Simulator {
 /// A default state with `sims` loaded and the first one selected, mirroring
 /// the Swift test suites' typical fixture.
 pub fn state_with(sims: Vec<Simulator>) -> AppState {
-    AppState {
-        simulators: sims,
-        rows: 24,
-        cols: 80,
-        ..AppState::default()
-    }
+    AppState { simulators: sims, rows: 24, cols: 80, ..AppState::default() }
 }

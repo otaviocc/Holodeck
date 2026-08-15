@@ -69,9 +69,7 @@ pub struct LiveSimctlClient<R: ProcessRunning = TokioProcessRunner> {
 
 impl LiveSimctlClient<TokioProcessRunner> {
     pub fn new() -> Self {
-        Self {
-            runner: TokioProcessRunner,
-        }
+        Self { runner: TokioProcessRunner }
     }
 }
 
@@ -87,15 +85,11 @@ impl<R: ProcessRunning> LiveSimctlClient<R> {
     }
 
     async fn run_process(&self, launch_path: &str, label: &str, arguments: Vec<String>) -> Result<Vec<u8>, SimctlError> {
-        let result = self
-            .runner
-            .run(launch_path, &arguments)
-            .await
-            .map_err(|err| SimctlError::CommandFailed {
-                command: format!("{label} {}", arguments.join(" ")),
-                exit_code: -1,
-                stderr: err.to_string(),
-            })?;
+        let result = self.runner.run(launch_path, &arguments).await.map_err(|err| SimctlError::CommandFailed {
+            command: format!("{label} {}", arguments.join(" ")),
+            exit_code: -1,
+            stderr: err.to_string(),
+        })?;
         if result.exit_code != 0 {
             return Err(SimctlError::CommandFailed {
                 command: format!("{label} {}", arguments.join(" ")),
@@ -121,9 +115,7 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
             args.push("available".to_string());
         }
         let stdout = self.run_simctl(args).await?;
-        device_list::decode(&stdout).map_err(|err| SimctlError::DecodingFailed {
-            underlying: Box::new(err),
-        })
+        device_list::decode(&stdout).map_err(|err| SimctlError::DecodingFailed { underlying: Box::new(err) })
     }
 
     async fn boot(&self, udid: Uuid) -> Result<(), SimctlError> {
@@ -150,21 +142,14 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
     }
 
     async fn set_appearance(&self, udid: Uuid, appearance: Appearance) -> Result<(), SimctlError> {
-        self.run_simctl(vec![
-            "ui".to_string(),
-            udid.to_string(),
-            "appearance".to_string(),
-            appearance.raw_value().to_string(),
-        ])
-        .await?;
+        self.run_simctl(vec!["ui".to_string(), udid.to_string(), "appearance".to_string(), appearance.raw_value().to_string()])
+            .await?;
         Ok(())
     }
 
     async fn set_status_bar(&self, udid: Uuid, overrides: &StatusBarOverrides) -> Result<(), SimctlError> {
         if overrides.is_empty() {
-            return Err(SimctlError::UnsupportedOperation {
-                reason: "no status bar overrides provided".to_string(),
-            });
+            return Err(SimctlError::UnsupportedOperation { reason: "no status bar overrides provided".to_string() });
         }
         let mut args = vec!["status_bar".to_string(), udid.to_string(), "override".to_string()];
         args.extend(overrides.simctl_arguments());
@@ -173,8 +158,7 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
     }
 
     async fn clear_status_bar(&self, udid: Uuid) -> Result<(), SimctlError> {
-        self.run_simctl(vec!["status_bar".to_string(), udid.to_string(), "clear".to_string()])
-            .await?;
+        self.run_simctl(vec!["status_bar".to_string(), udid.to_string(), "clear".to_string()]).await?;
         Ok(())
     }
 
@@ -206,24 +190,15 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
 
     async fn list_available_targets(&self) -> Result<AvailableTargets, SimctlError> {
         let stdout = self
-            .run_simctl(vec![
-                "list".to_string(),
-                "--json".to_string(),
-                "devicetypes".to_string(),
-                "runtimes".to_string(),
-            ])
+            .run_simctl(vec!["list".to_string(), "--json".to_string(), "devicetypes".to_string(), "runtimes".to_string()])
             .await?;
-        device_list::decode_available_targets(&stdout).map_err(|err| SimctlError::DecodingFailed {
-            underlying: Box::new(err),
-        })
+        device_list::decode_available_targets(&stdout).map_err(|err| SimctlError::DecodingFailed { underlying: Box::new(err) })
     }
 
     async fn list_apps(&self, udid: Uuid) -> Result<Vec<InstalledApp>, SimctlError> {
         let plist = self.run_simctl(vec!["listapps".to_string(), udid.to_string()]).await?;
         let json = self.plist_to_json(plist).await?;
-        app_list::decode(&json).map_err(|err| SimctlError::DecodingFailed {
-            underlying: Box::new(err),
-        })
+        app_list::decode(&json).map_err(|err| SimctlError::DecodingFailed { underlying: Box::new(err) })
     }
 
     async fn create(&self, name: &str, device_type_identifier: &str, runtime_identifier: &str) -> Result<Uuid, SimctlError> {
@@ -236,9 +211,8 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
             ])
             .await?;
         let trimmed = String::from_utf8_lossy(&stdout).trim().to_string();
-        Uuid::parse_str(&trimmed).map_err(|_| SimctlError::UnsupportedOperation {
-            reason: format!("create returned unexpected output: {trimmed}"),
-        })
+        Uuid::parse_str(&trimmed)
+            .map_err(|_| SimctlError::UnsupportedOperation { reason: format!("create returned unexpected output: {trimmed}") })
     }
 
     async fn erase(&self, udid: Uuid) -> Result<(), SimctlError> {
@@ -257,19 +231,13 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
     }
 
     async fn set_location(&self, udid: Uuid, latitude: f64, longitude: f64) -> Result<(), SimctlError> {
-        self.run_simctl(vec![
-            "location".to_string(),
-            udid.to_string(),
-            "set".to_string(),
-            format!("{latitude},{longitude}"),
-        ])
-        .await?;
+        self.run_simctl(vec!["location".to_string(), udid.to_string(), "set".to_string(), format!("{latitude},{longitude}")])
+            .await?;
         Ok(())
     }
 
     async fn clear_location(&self, udid: Uuid) -> Result<(), SimctlError> {
-        self.run_simctl(vec!["location".to_string(), udid.to_string(), "clear".to_string()])
-            .await?;
+        self.run_simctl(vec!["location".to_string(), udid.to_string(), "clear".to_string()]).await?;
         Ok(())
     }
 
@@ -280,12 +248,8 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
         permission: PrivacyPermission,
         bundle_id: Option<&str>,
     ) -> Result<(), SimctlError> {
-        let mut args = vec![
-            "privacy".to_string(),
-            udid.to_string(),
-            action.raw_value().to_string(),
-            permission.raw_value().to_string(),
-        ];
+        let mut args =
+            vec!["privacy".to_string(), udid.to_string(), action.raw_value().to_string(), permission.raw_value().to_string()];
         if let Some(bundle_id) = bundle_id {
             args.push(bundle_id.to_string());
         }
@@ -294,14 +258,12 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
     }
 
     async fn reset_keychain(&self, udid: Uuid) -> Result<(), SimctlError> {
-        self.run_simctl(vec!["keychain".to_string(), udid.to_string(), "reset".to_string()])
-            .await?;
+        self.run_simctl(vec!["keychain".to_string(), udid.to_string(), "reset".to_string()]).await?;
         Ok(())
     }
 
     async fn open_url(&self, udid: Uuid, url: &str) -> Result<(), SimctlError> {
-        self.run_simctl(vec!["openurl".to_string(), udid.to_string(), url.to_string()])
-            .await?;
+        self.run_simctl(vec!["openurl".to_string(), udid.to_string(), url.to_string()]).await?;
         Ok(())
     }
 
@@ -336,13 +298,7 @@ impl<R: ProcessRunning> LiveSimctlClient<R> {
             .stderr(std::process::Stdio::piped())
             .spawn()
             .map_err(SimctlError::Io)?;
-        child
-            .stdin
-            .take()
-            .expect("piped stdin")
-            .write_all(&plist)
-            .await
-            .map_err(SimctlError::Io)?;
+        child.stdin.take().expect("piped stdin").write_all(&plist).await.map_err(SimctlError::Io)?;
         let output = child.wait_with_output().await.map_err(SimctlError::Io)?;
         if !output.status.success() {
             return Err(SimctlError::CommandFailed {

@@ -20,11 +20,7 @@ struct SharedStub {
 impl ProcessRunning for SharedStub {
     async fn run(&self, launch_path: &str, arguments: &[String]) -> std::io::Result<ProcessResult> {
         self.calls.lock().unwrap().push((launch_path.to_string(), arguments.to_vec()));
-        Ok(ProcessResult {
-            stdout: Vec::new(),
-            stderr: Vec::new(),
-            exit_code: 0,
-        })
+        Ok(ProcessResult { stdout: Vec::new(), stderr: Vec::new(), exit_code: 0 })
     }
 }
 
@@ -47,13 +43,7 @@ async fn boot_argv() {
         client.boot(udid).await.unwrap();
     })
     .await;
-    assert_eq!(
-        calls,
-        vec![(
-            "/usr/bin/xcrun".to_string(),
-            vec!["simctl".to_string(), "boot".to_string(), udid.to_string()]
-        )]
-    );
+    assert_eq!(calls, vec![("/usr/bin/xcrun".to_string(), vec!["simctl".to_string(), "boot".to_string(), udid.to_string()])]);
 }
 
 #[tokio::test]
@@ -63,13 +53,7 @@ async fn shutdown_argv() {
         client.shutdown(udid).await.unwrap();
     })
     .await;
-    assert_eq!(
-        calls,
-        vec![(
-            "/usr/bin/xcrun".to_string(),
-            vec!["simctl".to_string(), "shutdown".to_string(), udid.to_string()]
-        )]
-    );
+    assert_eq!(calls, vec![("/usr/bin/xcrun".to_string(), vec!["simctl".to_string(), "shutdown".to_string(), udid.to_string()])]);
 }
 
 #[tokio::test]
@@ -84,13 +68,7 @@ async fn list_devices_available_only_argv() {
         calls,
         vec![(
             "/usr/bin/xcrun".to_string(),
-            vec![
-                "simctl".to_string(),
-                "list".to_string(),
-                "--json".to_string(),
-                "devices".to_string(),
-                "available".to_string()
-            ]
+            vec!["simctl".to_string(), "list".to_string(), "--json".to_string(), "devices".to_string(), "available".to_string()]
         )]
     );
 }
@@ -105,12 +83,7 @@ async fn list_devices_include_unavailable_argv() {
         calls,
         vec![(
             "/usr/bin/xcrun".to_string(),
-            vec![
-                "simctl".to_string(),
-                "list".to_string(),
-                "--json".to_string(),
-                "devices".to_string()
-            ]
+            vec!["simctl".to_string(), "list".to_string(), "--json".to_string(), "devices".to_string()]
         )]
     );
 }
@@ -140,10 +113,7 @@ async fn list_available_targets_argv() {
 async fn screenshot_argv() {
     let udid = Uuid::new_v4();
     let calls = run(|client| async move {
-        client
-            .screenshot(udid, std::path::Path::new("/tmp/out.png"), ScreenshotType::Png)
-            .await
-            .unwrap();
+        client.screenshot(udid, std::path::Path::new("/tmp/out.png"), ScreenshotType::Png).await.unwrap();
     })
     .await;
     assert_eq!(
@@ -174,13 +144,7 @@ async fn set_appearance_argv() {
         calls,
         vec![(
             "/usr/bin/xcrun".to_string(),
-            vec![
-                "simctl".to_string(),
-                "ui".to_string(),
-                udid.to_string(),
-                "appearance".to_string(),
-                "dark".to_string()
-            ]
+            vec!["simctl".to_string(), "ui".to_string(), udid.to_string(), "appearance".to_string(), "dark".to_string()]
         )]
     );
 }
@@ -199,10 +163,7 @@ async fn set_status_bar_rejects_empty_overrides_without_shelling_out() {
 #[tokio::test]
 async fn set_status_bar_argv() {
     let udid = Uuid::new_v4();
-    let overrides = StatusBarOverrides {
-        battery_level: Some(100),
-        ..Default::default()
-    };
+    let overrides = StatusBarOverrides { battery_level: Some(100), ..Default::default() };
     let calls = run(|client| async move {
         client.set_status_bar(udid, &overrides).await.unwrap();
     })
@@ -234,12 +195,7 @@ async fn clear_status_bar_argv() {
         calls,
         vec![(
             "/usr/bin/xcrun".to_string(),
-            vec![
-                "simctl".to_string(),
-                "status_bar".to_string(),
-                udid.to_string(),
-                "clear".to_string()
-            ]
+            vec!["simctl".to_string(), "status_bar".to_string(), udid.to_string(), "clear".to_string()]
         )]
     );
 }
@@ -252,16 +208,8 @@ async fn set_locale_fires_two_concurrent_spawns_rewriting_dash_to_underscore() {
     })
     .await;
     assert_eq!(calls.len(), 2);
-    assert!(
-        calls
-            .iter()
-            .any(|(_, args)| args.contains(&"AppleLanguages".to_string()) && args.contains(&"pt-BR".to_string()))
-    );
-    assert!(
-        calls
-            .iter()
-            .any(|(_, args)| args.contains(&"AppleLocale".to_string()) && args.contains(&"pt_BR".to_string()))
-    );
+    assert!(calls.iter().any(|(_, args)| args.contains(&"AppleLanguages".to_string()) && args.contains(&"pt-BR".to_string())));
+    assert!(calls.iter().any(|(_, args)| args.contains(&"AppleLocale".to_string()) && args.contains(&"pt_BR".to_string())));
 }
 
 #[tokio::test]
@@ -271,11 +219,7 @@ async fn create_argv_and_parses_uuid_from_trimmed_stdout() {
     #[async_trait]
     impl ProcessRunning for FixedStdoutRunner {
         async fn run(&self, _launch_path: &str, _arguments: &[String]) -> std::io::Result<ProcessResult> {
-            Ok(ProcessResult {
-                stdout: format!("  {}\n", self.0).into_bytes(),
-                stderr: Vec::new(),
-                exit_code: 0,
-            })
+            Ok(ProcessResult { stdout: format!("  {}\n", self.0).into_bytes(), stderr: Vec::new(), exit_code: 0 })
         }
     }
     let created = Uuid::new_v4();
@@ -313,13 +257,7 @@ async fn erase_argv() {
         client.erase(udid).await.unwrap();
     })
     .await;
-    assert_eq!(
-        calls,
-        vec![(
-            "/usr/bin/xcrun".to_string(),
-            vec!["simctl".to_string(), "erase".to_string(), udid.to_string()]
-        )]
-    );
+    assert_eq!(calls, vec![("/usr/bin/xcrun".to_string(), vec!["simctl".to_string(), "erase".to_string(), udid.to_string()])]);
 }
 
 #[tokio::test]
@@ -329,13 +267,7 @@ async fn delete_argv() {
         client.delete(udid).await.unwrap();
     })
     .await;
-    assert_eq!(
-        calls,
-        vec![(
-            "/usr/bin/xcrun".to_string(),
-            vec!["simctl".to_string(), "delete".to_string(), udid.to_string()]
-        )]
-    );
+    assert_eq!(calls, vec![("/usr/bin/xcrun".to_string(), vec!["simctl".to_string(), "delete".to_string(), udid.to_string()])]);
 }
 
 #[tokio::test]
@@ -346,10 +278,7 @@ async fn delete_unavailable_argv() {
     .await;
     assert_eq!(
         calls,
-        vec![(
-            "/usr/bin/xcrun".to_string(),
-            vec!["simctl".to_string(), "delete".to_string(), "unavailable".to_string()]
-        )]
+        vec![("/usr/bin/xcrun".to_string(), vec!["simctl".to_string(), "delete".to_string(), "unavailable".to_string()])]
     );
 }
 
@@ -386,12 +315,7 @@ async fn clear_location_argv() {
         calls,
         vec![(
             "/usr/bin/xcrun".to_string(),
-            vec![
-                "simctl".to_string(),
-                "location".to_string(),
-                udid.to_string(),
-                "clear".to_string()
-            ]
+            vec!["simctl".to_string(), "location".to_string(), udid.to_string(), "clear".to_string()]
         )]
     );
 }
@@ -400,23 +324,14 @@ async fn clear_location_argv() {
 async fn privacy_omits_bundle_id_when_none() {
     let udid = Uuid::new_v4();
     let calls = run(|client| async move {
-        client
-            .privacy(udid, PrivacyAction::Reset, PrivacyPermission::All, None)
-            .await
-            .unwrap();
+        client.privacy(udid, PrivacyAction::Reset, PrivacyPermission::All, None).await.unwrap();
     })
     .await;
     assert_eq!(
         calls,
         vec![(
             "/usr/bin/xcrun".to_string(),
-            vec![
-                "simctl".to_string(),
-                "privacy".to_string(),
-                udid.to_string(),
-                "reset".to_string(),
-                "all".to_string()
-            ]
+            vec!["simctl".to_string(), "privacy".to_string(), udid.to_string(), "reset".to_string(), "all".to_string()]
         )]
     );
 }
@@ -425,10 +340,7 @@ async fn privacy_omits_bundle_id_when_none() {
 async fn privacy_appends_bundle_id_when_present() {
     let udid = Uuid::new_v4();
     let calls = run(|client| async move {
-        client
-            .privacy(udid, PrivacyAction::Grant, PrivacyPermission::Photos, Some("com.example.App"))
-            .await
-            .unwrap();
+        client.privacy(udid, PrivacyAction::Grant, PrivacyPermission::Photos, Some("com.example.App")).await.unwrap();
     })
     .await;
     assert_eq!(
@@ -458,12 +370,7 @@ async fn reset_keychain_argv() {
         calls,
         vec![(
             "/usr/bin/xcrun".to_string(),
-            vec![
-                "simctl".to_string(),
-                "keychain".to_string(),
-                udid.to_string(),
-                "reset".to_string()
-            ]
+            vec!["simctl".to_string(), "keychain".to_string(), udid.to_string(), "reset".to_string()]
         )]
     );
 }
@@ -479,12 +386,7 @@ async fn open_url_argv() {
         calls,
         vec![(
             "/usr/bin/xcrun".to_string(),
-            vec![
-                "simctl".to_string(),
-                "openurl".to_string(),
-                udid.to_string(),
-                "https://apple.com".to_string()
-            ]
+            vec!["simctl".to_string(), "openurl".to_string(), udid.to_string(), "https://apple.com".to_string()]
         )]
     );
 }
@@ -517,11 +419,7 @@ async fn command_failure_surfaces_trimmed_stderr() {
     #[async_trait]
     impl ProcessRunning for FailingRunner {
         async fn run(&self, _launch_path: &str, _arguments: &[String]) -> std::io::Result<ProcessResult> {
-            Ok(ProcessResult {
-                stdout: Vec::new(),
-                stderr: b"  boom  \n".to_vec(),
-                exit_code: 1,
-            })
+            Ok(ProcessResult { stdout: Vec::new(), stderr: b"  boom  \n".to_vec(), exit_code: 1 })
         }
     }
     let client = LiveSimctlClient::with_runner(FailingRunner);

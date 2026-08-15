@@ -91,11 +91,7 @@ mod tests {
 
     #[test]
     fn builds_simctl_arguments_in_order() {
-        let overrides = StatusBarOverrides {
-            time: Some("9:41".to_string()),
-            battery_level: Some(100),
-            ..Default::default()
-        };
+        let overrides = StatusBarOverrides { time: Some("9:41".to_string()), battery_level: Some(100), ..Default::default() };
         assert_eq!(overrides.simctl_arguments(), vec!["--time", "9:41", "--batteryLevel", "100"]);
     }
 }

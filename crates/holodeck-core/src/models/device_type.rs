@@ -8,10 +8,7 @@ pub struct DeviceType {
 
 impl DeviceType {
     pub fn new(identifier: impl Into<String>, name: impl Into<String>) -> Self {
-        Self {
-            identifier: identifier.into(),
-            name: name.into(),
-        }
+        Self { identifier: identifier.into(), name: name.into() }
     }
 
     pub fn from_identifier(identifier: impl Into<String>) -> Self {

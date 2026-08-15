@@ -11,11 +11,7 @@ use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
-    let udid: Uuid = std::env::args()
-        .nth(1)
-        .expect("pass a booted udid as argv[1]")
-        .parse()
-        .expect("not a uuid");
+    let udid: Uuid = std::env::args().nth(1).expect("pass a booted udid as argv[1]").parse().expect("not a uuid");
     let output = PathBuf::from("/tmp/holodeck-rs-smoke.mp4");
     let _ = std::fs::remove_file(&output);
 

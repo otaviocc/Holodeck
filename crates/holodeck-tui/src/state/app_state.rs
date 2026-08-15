@@ -63,13 +63,7 @@ pub struct OpenUrlPrompt {
 
 impl OpenUrlPrompt {
     pub fn new(simulator_id: Uuid) -> Self {
-        Self {
-            simulator_id,
-            url: String::new(),
-            history_index: -1,
-            is_submitting: false,
-            error: None,
-        }
+        Self { simulator_id, url: String::new(), history_index: -1, is_submitting: false, error: None }
     }
 }
 
@@ -117,10 +111,7 @@ impl PrivacyWizard {
     }
 
     pub fn apps(&self) -> Vec<&InstalledApp> {
-        self.all_apps
-            .iter()
-            .filter(|app| self.show_system || app.is_user_app)
-            .collect()
+        self.all_apps.iter().filter(|app| self.show_system || app.is_user_app).collect()
     }
 
     pub fn selected_app(&self) -> Option<&InstalledApp> {
@@ -129,15 +120,11 @@ impl PrivacyWizard {
     }
 
     pub fn selected_action(&self) -> Option<PrivacyAction> {
-        usize::try_from(self.action_index)
-            .ok()
-            .and_then(|i| PrivacyAction::ALL.get(i).copied())
+        usize::try_from(self.action_index).ok().and_then(|i| PrivacyAction::ALL.get(i).copied())
     }
 
     pub fn selected_permission(&self) -> Option<PrivacyPermission> {
-        usize::try_from(self.permission_index)
-            .ok()
-            .and_then(|i| PrivacyPermission::ALL.get(i).copied())
+        usize::try_from(self.permission_index).ok().and_then(|i| PrivacyPermission::ALL.get(i).copied())
     }
 }
 
@@ -178,11 +165,7 @@ impl CreateWizard {
     /// The reducer's scroll math and the view's row clamp must agree on this
     /// number — otherwise the selected row can sit just off the bottom edge.
     pub fn device_type_viewport(&self, rows: i64) -> i64 {
-        let banner = if self.is_device_type_filter_focused || !self.device_type_filter.is_empty() {
-            1
-        } else {
-            0
-        };
+        let banner = if self.is_device_type_filter_focused || !self.device_type_filter.is_empty() { 1 } else { 0 };
         (Self::viewport(rows) - banner).max(1)
     }
 
@@ -191,17 +174,12 @@ impl CreateWizard {
             return self.device_types.iter().collect();
         }
         let needle = self.device_type_filter.to_lowercase();
-        self.device_types
-            .iter()
-            .filter(|d| d.name.to_lowercase().contains(&needle))
-            .collect()
+        self.device_types.iter().filter(|d| d.name.to_lowercase().contains(&needle)).collect()
     }
 
     pub fn selected_device_type(&self) -> Option<&DeviceType> {
         let list = self.visible_device_types();
-        usize::try_from(self.device_type_index)
-            .ok()
-            .and_then(|i| list.get(i).copied())
+        usize::try_from(self.device_type_index).ok().and_then(|i| list.get(i).copied())
     }
 
     pub fn selected_runtime(&self) -> Option<&Runtime> {
@@ -267,10 +245,7 @@ impl AppState {
             return self.simulators.iter().collect();
         }
         let needle = self.filter_query.to_lowercase();
-        self.simulators
-            .iter()
-            .filter(|sim| sim.name.to_lowercase().contains(&needle))
-            .collect()
+        self.simulators.iter().filter(|sim| sim.name.to_lowercase().contains(&needle)).collect()
     }
 
     pub fn selected_simulator(&self) -> Option<&Simulator> {

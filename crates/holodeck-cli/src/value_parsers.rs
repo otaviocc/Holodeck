@@ -51,9 +51,7 @@ pub fn parse_battery_state(raw: &str) -> Result<BatteryState, String> {
         "charging" => Ok(BatteryState::Charging),
         "charged" => Ok(BatteryState::Charged),
         "discharging" => Ok(BatteryState::Discharging),
-        other => Err(format!(
-            "invalid battery state '{other}' (expected charging, charged, discharging)"
-        )),
+        other => Err(format!("invalid battery state '{other}' (expected charging, charged, discharging)")),
     }
 }
 

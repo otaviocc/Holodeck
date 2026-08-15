@@ -23,13 +23,9 @@ impl AppearanceArgs {
     pub async fn run(&self) -> anyhow::Result<()> {
         let client: Arc<dyn SimctlClient> = Arc::new(LiveSimctlClient::new());
         let service = SimulatorService::new(client.clone());
-        let sim = resolve_in_state(
-            &service,
-            &self.query,
-            SimulatorState::Booted,
-            "appearance can only be set on booted simulators",
-        )
-        .await?;
+        let sim =
+            resolve_in_state(&service, &self.query, SimulatorState::Booted, "appearance can only be set on booted simulators")
+                .await?;
         client.set_appearance(sim.id, self.appearance).await?;
         println!("Set {} appearance to {}.", sim.name, self.appearance.raw_value());
         Ok(())

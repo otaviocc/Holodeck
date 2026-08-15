@@ -8,11 +8,6 @@ pub struct InstalledApp {
 
 impl InstalledApp {
     pub fn new(bundle_id: impl Into<String>, name: impl Into<String>, version: Option<String>, is_user_app: bool) -> Self {
-        Self {
-            bundle_id: bundle_id.into(),
-            name: name.into(),
-            version,
-            is_user_app,
-        }
+        Self { bundle_id: bundle_id.into(), name: name.into(), version, is_user_app }
     }
 }

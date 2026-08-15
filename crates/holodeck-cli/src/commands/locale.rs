@@ -22,18 +22,10 @@ impl LocaleArgs {
     pub async fn run(&self) -> anyhow::Result<()> {
         let client: Arc<dyn SimctlClient> = Arc::new(LiveSimctlClient::new());
         let service = SimulatorService::new(client.clone());
-        let sim = resolve_in_state(
-            &service,
-            &self.query,
-            SimulatorState::Booted,
-            "locale can only be set on booted simulators",
-        )
-        .await?;
+        let sim = resolve_in_state(&service, &self.query, SimulatorState::Booted, "locale can only be set on booted simulators")
+            .await?;
         client.set_locale(sim.id, &self.tag).await?;
-        println!(
-            "Set {} locale to {}. Reboot the simulator for changes to take effect.",
-            sim.name, self.tag
-        );
+        println!("Set {} locale to {}. Reboot the simulator for changes to take effect.", sim.name, self.tag);
         Ok(())
     }
 }

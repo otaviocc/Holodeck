@@ -18,10 +18,7 @@ pub fn handle(state: &AppState, prompt: &OpenUrlPrompt, key: Key) -> ReducerOutp
             }
             updated.is_submitting = true;
             updated.error = None;
-            let effect = SideEffect::OpenUrl {
-                udid: updated.simulator_id,
-                url: updated.url.clone(),
-            };
+            let effect = SideEffect::OpenUrl { udid: updated.simulator_id, url: updated.url.clone() };
             next.modal = Some(Modal::OpenUrl(updated));
             return ReducerOutput::with_effects(next, vec![effect]);
         }

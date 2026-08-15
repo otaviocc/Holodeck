@@ -27,12 +27,7 @@ impl EraseArgs {
     pub async fn run(&self) -> anyhow::Result<()> {
         let service = SimulatorService::new(Arc::new(LiveSimctlClient::new()));
         if self.all {
-            let sims: Vec<_> = service
-                .list(false)
-                .await?
-                .into_iter()
-                .filter(|s| s.state == SimulatorState::Shutdown)
-                .collect();
+            let sims: Vec<_> = service.list(false).await?.into_iter().filter(|s| s.state == SimulatorState::Shutdown).collect();
             if sims.is_empty() {
                 println!("No shut-down simulators to erase.");
                 return Ok(());

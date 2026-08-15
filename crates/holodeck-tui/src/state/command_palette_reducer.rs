@@ -59,7 +59,5 @@ pub fn handle(state: &AppState, palette: &CommandPalette, key: Key) -> ReducerOu
 pub fn top_match(query: &str, state: &AppState) -> Option<PaletteCommand> {
     let sim = state.selected_simulator();
     let is_recording = state.is_recording();
-    PaletteCommand::all()
-        .into_iter()
-        .find(|c| c.is_applicable(sim, is_recording) && c.matches(query))
+    PaletteCommand::all().into_iter().find(|c| c.is_applicable(sim, is_recording) && c.matches(query))
 }

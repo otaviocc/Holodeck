@@ -52,22 +52,15 @@ pub fn handle(state: &AppState, wizard: &PrivacyWizard, key: Key) -> ReducerOutp
                 updated.action_index = (updated.action_index + 1).min(PrivacyAction::ALL.len() as i64 - 1);
             }
             Key::Enter => {
-                let (Some(app), Some(action), Some(permission)) = (
-                    updated.selected_app(),
-                    updated.selected_action(),
-                    updated.selected_permission(),
-                ) else {
+                let (Some(app), Some(action), Some(permission)) =
+                    (updated.selected_app(), updated.selected_action(), updated.selected_permission())
+                else {
                     return ReducerOutput::new(next);
                 };
                 let bundle_id = app.bundle_id.clone();
                 updated.step = PrivacyWizardStep::Submitting;
                 updated.error = None;
-                let effect = SideEffect::ApplyPrivacy {
-                    udid: updated.simulator_id,
-                    action,
-                    permission,
-                    bundle_id,
-                };
+                let effect = SideEffect::ApplyPrivacy { udid: updated.simulator_id, action, permission, bundle_id };
                 next.modal = Some(Modal::PrivacyWizard(updated));
                 return ReducerOutput::with_effects(next, vec![effect]);
             }

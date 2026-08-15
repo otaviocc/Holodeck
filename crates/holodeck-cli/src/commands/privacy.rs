@@ -36,18 +36,10 @@ impl PrivacyArgs {
         let client: Arc<dyn SimctlClient> = Arc::new(LiveSimctlClient::new());
         let service = SimulatorService::new(client.clone());
         let sim = resolve_in_state(&service, &self.query, SimulatorState::Booted, "the simulator must be booted").await?;
-        client
-            .privacy(sim.id, self.action, self.permission, self.bundle_id.as_deref())
-            .await?;
+        client.privacy(sim.id, self.action, self.permission, self.bundle_id.as_deref()).await?;
         let target = self.bundle_id.as_ref().map(|b| format!(" for {b}")).unwrap_or_default();
         let action_capitalized = capitalize(self.action.raw_value());
-        println!(
-            "{} {}{} on {}.",
-            action_capitalized,
-            self.permission.raw_value(),
-            target,
-            sim.name
-        );
+        println!("{} {}{} on {}.", action_capitalized, self.permission.raw_value(), target, sim.name);
         Ok(())
     }
 }

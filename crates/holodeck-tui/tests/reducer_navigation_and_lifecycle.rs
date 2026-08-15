@@ -46,10 +46,7 @@ fn enter_boots_a_shutdown_simulator() {
     let state = state_with(vec![shutdown("A")]);
     let out = reduce(&state, AppEvent::Key(Key::Enter));
     assert_eq!(out.effects, vec![SideEffect::Boot(state.simulators[0].id)]);
-    assert_eq!(
-        out.state.pending_operations.get(&state.simulators[0].id),
-        Some(&PendingOperation::Boot)
-    );
+    assert_eq!(out.state.pending_operations.get(&state.simulators[0].id), Some(&PendingOperation::Boot));
     assert!(out.state.status_message.unwrap().contains("Booting"));
 }
 
@@ -58,10 +55,7 @@ fn enter_shuts_down_a_booted_simulator() {
     let state = state_with(vec![booted("A")]);
     let out = reduce(&state, AppEvent::Key(Key::Enter));
     assert_eq!(out.effects, vec![SideEffect::Shutdown(state.simulators[0].id)]);
-    assert_eq!(
-        out.state.pending_operations.get(&state.simulators[0].id),
-        Some(&PendingOperation::Shutdown)
-    );
+    assert_eq!(out.state.pending_operations.get(&state.simulators[0].id), Some(&PendingOperation::Shutdown));
 }
 
 #[test]
@@ -74,9 +68,7 @@ fn space_also_toggles_selected_simulator() {
 #[test]
 fn toggle_is_a_no_op_while_an_operation_is_pending() {
     let mut state = state_with(vec![shutdown("A")]);
-    state
-        .pending_operations
-        .insert(state.simulators[0].id, PendingOperation::Boot);
+    state.pending_operations.insert(state.simulators[0].id, PendingOperation::Boot);
     let out = reduce(&state, AppEvent::Key(Key::Enter));
     assert!(out.effects.is_empty());
 }
@@ -193,9 +185,7 @@ fn cannot_boot_an_already_booted_simulator_via_run_command() {
     // not Boot — exercise the boot-guard path through the palette instead by
     // simulating an already-shutdown sim with a pending op.
     let mut pending = state.clone();
-    pending
-        .pending_operations
-        .insert(state.simulators[0].id, PendingOperation::Shutdown);
+    pending.pending_operations.insert(state.simulators[0].id, PendingOperation::Shutdown);
     let out = reduce(&pending, AppEvent::Key(Key::Enter));
     assert!(out.effects.is_empty());
 }

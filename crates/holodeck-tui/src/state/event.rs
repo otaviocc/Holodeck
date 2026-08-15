@@ -11,10 +11,7 @@ pub enum AppEvent {
     Refreshed(Vec<Simulator>),
     RefreshFailed(String),
     Key(Key),
-    Resized {
-        rows: i64,
-        cols: i64,
-    },
+    Resized { rows: i64, cols: i64 },
     PollTick,
     OperationCompleted(Uuid),
     OperationFailed(Uuid, String),
@@ -25,24 +22,16 @@ pub enum AppEvent {
     ScreenshotFailed(String),
     AppearanceChanged(Uuid, Appearance),
     AppearanceFailed(String),
-    TargetsLoaded {
-        device_types: Vec<DeviceType>,
-        runtimes: Vec<Runtime>,
-    },
+    TargetsLoaded { device_types: Vec<DeviceType>, runtimes: Vec<Runtime> },
     TargetsFailed(String),
     SimulatorCreated(Uuid, String),
     SimulatorCreateFailed(String),
     AppsLoaded(Vec<InstalledApp>),
     AppsLoadFailed(String),
-    PrivacyApplied {
-        bundle_id: String,
-    },
+    PrivacyApplied { bundle_id: String },
     PrivacyApplyFailed(String),
     UrlHistoryLoaded(Vec<String>),
-    UrlOpened {
-        url: String,
-        history: Vec<String>,
-    },
+    UrlOpened { url: String, history: Vec<String> },
     UrlOpenFailed(String),
 }
 
@@ -58,24 +47,12 @@ pub enum SideEffect {
     EraseSimulator(Uuid),
     DeleteSimulator(Uuid),
     LoadTargets,
-    CreateSimulator {
-        name: String,
-        device_type: DeviceType,
-        runtime: Runtime,
-    },
+    CreateSimulator { name: String, device_type: DeviceType, runtime: Runtime },
     FocusSimulator(Uuid),
     LoadInstalledApps(Uuid),
-    ApplyPrivacy {
-        udid: Uuid,
-        action: PrivacyAction,
-        permission: PrivacyPermission,
-        bundle_id: String,
-    },
+    ApplyPrivacy { udid: Uuid, action: PrivacyAction, permission: PrivacyPermission, bundle_id: String },
     LoadUrlHistory,
-    OpenUrl {
-        udid: Uuid,
-        url: String,
-    },
+    OpenUrl { udid: Uuid, url: String },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -86,10 +63,7 @@ pub struct ReducerOutput {
 
 impl ReducerOutput {
     pub fn new(state: AppState) -> Self {
-        Self {
-            state,
-            effects: Vec::new(),
-        }
+        Self { state, effects: Vec::new() }
     }
 
     pub fn with_effects(state: AppState, effects: Vec<SideEffect>) -> Self {

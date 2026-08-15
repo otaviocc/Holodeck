@@ -69,19 +69,9 @@ fn print_table(simulators: &[Simulator]) {
     sorted.sort_by(|lhs, rhs| rhs.runtime.cmp(&lhs.runtime).then_with(|| lhs.name.cmp(&rhs.name)));
 
     let headers = ("RUNTIME", "NAME", "STATE", "UDID");
-    let runtime_w = sorted
-        .iter()
-        .map(|s| s.runtime.display_name().len())
-        .max()
-        .unwrap_or(0)
-        .max(headers.0.len());
+    let runtime_w = sorted.iter().map(|s| s.runtime.display_name().len()).max().unwrap_or(0).max(headers.0.len());
     let name_w = sorted.iter().map(|s| s.name.len()).max().unwrap_or(0).max(headers.1.len());
-    let state_w = sorted
-        .iter()
-        .map(|s| s.state.raw_value().len())
-        .max()
-        .unwrap_or(0)
-        .max(headers.2.len());
+    let state_w = sorted.iter().map(|s| s.state.raw_value().len()).max().unwrap_or(0).max(headers.2.len());
 
     let row = |runtime: &str, name: &str, state: &str, udid: &str| {
         format!("{runtime:runtime_w$}  {name:name_w$}  {state:state_w$}  {udid}")
@@ -89,9 +79,6 @@ fn print_table(simulators: &[Simulator]) {
 
     println!("{}", row(headers.0, headers.1, headers.2, headers.3));
     for sim in sorted {
-        println!(
-            "{}",
-            row(&sim.runtime.display_name(), &sim.name, sim.state.raw_value(), &udid(sim.id))
-        );
+        println!("{}", row(&sim.runtime.display_name(), &sim.name, sim.state.raw_value(), &udid(sim.id)));
     }
 }

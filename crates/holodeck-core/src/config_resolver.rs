@@ -14,9 +14,7 @@ impl ConfigResolver {
             .map(|xdg| PathBuf::from(shellexpand::tilde(&xdg).into_owned()))
             .or_else(|| dirs::home_dir().map(|home| home.join(".config")))
             .unwrap_or_else(|| PathBuf::from(".config"));
-        Self {
-            base: parent.join("holodeck"),
-        }
+        Self { base: parent.join("holodeck") }
     }
 
     pub fn mock(base: impl Into<PathBuf>) -> Self {

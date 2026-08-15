@@ -163,10 +163,8 @@ fn privacy_wizard_pick_app_lists_apps() {
 #[test]
 fn command_palette_overlay_shows_query_and_ghost_suffix() {
     let mut state = state_with(vec![shutdown("A")]);
-    state.modal = Some(Modal::CommandPalette(CommandPalette {
-        simulator_id: Some(state.simulators[0].id),
-        query: "bo".to_string(),
-    }));
+    state.modal =
+        Some(Modal::CommandPalette(CommandPalette { simulator_id: Some(state.simulators[0].id), query: "bo".to_string() }));
     let text = rendered(&state);
     assert!(text.contains("Command palette"));
     assert!(text.contains("bo"));
@@ -182,20 +180,10 @@ fn booted_and_shutdown_dots_use_success_and_hint_colors() {
     let state = state_with(vec![booted("A"), booted("B"), shutdown("C")]);
     let theme = Theme::default_plus();
     let (_, buffer) = render_to_text_and_buffer(&state, &theme);
-    let dots: Vec<_> = buffer
-        .content()
-        .iter()
-        .filter(|cell| cell.symbol() == "●" || cell.symbol() == "○")
-        .collect();
+    let dots: Vec<_> = buffer.content().iter().filter(|cell| cell.symbol() == "●" || cell.symbol() == "○").collect();
     assert_eq!(dots.len(), 3, "expected two booted dots and one shutdown dot");
-    assert!(
-        dots.iter().any(|cell| cell.symbol() == "●" && cell.fg == theme.green),
-        "an unselected booted dot should be green"
-    );
-    assert!(
-        dots.iter().any(|cell| cell.symbol() == "○" && cell.fg == theme.muted_text),
-        "the shutdown dot should be muted"
-    );
+    assert!(dots.iter().any(|cell| cell.symbol() == "●" && cell.fg == theme.green), "an unselected booted dot should be green");
+    assert!(dots.iter().any(|cell| cell.symbol() == "○" && cell.fg == theme.muted_text), "the shutdown dot should be muted");
 }
 
 #[test]
@@ -218,12 +206,6 @@ fn switching_to_the_ansi_theme_changes_rendered_colors() {
     let (default_plus_text, default_plus_buffer) = render_to_text_and_buffer(&state, &Theme::default_plus());
     let (ansi_text, ansi_buffer) = render_to_text_and_buffer(&state, &Theme::ansi());
 
-    assert_eq!(
-        default_plus_text, ansi_text,
-        "content should be identical — only styling should differ"
-    );
-    assert_ne!(
-        default_plus_buffer, ansi_buffer,
-        "the two themes should produce visibly different styling"
-    );
+    assert_eq!(default_plus_text, ansi_text, "content should be identical — only styling should differ");
+    assert_ne!(default_plus_buffer, ansi_buffer, "the two themes should produce visibly different styling");
 }

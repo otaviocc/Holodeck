@@ -11,22 +11,12 @@ async fn main() {
     println!("== list_devices(available=true) ==");
     let sims = client.list_devices(true).await.expect("list_devices failed");
     for sim in &sims {
-        println!(
-            "{} {} [{}] {}",
-            sim.name,
-            sim.runtime.display_name(),
-            sim.state.raw_value(),
-            sim.id
-        );
+        println!("{} {} [{}] {}", sim.name, sim.runtime.display_name(), sim.state.raw_value(), sim.id);
     }
 
     println!("\n== list_available_targets ==");
     let targets = client.list_available_targets().await.expect("list_available_targets failed");
-    println!(
-        "{} device types, {} runtimes",
-        targets.device_types.len(),
-        targets.runtimes.len()
-    );
+    println!("{} device types, {} runtimes", targets.device_types.len(), targets.runtimes.len());
 
     if let Some(booted) = sims.iter().find(|s| s.state.raw_value() == "Booted") {
         println!("\n== list_apps on booted {} ==", booted.name);

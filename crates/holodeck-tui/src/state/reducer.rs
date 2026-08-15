@@ -129,21 +129,15 @@ pub fn reduce(state: &AppState, event: AppEvent) -> ReducerOutput {
             ReducerOutput::new(next)
         }
 
-        AppEvent::TargetsLoaded {
-            mut device_types,
-            mut runtimes,
-        } => {
+        AppEvent::TargetsLoaded { mut device_types, mut runtimes } => {
             if let Some(Modal::CreateWizard(wizard)) = &next.modal {
                 let mut updated = wizard.clone();
                 device_types.sort_by(|a, b| a.name.cmp(&b.name));
                 runtimes.sort_by(|a, b| b.cmp(a));
                 updated.device_types = device_types;
                 updated.runtimes = runtimes;
-                updated.step = if updated.device_types.is_empty() {
-                    CreateWizardStep::Loading
-                } else {
-                    CreateWizardStep::PickDeviceType
-                };
+                updated.step =
+                    if updated.device_types.is_empty() { CreateWizardStep::Loading } else { CreateWizardStep::PickDeviceType };
                 next.modal = Some(Modal::CreateWizard(updated));
             }
             ReducerOutput::new(next)

@@ -71,14 +71,8 @@ mod tests {
         assert_eq!(serde_json::to_string(&ThemeName::Nord).unwrap(), "\"nord\"");
         assert_eq!(serde_json::to_string(&ThemeName::Dracula).unwrap(), "\"dracula\"");
         assert_eq!(serde_json::to_string(&ThemeName::Gruvbox).unwrap(), "\"gruvbox\"");
-        assert_eq!(
-            serde_json::to_string(&ThemeName::CatppuccinMocha).unwrap(),
-            "\"catppuccin-mocha\""
-        );
-        assert_eq!(
-            serde_json::to_string(&ThemeName::SolarizedDark).unwrap(),
-            "\"solarized-dark\""
-        );
+        assert_eq!(serde_json::to_string(&ThemeName::CatppuccinMocha).unwrap(), "\"catppuccin-mocha\"");
+        assert_eq!(serde_json::to_string(&ThemeName::SolarizedDark).unwrap(), "\"solarized-dark\"");
     }
 
     #[test]

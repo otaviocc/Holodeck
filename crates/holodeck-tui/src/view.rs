@@ -42,10 +42,7 @@ pub fn render(frame: &mut Frame, state: &AppState, theme: &Theme) {
 fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
     let mut banner_rows: Vec<Line> = Vec::new();
     if state.is_recording() {
-        banner_rows.push(Line::styled(
-            " ● Recording — press r or q to stop",
-            theme.error().add_modifier(Modifier::BOLD),
-        ));
+        banner_rows.push(Line::styled(" ● Recording — press r or q to stop", theme.error().add_modifier(Modifier::BOLD)));
     }
     match &state.modal {
         Some(Modal::Appearance) => {
@@ -65,10 +62,7 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
     constraints.push(Constraint::Length(1)); // status bar
     let areas = Layout::vertical(constraints).split(frame.area());
 
-    frame.render_widget(
-        Paragraph::new(Line::styled(" holodeck — iOS Simulator manager", theme.header())),
-        areas[0],
-    );
+    frame.render_widget(Paragraph::new(Line::styled(" holodeck — iOS Simulator manager", theme.header())), areas[0]);
     if !banner_rows.is_empty() {
         frame.render_widget(Paragraph::new(banner_rows), areas[1]);
     }
@@ -83,11 +77,7 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
 fn render_simulator_list(frame: &mut Frame, state: &AppState, theme: &Theme, area: Rect) {
     let visible = state.visible_simulators();
     if visible.is_empty() {
-        let message = if state.simulators.is_empty() {
-            "(no simulators)"
-        } else {
-            "(no matches)"
-        };
+        let message = if state.simulators.is_empty() { "(no simulators)" } else { "(no matches)" };
         frame.render_widget(Paragraph::new(message).style(theme.hint()), area);
         return;
     }
@@ -166,14 +156,8 @@ fn render_inspector(frame: &mut Frame, state: &AppState, theme: &Theme, id: uuid
         ("Device type", sim.device_type.name.clone()),
         ("State", sim.state.raw_value().to_string()),
         ("Available", sim.is_available.to_string()),
-        (
-            "Data path",
-            sim.data_path.as_ref().map(|p| p.display().to_string()).unwrap_or_default(),
-        ),
-        (
-            "Log path",
-            sim.log_path.as_ref().map(|p| p.display().to_string()).unwrap_or_default(),
-        ),
+        ("Data path", sim.data_path.as_ref().map(|p| p.display().to_string()).unwrap_or_default()),
+        ("Log path", sim.log_path.as_ref().map(|p| p.display().to_string()).unwrap_or_default()),
     ];
     let label_width = rows.iter().map(|(l, _)| l.len()).max().unwrap_or(0);
     let mut lines = vec![Line::styled("Inspector", theme.header()), Line::from("")];
@@ -204,13 +188,8 @@ fn render_open_url(frame: &mut Frame, theme: &Theme, prompt: &OpenUrlPrompt) {
 // MARK: - Create wizard
 
 fn render_create_wizard(frame: &mut Frame, theme: &Theme, wizard: &CreateWizard) {
-    let areas = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
-        Constraint::Min(1),
-        Constraint::Length(1),
-    ])
-    .split(frame.area());
+    let areas = Layout::vertical([Constraint::Length(1), Constraint::Length(1), Constraint::Min(1), Constraint::Length(1)])
+        .split(frame.area());
     frame.render_widget(Paragraph::new(Line::styled(breadcrumb(wizard.step), theme.bar())), areas[0]);
 
     match wizard.step {
@@ -225,21 +204,16 @@ fn render_create_wizard(frame: &mut Frame, theme: &Theme, wizard: &CreateWizard)
                 );
             }
             let visible = wizard.visible_device_types();
-            let items: Vec<ListItem> = visible
-                .iter()
-                .map(|d| ListItem::new(Span::styled(d.name.clone(), theme.base())))
-                .collect();
+            let items: Vec<ListItem> =
+                visible.iter().map(|d| ListItem::new(Span::styled(d.name.clone(), theme.base()))).collect();
             let mut list_state = ListState::default();
             list_state.select(usize::try_from(wizard.device_type_index).ok());
             let list = List::new(items).highlight_style(theme.bar());
             frame.render_stateful_widget(list, areas[2], &mut list_state);
         }
         CreateWizardStep::PickRuntime => {
-            let items: Vec<ListItem> = wizard
-                .runtimes
-                .iter()
-                .map(|r| ListItem::new(Span::styled(r.display_name(), theme.base())))
-                .collect();
+            let items: Vec<ListItem> =
+                wizard.runtimes.iter().map(|r| ListItem::new(Span::styled(r.display_name(), theme.base()))).collect();
             let mut list_state = ListState::default();
             list_state.select(usize::try_from(wizard.runtime_index).ok());
             let list = List::new(items).highlight_style(theme.bar());
@@ -289,10 +263,7 @@ fn wizard_footer_hint(step: CreateWizardStep) -> &'static str {
 
 fn render_privacy_wizard(frame: &mut Frame, theme: &Theme, wizard: &PrivacyWizard) {
     let areas = Layout::vertical([Constraint::Length(1), Constraint::Min(1), Constraint::Length(1)]).split(frame.area());
-    frame.render_widget(
-        Paragraph::new(Line::styled(privacy_breadcrumb(wizard.step), theme.bar())),
-        areas[0],
-    );
+    frame.render_widget(Paragraph::new(Line::styled(privacy_breadcrumb(wizard.step), theme.bar())), areas[0]);
 
     match wizard.step {
         PrivacyWizardStep::LoadingApps | PrivacyWizardStep::Submitting => {
@@ -368,19 +339,11 @@ fn render_command_palette_overlay(frame: &mut Frame, state: &AppState, theme: &T
     let box_height = 5u16.min(area.height);
     let x = area.x + (area.width.saturating_sub(box_width)) / 2;
     let y = area.y + (area.height.saturating_sub(box_height)) / 2;
-    let popup = Rect {
-        x,
-        y,
-        width: box_width,
-        height: box_height,
-    };
+    let popup = Rect { x, y, width: box_width, height: box_height };
 
     frame.render_widget(Clear, popup);
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(theme.accent())
-        .title(" Command palette ")
-        .style(theme.base());
+    let block =
+        Block::default().borders(Borders::ALL).border_style(theme.accent()).title(" Command palette ").style(theme.base());
     let inner = block.inner(popup);
     frame.render_widget(block, popup);
 
@@ -393,10 +356,8 @@ fn render_command_palette_overlay(frame: &mut Frame, state: &AppState, theme: &T
         .map(|name| name[palette.query.chars().count()..].to_string())
         .unwrap_or_default();
 
-    let mut lines = vec![Line::from(vec![
-        Span::styled(format!("> {}", palette.query), theme.base()),
-        Span::styled(ghost, theme.hint()),
-    ])];
+    let mut lines =
+        vec![Line::from(vec![Span::styled(format!("> {}", palette.query), theme.base()), Span::styled(ghost, theme.hint())])];
     if let Some(command) = matched {
         lines.push(Line::from(""));
         lines.push(Line::styled(command.description(), theme.hint()));

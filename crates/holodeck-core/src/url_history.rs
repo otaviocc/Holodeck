@@ -21,18 +21,13 @@ pub struct UrlHistoryStore {
 
 impl UrlHistoryStore {
     pub fn new(resolver: &ConfigResolver) -> Self {
-        Self {
-            path: resolver.file(HISTORY_FILE_NAME),
-        }
+        Self { path: resolver.file(HISTORY_FILE_NAME) }
     }
 
     /// Load failures (missing file, malformed JSON) degrade silently to `[]`,
     /// matching the Swift `URLHistoryStore.live().load`.
     pub fn load(&self) -> Vec<String> {
-        std::fs::read(&self.path)
-            .ok()
-            .and_then(|data| serde_json::from_slice(&data).ok())
-            .unwrap_or_default()
+        std::fs::read(&self.path).ok().and_then(|data| serde_json::from_slice(&data).ok()).unwrap_or_default()
     }
 
     pub fn record(&self, url: &str) -> std::io::Result<Vec<String>> {

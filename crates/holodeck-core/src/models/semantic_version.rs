@@ -32,10 +32,7 @@ impl PartialOrd for SemanticVersion {
 
 impl Ord for SemanticVersion {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.major
-            .cmp(&other.major)
-            .then(self.minor.cmp(&other.minor))
-            .then(self.patch.cmp(&other.patch))
+        self.major.cmp(&other.major).then(self.minor.cmp(&other.minor)).then(self.patch.cmp(&other.patch))
     }
 }
 

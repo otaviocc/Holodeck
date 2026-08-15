@@ -38,10 +38,9 @@ impl RecordArgs {
 
         let out_path = match &self.output {
             Some(path) => PathBuf::from(shellexpand::tilde(path).into_owned()),
-            None => default_media_path::record(
-                &dependencies.configuration.resolved_screenshots_directory(),
-                chrono::Local::now(),
-            ),
+            None => {
+                default_media_path::record(&dependencies.configuration.resolved_screenshots_directory(), chrono::Local::now())
+            }
         };
 
         dependencies.recording_service.start(sim.id, &out_path, codec).await?;

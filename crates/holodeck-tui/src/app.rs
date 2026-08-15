@@ -57,11 +57,7 @@ impl HolodeckApp {
         });
 
         let size = terminal.size()?;
-        let mut state = AppState {
-            rows: i64::from(size.height),
-            cols: i64::from(size.width),
-            ..AppState::default()
-        };
+        let mut state = AppState { rows: i64::from(size.height), cols: i64::from(size.width), ..AppState::default() };
         // Resolved once at launch, like the Swift TUI's other config reads
         // (`pollIntervalSeconds`) — a theme change requires a restart.
         let theme = Theme::from_name(self.dependencies.configuration.theme);
@@ -113,12 +109,7 @@ impl HolodeckApp {
 
             SideEffect::Refresh => {
                 let service = deps.simulator_service.clone();
-                spawn(
-                    tx,
-                    async move { service.list(false).await },
-                    AppEvent::Refreshed,
-                    AppEvent::RefreshFailed,
-                );
+                spawn(tx, async move { service.list(false).await }, AppEvent::Refreshed, AppEvent::RefreshFailed);
             }
 
             SideEffect::StartRecording(id) => {
@@ -186,19 +177,12 @@ impl HolodeckApp {
                 spawn(
                     tx,
                     async move { service.available_targets().await },
-                    |targets| AppEvent::TargetsLoaded {
-                        device_types: targets.device_types,
-                        runtimes: targets.runtimes,
-                    },
+                    |targets| AppEvent::TargetsLoaded { device_types: targets.device_types, runtimes: targets.runtimes },
                     AppEvent::TargetsFailed,
                 );
             }
 
-            SideEffect::CreateSimulator {
-                name,
-                device_type,
-                runtime,
-            } => {
+            SideEffect::CreateSimulator { name, device_type, runtime } => {
                 let service = deps.simulator_service.clone();
                 let name_for_event = name.clone();
                 tokio::spawn(async move {
@@ -222,28 +206,16 @@ impl HolodeckApp {
 
             SideEffect::LoadInstalledApps(id) => {
                 let service = deps.simulator_service.clone();
-                spawn(
-                    tx,
-                    async move { service.list_apps(id).await },
-                    AppEvent::AppsLoaded,
-                    AppEvent::AppsLoadFailed,
-                );
+                spawn(tx, async move { service.list_apps(id).await }, AppEvent::AppsLoaded, AppEvent::AppsLoadFailed);
             }
 
-            SideEffect::ApplyPrivacy {
-                udid,
-                action,
-                permission,
-                bundle_id,
-            } => {
+            SideEffect::ApplyPrivacy { udid, action, permission, bundle_id } => {
                 let client = deps.simctl_client.clone();
                 let bundle_id_for_event = bundle_id.clone();
                 tokio::spawn(async move {
                     match client.privacy(udid, action, permission, Some(&bundle_id)).await {
                         Ok(()) => {
-                            let _ = tx.send(AppEvent::PrivacyApplied {
-                                bundle_id: bundle_id_for_event,
-                            });
+                            let _ = tx.send(AppEvent::PrivacyApplied { bundle_id: bundle_id_for_event });
                         }
                         Err(err) => {
                             let _ = tx.send(AppEvent::PrivacyApplyFailed(err.to_string()));
@@ -334,10 +306,7 @@ fn input_loop(tx: UnboundedSender<AppEvent>) {
         let Ok(ev) = event::read() else { return };
         let mapped = match ev {
             Event::Key(key_event) => map_key_event(key_event).map(AppEvent::Key),
-            Event::Resize(cols, rows) => Some(AppEvent::Resized {
-                rows: i64::from(rows),
-                cols: i64::from(cols),
-            }),
+            Event::Resize(cols, rows) => Some(AppEvent::Resized { rows: i64::from(rows), cols: i64::from(cols) }),
             _ => None,
         };
         if let Some(event) = mapped

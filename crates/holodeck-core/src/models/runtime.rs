@@ -13,11 +13,7 @@ pub struct Runtime {
 
 impl Runtime {
     pub fn new(platform: Platform, version: SemanticVersion, identifier: impl Into<String>) -> Self {
-        Self {
-            platform,
-            version,
-            identifier: identifier.into(),
-        }
+        Self { platform, version, identifier: identifier.into() }
     }
 
     pub fn from_identifier(identifier: &str) -> Option<Self> {
@@ -27,11 +23,7 @@ impl Runtime {
         let version_part = suffix[dash + 1..].replace('-', ".");
         let platform = Platform::from_simctl_name(platform_name)?;
         let version = SemanticVersion::parse(&version_part)?;
-        Some(Self {
-            platform,
-            version,
-            identifier: identifier.to_string(),
-        })
+        Some(Self { platform, version, identifier: identifier.to_string() })
     }
 
     /// Apple sometimes ships point releases under the same identifier
@@ -40,11 +32,7 @@ impl Runtime {
     pub fn from_identifier_with_version(identifier: &str, version_string: Option<&str>) -> Option<Self> {
         let parsed = Self::from_identifier(identifier)?;
         let resolved_version = version_string.and_then(SemanticVersion::parse).unwrap_or(parsed.version);
-        Some(Self {
-            platform: parsed.platform,
-            version: resolved_version,
-            identifier: identifier.to_string(),
-        })
+        Some(Self { platform: parsed.platform, version: resolved_version, identifier: identifier.to_string() })
     }
 
     pub fn display_name(&self) -> String {
@@ -60,10 +48,7 @@ impl PartialOrd for Runtime {
 
 impl Ord for Runtime {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.platform
-            .raw_value()
-            .cmp(other.platform.raw_value())
-            .then(self.version.cmp(&other.version))
+        self.platform.raw_value().cmp(other.platform.raw_value()).then(self.version.cmp(&other.version))
     }
 }
 

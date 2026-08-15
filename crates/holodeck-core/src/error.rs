@@ -15,11 +15,7 @@ pub enum SimctlError {
     AlreadyInState { state: SimulatorState },
 
     #[error("{}", command_failed_description(stderr))]
-    CommandFailed {
-        command: String,
-        exit_code: i32,
-        stderr: String,
-    },
+    CommandFailed { command: String, exit_code: i32, stderr: String },
 
     #[error("decode failed")]
     DecodingFailed {
@@ -36,9 +32,5 @@ pub enum SimctlError {
 
 fn command_failed_description(stderr: &str) -> String {
     let trimmed = stderr.trim();
-    if trimmed.is_empty() {
-        "command failed".to_string()
-    } else {
-        trimmed.to_string()
-    }
+    if trimmed.is_empty() { "command failed".to_string() } else { trimmed.to_string() }
 }

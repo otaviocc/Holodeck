@@ -56,13 +56,8 @@ impl AppsArgs {
 impl ListArgs {
     pub async fn run(&self) -> anyhow::Result<()> {
         let service = SimulatorService::new(Arc::new(LiveSimctlClient::new()));
-        let sim = resolve_in_state(
-            &service,
-            &self.query,
-            SimulatorState::Booted,
-            "listapps only works on booted simulators",
-        )
-        .await?;
+        let sim =
+            resolve_in_state(&service, &self.query, SimulatorState::Booted, "listapps only works on booted simulators").await?;
         let mut apps = service.list_apps(sim.id).await?;
         if !self.system {
             apps.retain(|app| app.is_user_app);
@@ -94,13 +89,7 @@ fn print_table(apps: &[InstalledApp]) {
     let headers = ("NAME", "BUNDLE ID", "VERSION", "TYPE");
     let name_w = apps.iter().map(|a| a.name.len()).max().unwrap_or(0).max(headers.0.len());
     let bundle_w = apps.iter().map(|a| a.bundle_id.len()).max().unwrap_or(0).max(headers.1.len());
-    let version_w = apps
-        .iter()
-        .filter_map(|a| a.version.as_ref())
-        .map(|v| v.len())
-        .max()
-        .unwrap_or(0)
-        .max(headers.2.len());
+    let version_w = apps.iter().filter_map(|a| a.version.as_ref()).map(|v| v.len()).max().unwrap_or(0).max(headers.2.len());
 
     let row = |name: &str, bundle: &str, version: &str, kind: &str| {
         format!("{name:name_w$}  {bundle:bundle_w$}  {version:version_w$}  {kind}")

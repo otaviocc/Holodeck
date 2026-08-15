@@ -62,13 +62,7 @@ fn appearance_modal_light_and_dark_keys_dispatch_and_close() {
     state.modal = Some(Modal::Appearance);
     let out = reduce(&state, AppEvent::Key(Key::Char('l')));
     assert_eq!(out.state.modal, None);
-    assert_eq!(
-        out.effects,
-        vec![SideEffect::SetAppearance(
-            state.simulators[0].id,
-            holodeck_core::models::Appearance::Light
-        )]
-    );
+    assert_eq!(out.effects, vec![SideEffect::SetAppearance(state.simulators[0].id, holodeck_core::models::Appearance::Light)]);
 }
 
 #[test]
@@ -129,14 +123,9 @@ fn targets_loaded_sorts_device_types_ascending_and_runtimes_descending() {
             runtimes: vec![runtime("17.0"), runtime("18.0")],
         },
     );
-    let Some(Modal::CreateWizard(wizard)) = out.state.modal else {
-        panic!("expected CreateWizard modal")
-    };
+    let Some(Modal::CreateWizard(wizard)) = out.state.modal else { panic!("expected CreateWizard modal") };
     assert_eq!(wizard.device_types[0].name, "iPad Pro");
-    assert_eq!(
-        wizard.runtimes[0].version,
-        holodeck_core::models::SemanticVersion::new(18, 0, 0)
-    );
+    assert_eq!(wizard.runtimes[0].version, holodeck_core::models::SemanticVersion::new(18, 0, 0));
     assert_eq!(wizard.step, CreateWizardStep::PickDeviceType);
 }
 
@@ -144,16 +133,8 @@ fn targets_loaded_sorts_device_types_ascending_and_runtimes_descending() {
 fn empty_targets_leave_wizard_on_loading_step() {
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::CreateWizard(CreateWizard::new()));
-    let out = reduce(
-        &state,
-        AppEvent::TargetsLoaded {
-            device_types: vec![],
-            runtimes: vec![],
-        },
-    );
-    let Some(Modal::CreateWizard(wizard)) = out.state.modal else {
-        panic!()
-    };
+    let out = reduce(&state, AppEvent::TargetsLoaded { device_types: vec![], runtimes: vec![] });
+    let Some(Modal::CreateWizard(wizard)) = out.state.modal else { panic!() };
     assert_eq!(wizard.step, CreateWizardStep::Loading);
 }
 
@@ -168,22 +149,16 @@ fn device_type_navigation_and_filter_and_enter_advances_to_runtime() {
     let filtered = reduce(&state, AppEvent::Key(Key::Char('/')));
     let filtered = reduce(&filtered.state, AppEvent::Key(Key::Char('a')));
     let filtered = reduce(&filtered.state, AppEvent::Key(Key::Char('d')));
-    let Some(Modal::CreateWizard(w)) = &filtered.state.modal else {
-        panic!()
-    };
+    let Some(Modal::CreateWizard(w)) = &filtered.state.modal else { panic!() };
     assert_eq!(w.visible_device_types().len(), 1);
     assert_eq!(w.visible_device_types()[0].name, "iPad Pro");
 
     let confirmed_filter = reduce(&filtered.state, AppEvent::Key(Key::Enter));
-    let Some(Modal::CreateWizard(w)) = &confirmed_filter.state.modal else {
-        panic!()
-    };
+    let Some(Modal::CreateWizard(w)) = &confirmed_filter.state.modal else { panic!() };
     assert!(!w.is_device_type_filter_focused);
 
     let advanced = reduce(&confirmed_filter.state, AppEvent::Key(Key::Enter));
-    let Some(Modal::CreateWizard(w)) = &advanced.state.modal else {
-        panic!()
-    };
+    let Some(Modal::CreateWizard(w)) = &advanced.state.modal else { panic!() };
     assert_eq!(w.step, CreateWizardStep::PickRuntime);
 }
 
@@ -196,9 +171,7 @@ fn escape_clears_a_live_filter_before_closing_the_wizard() {
     state.modal = Some(Modal::CreateWizard(wizard));
 
     let cleared = reduce(&state, AppEvent::Key(Key::Escape));
-    let Some(Modal::CreateWizard(w)) = &cleared.state.modal else {
-        panic!("filter clear should keep modal open")
-    };
+    let Some(Modal::CreateWizard(w)) = &cleared.state.modal else { panic!("filter clear should keep modal open") };
     assert!(w.device_type_filter.is_empty());
 
     let closed = reduce(&cleared.state, AppEvent::Key(Key::Escape));
@@ -215,9 +188,7 @@ fn confirm_step_submits_create_simulator_effect() {
     state.modal = Some(Modal::CreateWizard(wizard));
 
     let out = reduce(&state, AppEvent::Key(Key::Enter));
-    let Some(SideEffect::CreateSimulator { name, .. }) = out.effects.first() else {
-        panic!("expected CreateSimulator effect")
-    };
+    let Some(SideEffect::CreateSimulator { name, .. }) = out.effects.first() else { panic!("expected CreateSimulator effect") };
     assert_eq!(name, "iPhone 17 Pro (iOS 18.0)");
 }
 
@@ -229,9 +200,7 @@ fn simulator_create_failed_returns_to_confirm_step_with_error() {
     state.modal = Some(Modal::CreateWizard(wizard));
 
     let out = reduce(&state, AppEvent::SimulatorCreateFailed("boom".to_string()));
-    let Some(Modal::CreateWizard(w)) = out.state.modal else {
-        panic!()
-    };
+    let Some(Modal::CreateWizard(w)) = out.state.modal else { panic!() };
     assert_eq!(w.step, CreateWizardStep::Confirm);
     assert_eq!(w.error, Some("boom".to_string()));
 }
@@ -261,13 +230,8 @@ fn privacy_wizard_refused_for_a_shutdown_simulator() {
 fn apps_loaded_populates_wizard_and_advances_to_pick_app() {
     let mut state = state_with(vec![booted("A")]);
     state.modal = Some(Modal::PrivacyWizard(PrivacyWizard::new(state.simulators[0].id)));
-    let out = reduce(
-        &state,
-        AppEvent::AppsLoaded(vec![app("com.example.a", true), app("com.example.b", false)]),
-    );
-    let Some(Modal::PrivacyWizard(w)) = out.state.modal else {
-        panic!()
-    };
+    let out = reduce(&state, AppEvent::AppsLoaded(vec![app("com.example.a", true), app("com.example.b", false)]));
+    let Some(Modal::PrivacyWizard(w)) = out.state.modal else { panic!() };
     assert_eq!(w.step, PrivacyWizardStep::PickApp);
     assert_eq!(w.apps().len(), 1, "system apps hidden by default");
 }
@@ -281,9 +245,7 @@ fn s_toggles_system_apps_in_privacy_wizard() {
     state.modal = Some(Modal::PrivacyWizard(wizard));
 
     let out = reduce(&state, AppEvent::Key(Key::Char('s')));
-    let Some(Modal::PrivacyWizard(w)) = out.state.modal else {
-        panic!()
-    };
+    let Some(Modal::PrivacyWizard(w)) = out.state.modal else { panic!() };
     assert_eq!(w.apps().len(), 2);
 }
 
@@ -320,9 +282,7 @@ fn privacy_apply_failed_returns_to_pick_action_with_error() {
     state.modal = Some(Modal::PrivacyWizard(wizard));
 
     let out = reduce(&state, AppEvent::PrivacyApplyFailed("boom".to_string()));
-    let Some(Modal::PrivacyWizard(w)) = out.state.modal else {
-        panic!()
-    };
+    let Some(Modal::PrivacyWizard(w)) = out.state.modal else { panic!() };
     assert_eq!(w.step, PrivacyWizardStep::PickAction);
     assert_eq!(w.error, Some("boom".to_string()));
 }
@@ -331,12 +291,7 @@ fn privacy_apply_failed_returns_to_pick_action_with_error() {
 fn privacy_applied_closes_modal_and_sets_status() {
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::PrivacyWizard(PrivacyWizard::new(uuid::Uuid::new_v4())));
-    let out = reduce(
-        &state,
-        AppEvent::PrivacyApplied {
-            bundle_id: "com.example.a".to_string(),
-        },
-    );
+    let out = reduce(&state, AppEvent::PrivacyApplied { bundle_id: "com.example.a".to_string() });
     assert_eq!(out.state.modal, None);
     assert!(out.state.status_message.unwrap().contains("com.example.a"));
 }

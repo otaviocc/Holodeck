@@ -92,23 +92,15 @@ impl SimulatorService {
             return Ok(exact.into_iter().next().unwrap());
         }
         if exact.len() > 1 {
-            return Err(SimctlError::AmbiguousMatch {
-                query: query.to_string(),
-                candidates: exact,
-            });
+            return Err(SimctlError::AmbiguousMatch { query: query.to_string(), candidates: exact });
         }
         if partial.len() == 1 {
             return Ok(partial.into_iter().next().unwrap());
         }
         if partial.is_empty() {
-            return Err(SimctlError::SimulatorNotFound {
-                query: query.to_string(),
-            });
+            return Err(SimctlError::SimulatorNotFound { query: query.to_string() });
         }
-        Err(SimctlError::AmbiguousMatch {
-            query: query.to_string(),
-            candidates: partial,
-        })
+        Err(SimctlError::AmbiguousMatch { query: query.to_string(), candidates: partial })
     }
 }
 
@@ -168,10 +160,7 @@ mod tests {
             Ok(())
         }
         async fn list_available_targets(&self) -> Result<AvailableTargets, SimctlError> {
-            Ok(AvailableTargets {
-                device_types: Vec::new(),
-                runtimes: Vec::new(),
-            })
+            Ok(AvailableTargets { device_types: Vec::new(), runtimes: Vec::new() })
         }
         async fn list_apps(&self, _udid: Uuid) -> Result<Vec<InstalledApp>, SimctlError> {
             Ok(Vec::new())

@@ -47,10 +47,7 @@ mod tests {
 
     #[test]
     fn parses_runtime_identifier() {
-        assert_eq!(
-            Platform::from_runtime_identifier("com.apple.CoreSimulator.SimRuntime.iOS-18-0"),
-            Some(Platform::IOS)
-        );
+        assert_eq!(Platform::from_runtime_identifier("com.apple.CoreSimulator.SimRuntime.iOS-18-0"), Some(Platform::IOS));
     }
 
     #[test]

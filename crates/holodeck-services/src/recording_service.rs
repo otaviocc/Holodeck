@@ -22,10 +22,7 @@ impl Default for RecordingService {
 
 impl RecordingService {
     pub fn new() -> Self {
-        Self {
-            recorder: Recorder::new(),
-            current_output: Mutex::new(None),
-        }
+        Self { recorder: Recorder::new(), current_output: Mutex::new(None) }
     }
 
     pub async fn is_recording(&self) -> bool {
@@ -34,9 +31,7 @@ impl RecordingService {
 
     pub async fn start(&self, udid: Uuid, output: &Path, codec: VideoCodec) -> Result<(), SimctlError> {
         if self.is_recording().await {
-            return Err(SimctlError::UnsupportedOperation {
-                reason: "already recording".to_string(),
-            });
+            return Err(SimctlError::UnsupportedOperation { reason: "already recording".to_string() });
         }
         default_media_path::ensure_directory_exists(output)?;
         let (launch_path, args) = record_video_command(udid, output, codec);

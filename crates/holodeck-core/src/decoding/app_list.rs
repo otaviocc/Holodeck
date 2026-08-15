@@ -29,19 +29,14 @@ pub fn decode(data: &[u8]) -> Result<Vec<InstalledApp>, serde_json::Error> {
         .into_values()
         .filter_map(|entry| {
             let bundle_id = entry.cf_bundle_identifier?;
-            let name = entry
-                .cf_bundle_display_name
-                .or(entry.cf_bundle_name)
-                .unwrap_or_else(|| bundle_id.clone());
+            let name = entry.cf_bundle_display_name.or(entry.cf_bundle_name).unwrap_or_else(|| bundle_id.clone());
             let version = entry.cf_bundle_short_version_string.or(entry.cf_bundle_version);
             let is_user_app = entry.application_type.as_deref() == Some("User");
             Some(InstalledApp::new(bundle_id, name, version, is_user_app))
         })
         .collect();
     apps.sort_by(|lhs, rhs| {
-        UniCase::new(&lhs.name)
-            .cmp(&UniCase::new(&rhs.name))
-            .then_with(|| lhs.bundle_id.cmp(&rhs.bundle_id))
+        UniCase::new(&lhs.name).cmp(&UniCase::new(&rhs.name)).then_with(|| lhs.bundle_id.cmp(&rhs.bundle_id))
     });
     Ok(apps)
 }
