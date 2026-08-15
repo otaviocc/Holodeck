@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Verify tag matches Cargo.toml version
+        run: |
+          set -euo pipefail
+          tag_version="${GITHUB_REF_NAME#v}"
+          cargo_version="$(grep -m1 '^version = ' Cargo.toml | sed -E 's/version = "(.*)"/\1/')"
+          if [ "$tag_version" != "$cargo_version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match the workspace version $cargo_version in Cargo.toml." >&2
+            exit 1
+          fi
+
+      - name: Test
+        run: cargo test --workspace --locked
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cat > /tmp/release-notes.md <<'NOTES'
+          ## Install
+
+          ```bash
+          cargo install --git https://github.com/otaviocc/Holodeck --tag TAG_PLACEHOLDER holodeck --locked
+          ```
+
+          Requires Rust 1.88+ and Xcode (`xcrun simctl` must be on `PATH`).
+          NOTES
+          sed -i '' "s/TAG_PLACEHOLDER/$GITHUB_REF_NAME/" /tmp/release-notes.md
+          gh release create "$GITHUB_REF_NAME" \
+            --title "holodeck $GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes-file /tmp/release-notes.md
