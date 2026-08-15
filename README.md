@@ -3,6 +3,9 @@
 A macOS CLI and TUI for managing iOS simulators, built with
 [ratatui](https://ratatui.rs).
 
+> This is a Rust rewrite of the original Swift implementation, which remains
+> available on the [`swift` branch](https://github.com/otaviocc/Holodeck/tree/swift).
+
 ```bash
 holodeck                                 # full-screen TUI (default)
 holodeck list                            # scripting subcommands for CI / shell composition
