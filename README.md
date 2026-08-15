@@ -15,19 +15,9 @@ unit-tested. 179 tests pass across the workspace (`cargo test --workspace`),
 `cargo clippy --workspace --all-targets -- -D warnings` is clean, and `cargo
 fmt --all -- --check` is clean.
 
-The TUI ships with [Default+](https://github.com/otaviocc/default-plus) as
-its default color theme (`crates/holodeck-tui/src/theme.rs`) — a `Theme`
-struct of named semantic `Style`s (`header`, `accent`, `success`, `warning`,
-`error`, `hint`, `bar`, ...) resolved once at startup from `Config::theme`,
-rather than `Color` literals scattered through the view layer (architecture
-borrowed from [vigia](https://github.com/breferrari/vigia)'s `theme.rs`).
-Seven more built-in themes are available, each ported from its own project's
-canonical palette: **Tokyo Night**, **Nord**, **Dracula**, **Gruvbox**,
-**Catppuccin Mocha**, **Solarized Dark**, and **Ansi** (inherits the
-terminal's own 16-color scheme instead of asserting truecolor). Set
-`"theme"` in `~/.config/holodeck/config.json` to any of `default-plus`,
-`ansi`, `tokyo-night`, `nord`, `dracula`, `gruvbox`, `catppuccin-mocha`, or
-`solarized-dark`.
+The TUI ships with 8 built-in color themes (default:
+[Default+](https://github.com/otaviocc/default-plus)) — see
+[Theming](#theming) below.
 
 - **holodeck-core**: every model, the 20-operation `simctl` client, both JSON
   decoders, config loading, URL history, default media paths, and the
@@ -78,6 +68,39 @@ attached terminal) — real simulator data rendered correctly (runtime grouping,
 states, status bar), `j`/`k` navigation, the `?` help overlay, and `q` all
 worked, with the terminal cleanly restored (`\x1b[?1049l\x1b[?25h`) on exit
 rather than left in alt-screen/hidden-cursor state.
+
+## Theming
+
+The TUI's colors are a `Theme` struct of named semantic styles
+(`crates/holodeck-tui/src/theme.rs`) rather than `Color` literals scattered
+through the view layer — architecture borrowed from
+[vigia](https://github.com/breferrari/vigia)'s `theme.rs`. Set `theme` in
+`~/.config/holodeck/config.json` to any of the values below (default:
+`default-plus`):
+
+| `theme` value | Theme | Source |
+| --- | --- | --- |
+| `default-plus` | Default+ *(default)* | [otaviocc/default-plus](https://github.com/otaviocc/default-plus) |
+| `ansi` | Terminal's own 16-color scheme | — |
+| `tokyo-night` | Tokyo Night | [folke/tokyonight.nvim](https://github.com/folke/tokyonight.nvim) |
+| `nord` | Nord | [nordtheme.com](https://www.nordtheme.com) |
+| `dracula` | Dracula | [draculatheme.com](https://draculatheme.com) |
+| `gruvbox` | Gruvbox (dark) | [morhetz/gruvbox](https://github.com/morhetz/gruvbox) |
+| `catppuccin-mocha` | Catppuccin Mocha | [catppuccin.com](https://catppuccin.com) |
+| `solarized-dark` | Solarized Dark | [ethanschoonover.com/solarized](https://ethanschoonover.com/solarized/) |
+
+```json
+{
+  "theme": "nord"
+}
+```
+
+Every built-in (aside from `ansi`, which intentionally inherits whatever the
+reader's terminal defines) is ported verbatim from that project's own
+canonical palette — see `Theme::default_plus()`/`Theme::nord()`/etc. in
+`theme.rs` for the exact hex values and a note on any per-theme quirks (e.g.
+Dracula has no distinct "blue" and borrows its purple for that slot, matching
+Dracula's own ANSI spec).
 
 ## Crate layout
 
