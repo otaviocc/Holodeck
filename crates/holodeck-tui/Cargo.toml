@@ -11,3 +11,4 @@ holodeck-services = { workspace = true }
 tokio = { workspace = true }
 ratatui = { workspace = true }
 uuid = { workspace = true }
+chrono = { workspace = true }

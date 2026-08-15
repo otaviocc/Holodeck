@@ -546,6 +546,7 @@ dependencies = [
 name = "holodeck-tui"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "holodeck-core",
  "holodeck-services",
  "ratatui",
