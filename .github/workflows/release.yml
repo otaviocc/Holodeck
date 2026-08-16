@@ -31,6 +31,32 @@ jobs:
       - name: Test
         run: cargo test --workspace --locked
 
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Idempotent: if a tag's release job is re-run after a partial
+          # failure, a crate already published at this version is treated
+          # as success instead of failing the whole release.
+          publish() {
+            local pkg="$1"
+            local log
+            log="$(mktemp)"
+            if cargo publish -p "$pkg" --locked 2>&1 | tee "$log"; then
+              return 0
+            fi
+            if grep -q "already uploaded" "$log"; then
+              echo "$pkg already published at this version, skipping."
+              return 0
+            fi
+            return 1
+          }
+          publish holodeck-simctl-core
+          publish holodeck-simctl-services
+          publish holodeck-simctl-tui
+          publish holodeck-simctl
+
       - name: Add macOS targets
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
