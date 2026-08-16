@@ -3,7 +3,7 @@
 A macOS CLI and TUI for managing iOS simulators, built with
 [ratatui](https://ratatui.rs).
 
-<img width="740" height="480" alt="Screenshot" src="https://github.com/user-attachments/assets/f0e3c1a8-d21a-47fb-b3c4-1575dd42283c" />
+<img width="1351" height="952" alt="Screenshot" src="https://github.com/user-attachments/assets/08508b9d-ee81-4fd2-89d6-89c7c0b5ed8d" />
 
 > This is a Rust rewrite of the original Swift implementation, which remains
 > available on the [`swift` branch](https://github.com/otaviocc/Holodeck/tree/swift).
