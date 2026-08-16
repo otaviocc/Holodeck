@@ -1,9 +1,11 @@
 [package]
-name = "holodeck-tui"
+name = "holodeck-simctl-tui"
+description = "Terminal UI for holodeck-simctl, a companion for the iOS Simulator's simctl"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 holodeck-core = { workspace = true }

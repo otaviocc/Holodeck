@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use holodeck_core::models::{DeviceType, Platform, Runtime, SemanticVersion, Simulator, SimulatorState};
-use holodeck_tui::state::AppState;
+use holodeck_simctl_tui::state::AppState;
 use uuid::Uuid;
 
 pub fn sim(name: &str, state: SimulatorState) -> Simulator {

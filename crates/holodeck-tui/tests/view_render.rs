@@ -6,9 +6,9 @@
 mod support;
 
 use holodeck_core::models::InstalledApp;
-use holodeck_tui::Theme;
-use holodeck_tui::state::{AppState, CommandPalette, CreateWizard, Modal, OpenUrlPrompt, PrivacyWizard};
-use holodeck_tui::view::render;
+use holodeck_simctl_tui::Theme;
+use holodeck_simctl_tui::state::{AppState, CommandPalette, CreateWizard, Modal, OpenUrlPrompt, PrivacyWizard};
+use holodeck_simctl_tui::view::render;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use support::{booted, shutdown, state_with};
@@ -138,7 +138,7 @@ fn open_url_prompt_shows_typed_url_and_error() {
 fn create_wizard_confirm_step_shows_selection() {
     use holodeck_core::models::{DeviceType, Runtime};
     let mut wizard = CreateWizard::new();
-    wizard.step = holodeck_tui::state::CreateWizardStep::Confirm;
+    wizard.step = holodeck_simctl_tui::state::CreateWizardStep::Confirm;
     wizard.device_types = vec![DeviceType::new("id", "iPhone 17 Pro")];
     wizard.runtimes = vec![Runtime::from_identifier("com.apple.CoreSimulator.SimRuntime.iOS-18-0").unwrap()];
     let mut state = state_with(vec![]);
@@ -151,7 +151,7 @@ fn create_wizard_confirm_step_shows_selection() {
 #[test]
 fn privacy_wizard_pick_app_lists_apps() {
     let mut wizard = PrivacyWizard::new(uuid::Uuid::new_v4());
-    wizard.step = holodeck_tui::state::PrivacyWizardStep::PickApp;
+    wizard.step = holodeck_simctl_tui::state::PrivacyWizardStep::PickApp;
     wizard.all_apps = vec![InstalledApp::new("com.example.a", "Alpha", None, true)];
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::PrivacyWizard(wizard));

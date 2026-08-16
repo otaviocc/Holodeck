@@ -1,6 +1,6 @@
 mod support;
 
-use holodeck_tui::state::{AppEvent, CommandPalette, Key, Modal, OpenUrlPrompt, SideEffect, reduce};
+use holodeck_simctl_tui::state::{AppEvent, CommandPalette, Key, Modal, OpenUrlPrompt, SideEffect, reduce};
 use support::{booted, shutdown, state_with};
 
 // MARK: - Command palette

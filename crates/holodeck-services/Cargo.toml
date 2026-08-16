@@ -1,9 +1,11 @@
 [package]
-name = "holodeck-services"
+name = "holodeck-simctl-services"
+description = "Application services layer (recording, screenshots, simulator orchestration) for the holodeck-simctl CLI/TUI"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
 holodeck-core = { workspace = true }

@@ -1,7 +1,7 @@
 mod support;
 
 use holodeck_core::models::SimulatorState;
-use holodeck_tui::state::{AppEvent, Key, PendingOperation, SideEffect, reduce};
+use holodeck_simctl_tui::state::{AppEvent, Key, PendingOperation, SideEffect, reduce};
 use support::{booted, shutdown, state_with};
 
 #[test]

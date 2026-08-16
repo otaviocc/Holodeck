@@ -1,7 +1,7 @@
 mod support;
 
 use holodeck_core::models::{DeviceType, InstalledApp, PrivacyAction, PrivacyPermission, Runtime};
-use holodeck_tui::state::{
+use holodeck_simctl_tui::state::{
     AppEvent, CreateWizard, CreateWizardStep, Key, Modal, PendingOperation, PrivacyWizard, PrivacyWizardStep, SideEffect, reduce,
 };
 use support::{booted, shutdown, state_with};

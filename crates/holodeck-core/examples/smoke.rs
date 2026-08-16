@@ -2,7 +2,7 @@
 //! not part of `cargo test` since it depends on real simulator state.
 //! Run with: cargo run -p holodeck-core --example smoke
 
-use holodeck_core::{LiveSimctlClient, SimctlClient};
+use holodeck_simctl_core::{LiveSimctlClient, SimctlClient};
 
 #[tokio::main]
 async fn main() {

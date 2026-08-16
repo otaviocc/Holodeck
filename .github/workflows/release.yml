@@ -37,8 +37,8 @@ jobs:
       - name: Build universal binary
         run: |
           set -euo pipefail
-          cargo build --release --locked -p holodeck --target aarch64-apple-darwin
-          cargo build --release --locked -p holodeck --target x86_64-apple-darwin
+          cargo build --release --locked -p holodeck-simctl --target aarch64-apple-darwin
+          cargo build --release --locked -p holodeck-simctl --target x86_64-apple-darwin
           mkdir -p dist
           lipo -create -output dist/holodeck \
             target/aarch64-apple-darwin/release/holodeck \

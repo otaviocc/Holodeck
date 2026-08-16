@@ -475,15 +475,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
-name = "holodeck"
+name = "holodeck-simctl"
 version = "0.4.0"
 dependencies = [
  "anyhow",
  "chrono",
  "clap",
- "holodeck-core",
- "holodeck-services",
- "holodeck-tui",
+ "holodeck-simctl-core",
+ "holodeck-simctl-services",
+ "holodeck-simctl-tui",
  "serde",
  "serde_json",
  "shellexpand",
@@ -492,7 +492,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "holodeck-core"
+name = "holodeck-simctl-core"
 version = "0.4.0"
 dependencies = [
  "async-trait",
@@ -510,11 +510,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "holodeck-services"
+name = "holodeck-simctl-services"
 version = "0.4.0"
 dependencies = [
  "async-trait",
- "holodeck-core",
+ "holodeck-simctl-core",
  "tempfile",
  "tokio",
  "unicase",
@@ -522,12 +522,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "holodeck-tui"
+name = "holodeck-simctl-tui"
 version = "0.4.0"
 dependencies = [
  "chrono",
- "holodeck-core",
- "holodeck-services",
+ "holodeck-simctl-core",
+ "holodeck-simctl-services",
  "ratatui",
  "tokio",
  "uuid",

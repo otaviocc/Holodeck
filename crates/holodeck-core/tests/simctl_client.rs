@@ -5,8 +5,8 @@
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use holodeck_core::models::{Appearance, PrivacyAction, PrivacyPermission, ScreenshotType, StatusBarOverrides};
-use holodeck_core::{LiveSimctlClient, ProcessResult, ProcessRunning, SimctlClient};
+use holodeck_simctl_core::models::{Appearance, PrivacyAction, PrivacyPermission, ScreenshotType, StatusBarOverrides};
+use holodeck_simctl_core::{LiveSimctlClient, ProcessResult, ProcessRunning, SimctlClient};
 use uuid::Uuid;
 
 type Call = (String, Vec<String>);

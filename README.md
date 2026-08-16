@@ -29,7 +29,13 @@ and no Gatekeeper prompt on first run.
 ### Cargo
 
 ```bash
-cargo install --git https://github.com/otaviocc/Holodeck --tag v0.4.0 holodeck --locked
+cargo install holodeck-simctl
+```
+
+Or, for a specific tag from source:
+
+```bash
+cargo install --git https://github.com/otaviocc/Holodeck --tag v0.4.0 holodeck-simctl --locked
 ```
 
 Both require Xcode (`xcrun simctl` must be on `PATH`) and, for Cargo, a Rust
@@ -118,11 +124,17 @@ All fields are optional.
 ## Crate layout
 
 ```
-crates/holodeck-core/      models, SimctlClient trait + Live impl, decoders, config, recorder
-crates/holodeck-services/  SimulatorService/RecordingService/ScreenshotService + AppDependencies
-crates/holodeck-tui/       state/ (pure, 6 reducers) + app.rs (event loop) + view.rs (ratatui) + theme.rs + input.rs
-crates/holodeck-cli/       18 clap subcommands, bin: holodeck
+crates/holodeck-core/      pkg: holodeck-simctl-core, models, SimctlClient trait + Live impl, decoders, config, recorder
+crates/holodeck-services/  pkg: holodeck-simctl-services, SimulatorService/RecordingService/ScreenshotService + AppDependencies
+crates/holodeck-tui/       pkg: holodeck-simctl-tui, state/ (pure, 6 reducers) + app.rs (event loop) + view.rs (ratatui) + theme.rs + input.rs
+crates/holodeck-cli/       pkg: holodeck-simctl, 18 clap subcommands, bin: holodeck
 ```
+
+Package names carry a `holodeck-simctl` prefix for crates.io (the bare
+`holodeck`/`holodeck-core` names were already taken by unrelated crates); the
+binary is still `holodeck` and the Rust import paths are still
+`holodeck_core`/`holodeck_services`/`holodeck_tui` (remapped via `package =`
+in the workspace `Cargo.toml`).
 
 ## Commands
 
@@ -133,9 +145,9 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo fmt --all -- --check
 
 # Launch the TUI (needs a real terminal):
-cargo run -p holodeck -- tui        # or just: cargo run -p holodeck
+cargo run -p holodeck-simctl -- tui        # or just: cargo run -p holodeck-simctl
 
 # Manual smoke tests against real xcrun simctl (not part of `cargo test`):
-cargo run -p holodeck-core --example smoke
-cargo run -p holodeck-core --example record_smoke -- <booted-udid>
+cargo run -p holodeck-simctl-core --example smoke
+cargo run -p holodeck-simctl-core --example record_smoke -- <booted-udid>
 ```

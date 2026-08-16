@@ -1,9 +1,11 @@
 [package]
-name = "holodeck"
+name = "holodeck-simctl"
+description = "A CLI and TUI companion for the iOS Simulator's simctl — boot, record, screenshot, and manage simulators"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "holodeck"

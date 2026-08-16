@@ -5,8 +5,8 @@
 
 use std::path::PathBuf;
 
-use holodeck_core::models::VideoCodec;
-use holodeck_core::{Recorder, simctl_client::record_video_command};
+use holodeck_simctl_core::models::VideoCodec;
+use holodeck_simctl_core::{Recorder, simctl_client::record_video_command};
 use uuid::Uuid;
 
 #[tokio::main]
