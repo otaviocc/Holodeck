@@ -31,6 +31,21 @@ jobs:
       - name: Test
         run: cargo test --workspace --locked
 
+      - name: Add macOS targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Build universal binary
+        run: |
+          set -euo pipefail
+          cargo build --release --locked -p holodeck --target aarch64-apple-darwin
+          cargo build --release --locked -p holodeck --target x86_64-apple-darwin
+          mkdir -p dist
+          lipo -create -output dist/holodeck \
+            target/aarch64-apple-darwin/release/holodeck \
+            target/x86_64-apple-darwin/release/holodeck
+          chmod +x dist/holodeck
+          tar -czf "dist/holodeck-$GITHUB_REF_NAME-macos-universal.tar.gz" -C dist holodeck
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -43,10 +58,13 @@ jobs:
           cargo install --git https://github.com/otaviocc/Holodeck --tag TAG_PLACEHOLDER holodeck --locked
           ```
 
-          Requires Rust 1.88+ and Xcode (`xcrun simctl` must be on `PATH`).
+          Or download the prebuilt universal macOS binary below.
+
+          Requires Rust 1.88+ (if building from source) and Xcode (`xcrun simctl` must be on `PATH`).
           NOTES
           sed -i '' "s/TAG_PLACEHOLDER/$GITHUB_REF_NAME/" /tmp/release-notes.md
           gh release create "$GITHUB_REF_NAME" \
             --title "holodeck $GITHUB_REF_NAME" \
             --generate-notes \
-            --notes-file /tmp/release-notes.md
+            --notes-file /tmp/release-notes.md \
+            "dist/holodeck-$GITHUB_REF_NAME-macos-universal.tar.gz"
