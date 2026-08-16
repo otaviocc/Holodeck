@@ -28,7 +28,7 @@ thiserror = "2"
 uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
 shellexpand = "3"
-dirs = "5"
+dirs = "6"
 tempfile = "3"
 clap = { version = "4", features = ["derive"] }
 clap_complete = "4"
