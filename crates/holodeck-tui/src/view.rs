@@ -97,7 +97,9 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
 
     let header_left = " holodeck ";
     let header_right = " ⏎ toggle  : cmd  ? help  q quit ";
-    let gap = (state.cols as usize).saturating_sub(header_left.len() + header_right.len());
+    let left_width = header_left.chars().count();
+    let right_width = header_right.chars().count();
+    let gap = (state.cols as usize).saturating_sub(left_width + right_width);
     let header_line = Line::from(vec![
         Span::styled(header_left, theme.bar()),
         Span::styled(" ".repeat(gap), theme.bar()),
