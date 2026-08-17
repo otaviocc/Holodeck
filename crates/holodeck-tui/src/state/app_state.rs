@@ -262,11 +262,14 @@ impl AppState {
     /// from `main_scroll_offset` and stops when body height is exhausted; the
     /// 2-line headroom leaves room for runtime-group headers without exact
     /// counting.
+    ///
+    /// All modals except `Appearance`, `ConfirmErase`, and `ConfirmDelete` are
+    /// rendered as floating popup overlays on top of the simulator list, so
+    /// they do not consume any banner rows in the main layout.
     pub fn main_list_viewport(&self) -> i64 {
         let modal_banner = match &self.modal {
-            Some(Modal::CommandPalette(_)) => 0,
-            Some(_) => 1,
-            None => 0,
+            Some(Modal::Appearance | Modal::ConfirmErase(_) | Modal::ConfirmDelete(_)) => 1,
+            _ => 0,
         };
         let banner = i64::from(self.is_recording()) + modal_banner;
         (self.rows - 4 - banner - 2).max(1)

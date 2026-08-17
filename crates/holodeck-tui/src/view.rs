@@ -27,14 +27,47 @@ const HELP_ENTRIES: &[(&str, &str)] = &[
 ];
 
 pub fn render(frame: &mut Frame, state: &AppState, theme: &Theme) {
+    // Always render the main simulator list first, then overlay the active modal on top.
+    render_main(frame, state, theme);
+
     match &state.modal {
         Some(Modal::Help) => render_help(frame, theme),
         Some(Modal::Inspector(id)) => render_inspector(frame, state, theme, *id),
         Some(Modal::OpenUrl(prompt)) => render_open_url(frame, theme, prompt),
-        Some(Modal::CreateWizard(wizard)) => render_create_wizard(frame, theme, wizard),
-        Some(Modal::PrivacyWizard(wizard)) => render_privacy_wizard(frame, theme, wizard),
-        _ => render_main(frame, state, theme),
+        Some(Modal::CreateWizard(wizard)) => render_create_wizard(frame, state, theme, wizard),
+        Some(Modal::PrivacyWizard(wizard)) => render_privacy_wizard(frame, state, theme, wizard),
+        Some(Modal::CommandPalette(palette)) => render_command_palette_overlay(frame, state, theme, palette, frame.area()),
+        _ => {}
     }
+}
+
+// MARK: - Popup overlay geometry
+
+/// Computes a centered floating popup `Rect` over `area`.
+///
+/// `width_pct` and `height_pct` are percentages (0–100) of `area` dimensions.
+/// The result is clamped so the popup never exceeds `area`.
+fn popup_rect(area: Rect, width_pct: u16, height_pct: u16) -> Rect {
+    let width = (area.width * width_pct / 100).min(area.width);
+    let height = (area.height * height_pct / 100).min(area.height);
+    let x = area.x + (area.width.saturating_sub(width)) / 2;
+    let y = area.y + (area.height.saturating_sub(height)) / 2;
+    Rect { x, y, width, height }
+}
+
+/// Renders a centered floating popup with a title and returns the inner `Rect`
+/// available for content (i.e. inside the border).
+fn render_popup(frame: &mut Frame, area: Rect, width_pct: u16, height_pct: u16, title: &str, theme: &Theme) -> Rect {
+    let popup = popup_rect(area, width_pct, height_pct);
+    frame.render_widget(Clear, popup);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(theme.accent())
+        .title(format!(" {title} "))
+        .style(theme.base());
+    let inner = block.inner(popup);
+    frame.render_widget(block, popup);
+    inner
 }
 
 // MARK: - Main simulator list
@@ -68,10 +101,6 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
     }
     render_simulator_list(frame, state, theme, areas[2]);
     render_status_bar(frame, state, theme, areas[3]);
-
-    if let Some(Modal::CommandPalette(palette)) = &state.modal {
-        render_command_palette_overlay(frame, state, theme, palette, frame.area());
-    }
 }
 
 fn render_simulator_list(frame: &mut Frame, state: &AppState, theme: &Theme, area: Rect) {
@@ -130,22 +159,31 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, theme: &Theme, area: R
 
 fn render_help(frame: &mut Frame, theme: &Theme) {
     let key_width = HELP_ENTRIES.iter().map(|(k, _)| k.len()).max().unwrap_or(0);
-    let mut lines = vec![Line::styled("Keybindings", theme.header()), Line::from("")];
+    // Content rows: title + blank + one per entry + blank + footer
+    let content_height = (2 + HELP_ENTRIES.len() + 2) as u16;
+    // Popup height: content + 2 border rows, clamped to terminal height
+    let popup_height_pct = ((content_height + 2) * 100 / frame.area().height.max(1)).min(90) as u16;
+
+    let inner = render_popup(frame, frame.area(), 60, popup_height_pct.max(40), "Keybindings", theme);
+
+    let mut lines = vec![Line::from("")];
     for (key, description) in HELP_ENTRIES {
         lines.push(Line::styled(format!("  {key:key_width$}  {description}"), theme.base()));
     }
     lines.push(Line::from(""));
-    lines.push(Line::styled("Press any key to close", theme.hint()));
-    frame.render_widget(Paragraph::new(lines), frame.area());
+    lines.push(Line::styled("  Press any key to close", theme.hint()));
+    frame.render_widget(Paragraph::new(lines), inner);
 }
 
 // MARK: - Inspector
 
 fn render_inspector(frame: &mut Frame, state: &AppState, theme: &Theme, id: uuid::Uuid) {
+    let inner = render_popup(frame, frame.area(), 70, 60, "Inspector", theme);
+
     let Some(sim) = state.simulators.iter().find(|s| s.id == id) else {
         frame.render_widget(
-            Paragraph::new("Simulator no longer available. Press any key to close.").style(theme.hint()),
-            frame.area(),
+            Paragraph::new("  Simulator no longer available. Press any key to close.").style(theme.hint()),
+            inner,
         );
         return;
     };
@@ -160,93 +198,111 @@ fn render_inspector(frame: &mut Frame, state: &AppState, theme: &Theme, id: uuid
         ("Log path", sim.log_path.as_ref().map(|p| p.display().to_string()).unwrap_or_default()),
     ];
     let label_width = rows.iter().map(|(l, _)| l.len()).max().unwrap_or(0);
-    let mut lines = vec![Line::styled("Inspector", theme.header()), Line::from("")];
+    let mut lines = vec![Line::from("")];
     for (label, value) in rows {
         lines.push(Line::styled(format!("  {label:label_width$}  {value}"), theme.base()));
     }
     lines.push(Line::from(""));
-    lines.push(Line::styled("Press any key to close", theme.hint()));
-    frame.render_widget(Paragraph::new(lines), frame.area());
+    lines.push(Line::styled("  Press any key to close", theme.hint()));
+    frame.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), inner);
 }
 
 // MARK: - Open URL
 
 fn render_open_url(frame: &mut Frame, theme: &Theme, prompt: &OpenUrlPrompt) {
-    let mut lines = vec![Line::styled("Open URL", theme.header()), Line::from("")];
+    let inner = render_popup(frame, frame.area(), 70, 40, "Open URL", theme);
+
+    let mut lines = vec![Line::from("")];
     lines.push(Line::styled(format!("  {}_", prompt.url), theme.base()));
     lines.push(Line::from(""));
     if let Some(error) = &prompt.error {
         lines.push(Line::styled(format!("  ⚠ {error}"), theme.error()));
     } else if prompt.is_submitting {
         lines.push(Line::styled("  Opening…", theme.warning()));
+    } else {
+        lines.push(Line::from(""));
     }
     lines.push(Line::from(""));
-    lines.push(Line::styled("↑/↓ history · Enter open · Esc cancel", theme.hint()));
-    frame.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), frame.area());
+    lines.push(Line::styled("  ↑/↓ history · Enter open · Esc cancel", theme.hint()));
+    frame.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), inner);
 }
 
 // MARK: - Create wizard
 
-fn render_create_wizard(frame: &mut Frame, theme: &Theme, wizard: &CreateWizard) {
-    let areas = Layout::vertical([Constraint::Length(1), Constraint::Length(1), Constraint::Min(1), Constraint::Length(1)])
-        .split(frame.area());
-    frame.render_widget(Paragraph::new(Line::styled(breadcrumb(wizard.step), theme.bar())), areas[0]);
+fn render_create_wizard(frame: &mut Frame, state: &AppState, theme: &Theme, wizard: &CreateWizard) {
+    let inner = render_popup(frame, frame.area(), 80, 80, breadcrumb(wizard.step), theme);
+
+    // Split inner area: optional filter banner, list/content, footer
+    let filter_visible = wizard.is_device_type_filter_focused || !wizard.device_type_filter.is_empty();
+    let filter_height = if filter_visible && wizard.step == CreateWizardStep::PickDeviceType { 1 } else { 0 };
+    let areas = Layout::vertical([
+        Constraint::Length(filter_height),
+        Constraint::Min(1),
+        Constraint::Length(1),
+    ])
+    .split(inner);
+
+    if filter_height > 0 {
+        frame.render_widget(
+            Paragraph::new(format!("  Filter: {}_", wizard.device_type_filter)).style(theme.base()),
+            areas[0],
+        );
+    }
 
     match wizard.step {
         CreateWizardStep::Loading | CreateWizardStep::Submitting => {
-            frame.render_widget(Paragraph::new("Loading…").style(theme.hint()), areas[2]);
+            frame.render_widget(Paragraph::new("  Loading…").style(theme.hint()), areas[1]);
         }
         CreateWizardStep::PickDeviceType => {
-            if wizard.is_device_type_filter_focused || !wizard.device_type_filter.is_empty() {
-                frame.render_widget(
-                    Paragraph::new(format!("Filter: {}_", wizard.device_type_filter)).style(theme.base()),
-                    areas[1],
-                );
-            }
             let visible = wizard.visible_device_types();
             let items: Vec<ListItem> =
-                visible.iter().map(|d| ListItem::new(Span::styled(d.name.clone(), theme.base()))).collect();
+                visible.iter().map(|d| ListItem::new(Span::styled(format!("  {}", d.name), theme.base()))).collect();
             let mut list_state = ListState::default();
             list_state.select(usize::try_from(wizard.device_type_index).ok());
             let list = List::new(items).highlight_style(theme.bar());
-            frame.render_stateful_widget(list, areas[2], &mut list_state);
+            frame.render_stateful_widget(list, areas[1], &mut list_state);
         }
         CreateWizardStep::PickRuntime => {
-            let items: Vec<ListItem> =
-                wizard.runtimes.iter().map(|r| ListItem::new(Span::styled(r.display_name(), theme.base()))).collect();
+            let items: Vec<ListItem> = wizard
+                .runtimes
+                .iter()
+                .map(|r| ListItem::new(Span::styled(format!("  {}", r.display_name()), theme.base())))
+                .collect();
             let mut list_state = ListState::default();
             list_state.select(usize::try_from(wizard.runtime_index).ok());
             let list = List::new(items).highlight_style(theme.bar());
-            frame.render_stateful_widget(list, areas[2], &mut list_state);
+            frame.render_stateful_widget(list, areas[1], &mut list_state);
         }
         CreateWizardStep::Confirm => {
-            let mut lines = vec![Line::styled(format!("Name: {}", wizard.default_name()), theme.base())];
+            let mut lines = vec![Line::from("")];
+            lines.push(Line::styled(format!("  Name:    {}", wizard.default_name()), theme.base()));
             if let Some(d) = wizard.selected_device_type() {
-                lines.push(Line::styled(format!("Device: {}", d.name), theme.base()));
+                lines.push(Line::styled(format!("  Device:  {}", d.name), theme.base()));
             }
             if let Some(r) = wizard.selected_runtime() {
-                lines.push(Line::styled(format!("Runtime: {}", r.display_name()), theme.base()));
+                lines.push(Line::styled(format!("  Runtime: {}", r.display_name()), theme.base()));
             }
             if let Some(error) = &wizard.error {
                 lines.push(Line::from(""));
-                lines.push(Line::styled(format!("⚠ {error}"), theme.error()));
+                lines.push(Line::styled(format!("  ⚠ {error}"), theme.error()));
             }
-            lines.push(Line::from(""));
-            lines.push(Line::styled("Enter/y confirm · b back", theme.hint()));
-            frame.render_widget(Paragraph::new(lines), areas[2]);
+            frame.render_widget(Paragraph::new(lines), areas[1]);
         }
     }
 
-    render_footer(frame, areas[3], wizard_footer_hint(wizard.step), theme);
+    frame.render_widget(Paragraph::new(wizard_footer_hint(wizard.step)).style(theme.hint()), areas[2]);
+
+    // Keep scroll math consistent with the popup inner height.
+    let _ = state;
 }
 
 fn breadcrumb(step: CreateWizardStep) -> &'static str {
     match step {
-        CreateWizardStep::Loading => " New simulator — loading targets…",
-        CreateWizardStep::PickDeviceType => " New simulator — device type",
-        CreateWizardStep::PickRuntime => " New simulator — runtime",
-        CreateWizardStep::Confirm => " New simulator — confirm",
-        CreateWizardStep::Submitting => " New simulator — creating…",
+        CreateWizardStep::Loading => "New simulator — loading…",
+        CreateWizardStep::PickDeviceType => "New simulator — device type",
+        CreateWizardStep::PickRuntime => "New simulator — runtime",
+        CreateWizardStep::Confirm => "New simulator — confirm",
+        CreateWizardStep::Submitting => "New simulator — creating…",
     }
 }
 
@@ -261,61 +317,64 @@ fn wizard_footer_hint(step: CreateWizardStep) -> &'static str {
 
 // MARK: - Privacy wizard
 
-fn render_privacy_wizard(frame: &mut Frame, theme: &Theme, wizard: &PrivacyWizard) {
-    let areas = Layout::vertical([Constraint::Length(1), Constraint::Min(1), Constraint::Length(1)]).split(frame.area());
-    frame.render_widget(Paragraph::new(Line::styled(privacy_breadcrumb(wizard.step), theme.bar())), areas[0]);
+fn render_privacy_wizard(frame: &mut Frame, state: &AppState, theme: &Theme, wizard: &PrivacyWizard) {
+    let inner = render_popup(frame, frame.area(), 80, 80, privacy_breadcrumb(wizard.step), theme);
+
+    let areas = Layout::vertical([Constraint::Min(1), Constraint::Length(1)]).split(inner);
 
     match wizard.step {
         PrivacyWizardStep::LoadingApps | PrivacyWizardStep::Submitting => {
-            frame.render_widget(Paragraph::new("Loading…").style(theme.hint()), areas[1]);
+            frame.render_widget(Paragraph::new("  Loading…").style(theme.hint()), areas[0]);
         }
         PrivacyWizardStep::PickApp => {
             let apps = wizard.apps();
             if apps.is_empty() {
-                frame.render_widget(Paragraph::new("(no apps)").style(theme.hint()), areas[1]);
+                frame.render_widget(Paragraph::new("  (no apps)").style(theme.hint()), areas[0]);
             } else {
                 let items: Vec<ListItem> = apps
                     .iter()
-                    .map(|a| ListItem::new(Span::styled(format!("{} ({})", a.name, a.bundle_id), theme.base())))
+                    .map(|a| ListItem::new(Span::styled(format!("  {} ({})", a.name, a.bundle_id), theme.base())))
                     .collect();
                 let mut list_state = ListState::default();
                 list_state.select(usize::try_from(wizard.app_index).ok());
                 let list = List::new(items).highlight_style(theme.bar());
-                frame.render_stateful_widget(list, areas[1], &mut list_state);
+                frame.render_stateful_widget(list, areas[0], &mut list_state);
             }
         }
         PrivacyWizardStep::PickPermission => {
             let items: Vec<ListItem> = holodeck_core::models::PrivacyPermission::ALL
                 .iter()
-                .map(|p| ListItem::new(Span::styled(p.raw_value(), theme.base())))
+                .map(|p| ListItem::new(Span::styled(format!("  {}", p.raw_value()), theme.base())))
                 .collect();
             let mut list_state = ListState::default();
             list_state.select(usize::try_from(wizard.permission_index).ok());
             let list = List::new(items).highlight_style(theme.bar());
-            frame.render_stateful_widget(list, areas[1], &mut list_state);
+            frame.render_stateful_widget(list, areas[0], &mut list_state);
         }
         PrivacyWizardStep::PickAction => {
             let items: Vec<ListItem> = holodeck_core::models::PrivacyAction::ALL
                 .iter()
-                .map(|a| ListItem::new(Span::styled(a.raw_value(), theme.base())))
+                .map(|a| ListItem::new(Span::styled(format!("  {}", a.raw_value()), theme.base())))
                 .collect();
             let mut list_state = ListState::default();
             list_state.select(usize::try_from(wizard.action_index).ok());
             let list = List::new(items).highlight_style(theme.bar());
-            frame.render_stateful_widget(list, areas[1], &mut list_state);
+            frame.render_stateful_widget(list, areas[0], &mut list_state);
         }
     }
 
-    render_footer(frame, areas[2], privacy_footer_hint(wizard.step), theme);
+    frame.render_widget(Paragraph::new(privacy_footer_hint(wizard.step)).style(theme.hint()), areas[1]);
+
+    let _ = state;
 }
 
 fn privacy_breadcrumb(step: PrivacyWizardStep) -> &'static str {
     match step {
-        PrivacyWizardStep::LoadingApps => " Privacy — loading apps…",
-        PrivacyWizardStep::PickApp => " Privacy — pick an app",
-        PrivacyWizardStep::PickPermission => " Privacy — pick a permission",
-        PrivacyWizardStep::PickAction => " Privacy — pick an action",
-        PrivacyWizardStep::Submitting => " Privacy — applying…",
+        PrivacyWizardStep::LoadingApps => "Privacy — loading apps…",
+        PrivacyWizardStep::PickApp => "Privacy — pick an app",
+        PrivacyWizardStep::PickPermission => "Privacy — pick a permission",
+        PrivacyWizardStep::PickAction => "Privacy — pick an action",
+        PrivacyWizardStep::Submitting => "Privacy — applying…",
     }
 }
 
@@ -326,10 +385,6 @@ fn privacy_footer_hint(step: PrivacyWizardStep) -> &'static str {
         PrivacyWizardStep::PickAction => "↑/↓ select · Enter apply · b back · Esc cancel",
         _ => "Esc cancel",
     }
-}
-
-fn render_footer(frame: &mut Frame, area: Rect, hint: &str, theme: &Theme) {
-    frame.render_widget(Paragraph::new(hint).style(theme.hint()), area);
 }
 
 // MARK: - Command palette overlay
