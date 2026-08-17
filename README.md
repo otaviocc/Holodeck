@@ -35,7 +35,7 @@ cargo install holodeck-simctl
 Or, for a specific tag from source:
 
 ```bash
-cargo install --git https://github.com/otaviocc/Holodeck --tag v0.6.0 holodeck-simctl --locked
+cargo install --git https://github.com/otaviocc/Holodeck --tag v0.6.1 holodeck-simctl --locked
 ```
 
 Both require Xcode (`xcrun simctl` must be on `PATH`) and, for Cargo, a Rust

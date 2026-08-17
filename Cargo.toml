@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.6.0"
+version = "0.6.1"
 edition = "2024"
 rust-version = "1.88"
 license = "MIT"
@@ -16,9 +16,9 @@ repository = "https://github.com/otaviocc/Holodeck"
 authors = ["Otavio C."]
 
 [workspace.dependencies]
-holodeck-core = { path = "crates/holodeck-core", package = "holodeck-simctl-core", version = "0.6.0" }
-holodeck-services = { path = "crates/holodeck-services", package = "holodeck-simctl-services", version = "0.6.0" }
-holodeck-tui = { path = "crates/holodeck-tui", package = "holodeck-simctl-tui", version = "0.6.0" }
+holodeck-core = { path = "crates/holodeck-core", package = "holodeck-simctl-core", version = "0.6.1" }
+holodeck-services = { path = "crates/holodeck-services", package = "holodeck-simctl-services", version = "0.6.1" }
+holodeck-tui = { path = "crates/holodeck-tui", package = "holodeck-simctl-tui", version = "0.6.1" }
 
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "process", "sync", "time", "signal", "io-util"] }
 async-trait = "0.1"
