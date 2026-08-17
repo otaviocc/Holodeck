@@ -12,12 +12,12 @@ use super::privacy_wizard_reducer;
 pub fn handle(state: &AppState, key: Key) -> ReducerOutput {
     let mut next = state.clone();
     match state.modal.clone() {
-        Some(Modal::Appearance) => appearance(&next, key),
-        Some(Modal::ConfirmErase(id)) => {
-            confirm(&next, id, key, "Erasing…", PendingOperation::Erase, SideEffect::EraseSimulator(id))
+        Some(Modal::Appearance(index)) => appearance(&next, index, key),
+        Some(Modal::ConfirmErase(id, index)) => {
+            confirm(&next, id, index, key, "Erasing…", PendingOperation::Erase, SideEffect::EraseSimulator(id))
         }
-        Some(Modal::ConfirmDelete(id)) => {
-            confirm(&next, id, key, "Deleting…", PendingOperation::Delete, SideEffect::DeleteSimulator(id))
+        Some(Modal::ConfirmDelete(id, index)) => {
+            confirm(&next, id, index, key, "Deleting…", PendingOperation::Delete, SideEffect::DeleteSimulator(id))
         }
         Some(Modal::CreateWizard(wizard)) => wizard_handle(&next, &wizard, key),
         Some(Modal::PrivacyWizard(wizard)) => privacy_wizard_reducer::handle(&next, &wizard, key),
@@ -34,27 +34,26 @@ pub fn handle(state: &AppState, key: Key) -> ReducerOutput {
     }
 }
 
-fn appearance(state: &AppState, key: Key) -> ReducerOutput {
+fn appearance(state: &AppState, index: i64, key: Key) -> ReducerOutput {
     let mut next = state.clone();
     match key {
-        Key::Char('l') => {
-            let Some(sim) = next.selected_simulator().cloned() else {
-                next.modal = None;
-                return ReducerOutput::new(next);
-            };
-            next.modal = None;
-            next.status_message = Some("Setting appearance to light…".to_string());
-            ReducerOutput::with_effects(next, vec![SideEffect::SetAppearance(sim.id, Appearance::Light)])
+        // Navigation
+        Key::Up | Key::Char('k') => {
+            next.modal = Some(Modal::Appearance((index - 1).rem_euclid(2)));
+            ReducerOutput::new(next)
         }
-        Key::Char('d') => {
-            let Some(sim) = next.selected_simulator().cloned() else {
-                next.modal = None;
-                return ReducerOutput::new(next);
-            };
-            next.modal = None;
-            next.status_message = Some("Setting appearance to dark…".to_string());
-            ReducerOutput::with_effects(next, vec![SideEffect::SetAppearance(sim.id, Appearance::Dark)])
+        Key::Down | Key::Char('j') => {
+            next.modal = Some(Modal::Appearance((index + 1).rem_euclid(2)));
+            ReducerOutput::new(next)
         }
+        // Confirm selection with Enter/Space
+        Key::Enter | Key::Char(' ') => {
+            let appearance = if index == 0 { Appearance::Light } else { Appearance::Dark };
+            apply_appearance(&mut next, appearance)
+        }
+        // Legacy single-key shortcuts
+        Key::Char('l') => apply_appearance(&mut next, Appearance::Light),
+        Key::Char('d') => apply_appearance(&mut next, Appearance::Dark),
         Key::Escape | Key::Char('q') => {
             next.modal = None;
             ReducerOutput::new(next)
@@ -63,28 +62,83 @@ fn appearance(state: &AppState, key: Key) -> ReducerOutput {
     }
 }
 
-fn confirm(state: &AppState, id: Uuid, key: Key, status: &str, operation: PendingOperation, effect: SideEffect) -> ReducerOutput {
+fn apply_appearance(next: &mut AppState, appearance: Appearance) -> ReducerOutput {
+    let Some(sim) = next.selected_simulator().cloned() else {
+        next.modal = None;
+        return ReducerOutput::new(next.clone());
+    };
+    next.modal = None;
+    let label = if appearance == Appearance::Light { "light" } else { "dark" };
+    next.status_message = Some(format!("Setting appearance to {label}…"));
+    ReducerOutput::with_effects(next.clone(), vec![SideEffect::SetAppearance(sim.id, appearance)])
+}
+
+fn confirm(
+    state: &AppState,
+    id: Uuid,
+    index: i64,
+    key: Key,
+    status: &str,
+    operation: PendingOperation,
+    effect: SideEffect,
+) -> ReducerOutput {
     let mut next = state.clone();
+
+    // Helper: rebuild the modal variant with an updated index, preserving
+    // whether this is an Erase or Delete confirm. We detect by checking the
+    // current modal since `effect` is moved later.
+    let with_index = |idx: i64| match &state.modal {
+        Some(Modal::ConfirmErase(uid, _)) => Modal::ConfirmErase(*uid, idx),
+        _ => Modal::ConfirmDelete(id, idx),
+    };
+
     match key {
-        Key::Char('y') | Key::Char('Y') => {
-            next.modal = None;
-            // Don't clobber an unrelated in-flight intent (e.g. a pending
-            // Boot when the user confirms Delete). The sibling reducers in
-            // reducer.rs apply the same guard on their own paths.
-            if next.pending_operations.contains_key(&id) {
-                next.status_message = Some("Simulator already has a pending operation".to_string());
-                return ReducerOutput::new(next);
-            }
-            next.status_message = Some(status.to_string());
-            next.pending_operations.insert(id, operation);
-            ReducerOutput::with_effects(next, vec![effect])
+        // Navigation
+        Key::Up | Key::Char('k') => {
+            next.modal = Some(with_index((index - 1).rem_euclid(2)));
+            ReducerOutput::new(next)
         }
+        Key::Down | Key::Char('j') => {
+            next.modal = Some(with_index((index + 1).rem_euclid(2)));
+            ReducerOutput::new(next)
+        }
+        // Confirm selection with Enter/Space: index 0 = Yes, 1 = No
+        Key::Enter | Key::Char(' ') => {
+            if index == 0 {
+                execute_confirm(next, id, status, operation, effect)
+            } else {
+                next.modal = None;
+                ReducerOutput::new(next)
+            }
+        }
+        // Legacy single-key shortcuts
+        Key::Char('y') | Key::Char('Y') => execute_confirm(next, id, status, operation, effect),
         Key::Char('n') | Key::Char('N') | Key::Escape | Key::Char('q') => {
             next.modal = None;
             ReducerOutput::new(next)
         }
         _ => ReducerOutput::new(next),
     }
+}
+
+fn execute_confirm(
+    mut next: AppState,
+    id: Uuid,
+    status: &str,
+    operation: PendingOperation,
+    effect: SideEffect,
+) -> ReducerOutput {
+    next.modal = None;
+    // Don't clobber an unrelated in-flight intent (e.g. a pending
+    // Boot when the user confirms Delete). The sibling reducers in
+    // reducer.rs apply the same guard on their own paths.
+    if next.pending_operations.contains_key(&id) {
+        next.status_message = Some("Simulator already has a pending operation".to_string());
+        return ReducerOutput::new(next);
+    }
+    next.status_message = Some(status.to_string());
+    next.pending_operations.insert(id, operation);
+    ReducerOutput::with_effects(next, vec![effect])
 }
 
 fn wizard_handle(state: &AppState, wizard: &CreateWizard, key: Key) -> ReducerOutput {

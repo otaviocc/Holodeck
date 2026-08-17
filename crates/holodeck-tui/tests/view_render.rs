@@ -85,18 +85,18 @@ fn status_bar_shows_error_over_status_message() {
 #[test]
 fn appearance_modal_banner_renders() {
     let mut state = state_with(vec![booted("A")]);
-    state.modal = Some(Modal::Appearance);
+    state.modal = Some(Modal::Appearance(0));
     let text = rendered(&state);
     assert!(text.contains("Appearance"));
-    assert!(text.contains("light"));
-    assert!(text.contains("dark"));
+    assert!(text.contains("Light"));
+    assert!(text.contains("Dark"));
 }
 
 #[test]
 fn confirm_erase_banner_renders() {
     let mut state = state_with(vec![shutdown("A")]);
     let id = state.simulators[0].id;
-    state.modal = Some(Modal::ConfirmErase(id));
+    state.modal = Some(Modal::ConfirmErase(id, 1));
     let text = rendered(&state);
     assert!(text.contains("Erase"));
 }

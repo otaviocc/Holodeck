@@ -12,7 +12,7 @@ const HELP_ENTRIES: &[(&str, &str)] = &[
     ("R", "Force refresh"),
     ("r", "Start / stop recording"),
     ("p", "Screenshot"),
-    ("a", "Appearance submenu (l light / d dark / Esc)"),
+    ("a", "Appearance (↑/↓ select light/dark · Enter apply)"),
     ("n", "New simulator wizard"),
     ("f", "Focus Simulator.app on the selection"),
     ("e", "Erase (shut-down sims only; y/n confirm)"),
@@ -37,6 +37,9 @@ pub fn render(frame: &mut Frame, state: &AppState, theme: &Theme) {
         Some(Modal::CreateWizard(wizard)) => render_create_wizard(frame, state, theme, wizard),
         Some(Modal::PrivacyWizard(wizard)) => render_privacy_wizard(frame, state, theme, wizard),
         Some(Modal::CommandPalette(palette)) => render_command_palette_overlay(frame, state, theme, palette, frame.area()),
+        Some(Modal::Appearance(index)) => render_appearance(frame, theme, *index),
+        Some(Modal::ConfirmErase(id, index)) => render_confirm(frame, state, theme, *id, *index, ConfirmKind::Erase),
+        Some(Modal::ConfirmDelete(id, index)) => render_confirm(frame, state, theme, *id, *index, ConfirmKind::Delete),
         _ => {}
     }
 }
@@ -77,14 +80,7 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
     if state.is_recording() {
         banner_rows.push(Line::styled(" ● Recording — press r or q to stop", theme.error().add_modifier(Modifier::BOLD)));
     }
-    match &state.modal {
-        Some(Modal::Appearance) => {
-            banner_rows.push(Line::styled(" Appearance — l: light  d: dark  Esc: cancel", theme.warning()))
-        }
-        Some(Modal::ConfirmErase(_)) => banner_rows.push(Line::styled(" Erase this simulator? [y]es / [n]o", theme.warning())),
-        Some(Modal::ConfirmDelete(_)) => banner_rows.push(Line::styled(" Delete this simulator? [y]es / [n]o", theme.warning())),
-        _ => {}
-    }
+
     if state.is_filter_focused || !state.filter_query.is_empty() {
         banner_rows.push(Line::styled(format!(" Filter: {}_", state.filter_query), theme.base()));
     }
@@ -395,6 +391,54 @@ fn privacy_footer_hint(step: PrivacyWizardStep) -> &'static str {
         PrivacyWizardStep::PickAction => "↑/↓ select · Enter apply · b back · Esc cancel",
         _ => "Esc cancel",
     }
+}
+
+// MARK: - Appearance popup
+
+fn render_appearance(frame: &mut Frame, theme: &Theme, index: i64) {
+    let inner = render_popup(frame, frame.area(), 40, 35, "Appearance", theme);
+    let options = ["Light", "Dark"];
+    let mut lines = vec![Line::from("")];
+    for (i, label) in options.iter().enumerate() {
+        let (bullet, style) = if i as i64 == index {
+            ("●", theme.base().add_modifier(Modifier::BOLD))
+        } else {
+            ("○", theme.hint())
+        };
+        lines.push(Line::styled(format!("  {bullet} {label}"), style));
+    }
+    lines.push(Line::from(""));
+    lines.push(Line::styled("  ↑/↓ select · Enter apply · Esc cancel", theme.hint()));
+    frame.render_widget(Paragraph::new(lines), inner);
+}
+
+// MARK: - Confirm erase / delete popup
+
+enum ConfirmKind {
+    Erase,
+    Delete,
+}
+
+fn render_confirm(frame: &mut Frame, state: &AppState, theme: &Theme, id: uuid::Uuid, index: i64, kind: ConfirmKind) {
+    let sim_name = state.simulators.iter().find(|s| s.id == id).map(|s| s.name.as_str()).unwrap_or("?");
+    let title = match kind {
+        ConfirmKind::Erase => format!("Erase \u{201c}{sim_name}\u{201d}?"),
+        ConfirmKind::Delete => format!("Delete \u{201c}{sim_name}\u{201d}?"),
+    };
+    let inner = render_popup(frame, frame.area(), 44, 35, &title, theme);
+    let options = ["Yes", "No"];
+    let mut lines = vec![Line::from("")];
+    for (i, label) in options.iter().enumerate() {
+        let (bullet, style) = if i as i64 == index {
+            ("●", theme.base().add_modifier(Modifier::BOLD))
+        } else {
+            ("○", theme.hint())
+        };
+        lines.push(Line::styled(format!("  {bullet} {label}"), style));
+    }
+    lines.push(Line::from(""));
+    lines.push(Line::styled("  ↑/↓ select · Enter confirm · Esc cancel", theme.hint()));
+    frame.render_widget(Paragraph::new(lines), inner);
 }
 
 // MARK: - Command palette overlay

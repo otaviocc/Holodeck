@@ -17,9 +17,12 @@ pub enum PendingOperation {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Modal {
-    Appearance,
-    ConfirmErase(Uuid),
-    ConfirmDelete(Uuid),
+    /// Selected index: 0 = Light, 1 = Dark.
+    Appearance(i64),
+    /// Selected index: 0 = Yes, 1 = No.
+    ConfirmErase(Uuid, i64),
+    /// Selected index: 0 = Yes, 1 = No.
+    ConfirmDelete(Uuid, i64),
     CreateWizard(CreateWizard),
     PrivacyWizard(PrivacyWizard),
     Inspector(Uuid),
@@ -34,10 +37,10 @@ impl Modal {
     /// reducer drops the modal.
     pub fn referenced_simulator(&self) -> Option<Uuid> {
         match self {
-            Modal::ConfirmErase(id) | Modal::ConfirmDelete(id) | Modal::Inspector(id) => Some(*id),
+            Modal::ConfirmErase(id, _) | Modal::ConfirmDelete(id, _) | Modal::Inspector(id) => Some(*id),
             Modal::OpenUrl(prompt) => Some(prompt.simulator_id),
             Modal::CommandPalette(palette) => palette.simulator_id,
-            Modal::Appearance | Modal::CreateWizard(_) | Modal::PrivacyWizard(_) | Modal::Help => None,
+            Modal::Appearance(_) | Modal::CreateWizard(_) | Modal::PrivacyWizard(_) | Modal::Help => None,
         }
     }
 }
@@ -267,11 +270,7 @@ impl AppState {
     /// rendered as floating popup overlays on top of the simulator list, so
     /// they do not consume any banner rows in the main layout.
     pub fn main_list_viewport(&self) -> i64 {
-        let modal_banner = match &self.modal {
-            Some(Modal::Appearance | Modal::ConfirmErase(_) | Modal::ConfirmDelete(_)) => 1,
-            _ => 0,
-        };
-        let banner = i64::from(self.is_recording()) + modal_banner;
+        let banner = i64::from(self.is_recording());
         (self.rows - 4 - banner - 2).max(1)
     }
 

@@ -12,7 +12,7 @@ use support::{booted, shutdown, state_with};
 fn n_key_opens_erase_confirmation_only_for_shutdown_sims() {
     let state = state_with(vec![shutdown("A")]);
     let out = reduce(&state, AppEvent::Key(Key::Char('e')));
-    assert_eq!(out.state.modal, Some(Modal::ConfirmErase(state.simulators[0].id)));
+    assert_eq!(out.state.modal, Some(Modal::ConfirmErase(state.simulators[0].id, 1)));
 }
 
 #[test]
@@ -27,7 +27,7 @@ fn erase_is_refused_for_a_booted_simulator() {
 fn confirm_erase_yes_dispatches_effect_and_tracks_pending() {
     let mut state = state_with(vec![shutdown("A")]);
     let id = state.simulators[0].id;
-    state.modal = Some(Modal::ConfirmErase(id));
+    state.modal = Some(Modal::ConfirmErase(id, 1));
     let out = reduce(&state, AppEvent::Key(Key::Char('y')));
     assert_eq!(out.state.modal, None);
     assert_eq!(out.effects, vec![SideEffect::EraseSimulator(id)]);
@@ -37,7 +37,7 @@ fn confirm_erase_yes_dispatches_effect_and_tracks_pending() {
 #[test]
 fn confirm_erase_no_dismisses_without_effect() {
     let mut state = state_with(vec![shutdown("A")]);
-    state.modal = Some(Modal::ConfirmErase(state.simulators[0].id));
+    state.modal = Some(Modal::ConfirmErase(state.simulators[0].id, 1));
     let out = reduce(&state, AppEvent::Key(Key::Char('n')));
     assert_eq!(out.state.modal, None);
     assert!(out.effects.is_empty());
@@ -47,7 +47,7 @@ fn confirm_erase_no_dismisses_without_effect() {
 fn confirm_delete_declines_if_another_operation_is_already_pending() {
     let mut state = state_with(vec![shutdown("A")]);
     let id = state.simulators[0].id;
-    state.modal = Some(Modal::ConfirmDelete(id));
+    state.modal = Some(Modal::ConfirmDelete(id, 1));
     state.pending_operations.insert(id, PendingOperation::Boot);
     let out = reduce(&state, AppEvent::Key(Key::Char('y')));
     assert!(out.effects.is_empty());
@@ -59,7 +59,7 @@ fn confirm_delete_declines_if_another_operation_is_already_pending() {
 #[test]
 fn appearance_modal_light_and_dark_keys_dispatch_and_close() {
     let mut state = state_with(vec![booted("A")]);
-    state.modal = Some(Modal::Appearance);
+    state.modal = Some(Modal::Appearance(0));
     let out = reduce(&state, AppEvent::Key(Key::Char('l')));
     assert_eq!(out.state.modal, None);
     assert_eq!(out.effects, vec![SideEffect::SetAppearance(state.simulators[0].id, holodeck_core::models::Appearance::Light)]);
@@ -68,7 +68,7 @@ fn appearance_modal_light_and_dark_keys_dispatch_and_close() {
 #[test]
 fn appearance_modal_escape_closes_without_effect() {
     let mut state = state_with(vec![booted("A")]);
-    state.modal = Some(Modal::Appearance);
+    state.modal = Some(Modal::Appearance(0));
     let out = reduce(&state, AppEvent::Key(Key::Escape));
     assert_eq!(out.state.modal, None);
     assert!(out.effects.is_empty());

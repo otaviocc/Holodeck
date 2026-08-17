@@ -372,7 +372,7 @@ pub fn run_command(command: PaletteCommand, state: AppState) -> ReducerOutput {
                 return ReducerOutput::new(next);
             };
             let id = sim.id;
-            next.modal = Some(Modal::ConfirmDelete(id));
+            next.modal = Some(Modal::ConfirmDelete(id, 1));
             ReducerOutput::new(next)
         }
 
@@ -384,7 +384,7 @@ pub fn run_command(command: PaletteCommand, state: AppState) -> ReducerOutput {
                 next.status_message = Some(format!("Cannot erase: {} is {}", sim.name, sim.state.raw_value()));
                 return ReducerOutput::new(next);
             }
-            next.modal = Some(Modal::ConfirmErase(sim.id));
+            next.modal = Some(Modal::ConfirmErase(sim.id, 1));
             ReducerOutput::new(next)
         }
 
@@ -396,7 +396,7 @@ pub fn run_command(command: PaletteCommand, state: AppState) -> ReducerOutput {
                 next.status_message = Some(format!("Cannot set appearance: {} is {}", sim.name, sim.state.raw_value()));
                 return ReducerOutput::new(next);
             }
-            next.modal = Some(Modal::Appearance);
+            next.modal = Some(Modal::Appearance(0));
             ReducerOutput::new(next)
         }
 
