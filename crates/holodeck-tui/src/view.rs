@@ -95,7 +95,15 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
     constraints.push(Constraint::Length(1)); // status bar
     let areas = Layout::vertical(constraints).split(frame.area());
 
-    frame.render_widget(Paragraph::new(Line::styled(" holodeck — iOS Simulator manager", theme.header())), areas[0]);
+    let header_left = " holodeck ";
+    let header_right = " ⏎ toggle  : cmd  ? help  q quit ";
+    let gap = (state.cols as usize).saturating_sub(header_left.len() + header_right.len());
+    let header_line = Line::from(vec![
+        Span::styled(header_left, theme.bar()),
+        Span::styled(" ".repeat(gap), theme.bar()),
+        Span::styled(header_right, theme.bar()),
+    ]);
+    frame.render_widget(Paragraph::new(header_line), areas[0]);
     if !banner_rows.is_empty() {
         frame.render_widget(Paragraph::new(banner_rows), areas[1]);
     }
