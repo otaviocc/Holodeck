@@ -173,7 +173,7 @@ fn render_help(frame: &mut Frame, theme: &Theme) {
     // Content rows: title + blank + one per entry + blank + footer
     let content_height = (2 + HELP_ENTRIES.len() + 2) as u16;
     // Popup height: content + 2 border rows, clamped to terminal height
-    let popup_height_pct = ((content_height + 2) * 100 / frame.area().height.max(1)).min(90) as u16;
+    let popup_height_pct = ((content_height + 2) * 100 / frame.area().height.max(1)).min(90);
 
     let inner = render_popup(frame, frame.area(), 60, popup_height_pct.max(40), "Keybindings", theme);
 
