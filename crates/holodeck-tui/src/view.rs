@@ -63,11 +63,8 @@ fn popup_rect(area: Rect, width_pct: u16, height_pct: u16) -> Rect {
 fn render_popup(frame: &mut Frame, area: Rect, width_pct: u16, height_pct: u16, title: &str, theme: &Theme) -> Rect {
     let popup = popup_rect(area, width_pct, height_pct);
     frame.render_widget(Clear, popup);
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(theme.accent())
-        .title(format!(" {title} "))
-        .style(theme.base());
+    let block =
+        Block::default().borders(Borders::ALL).border_style(theme.accent_style()).title(format!(" {title} ")).style(theme.base());
     let inner = block.inner(popup);
     frame.render_widget(block, popup);
     inner
@@ -122,7 +119,7 @@ fn render_simulator_list(frame: &mut Frame, state: &AppState, theme: &Theme, are
     let mut current_runtime = None;
     for (i, sim) in visible.iter().enumerate() {
         if current_runtime != Some(&sim.runtime) {
-            items.push(ListItem::new(Line::styled(sim.runtime.display_name(), theme.accent())));
+            items.push(ListItem::new(Line::styled(sim.runtime.display_name(), theme.accent_style())));
             current_runtime = Some(&sim.runtime);
         }
         if i as i64 == state.selected_index {
@@ -150,9 +147,9 @@ fn render_simulator_list(frame: &mut Frame, state: &AppState, theme: &Theme, are
 fn render_status_bar(frame: &mut Frame, state: &AppState, theme: &Theme, area: Rect) {
     let bar = theme.bar();
     let (text, style) = if let Some(err) = &state.last_error {
-        (err.clone(), bar.fg(theme.red))
+        (err.clone(), bar.fg(theme.error))
     } else if let Some(msg) = &state.status_message {
-        (msg.clone(), bar.fg(theme.yellow))
+        (msg.clone(), bar.fg(theme.warning))
     } else if let Some(sim) = state.selected_simulator() {
         (format!("{} — {}", sim.name, sim.id), bar)
     } else {
@@ -187,10 +184,8 @@ fn render_inspector(frame: &mut Frame, state: &AppState, theme: &Theme, id: uuid
     let inner = render_popup(frame, frame.area(), 70, 60, "Inspector", theme);
 
     let Some(sim) = state.simulators.iter().find(|s| s.id == id) else {
-        frame.render_widget(
-            Paragraph::new("  Simulator no longer available. Press any key to close.").style(theme.hint()),
-            inner,
-        );
+        frame
+            .render_widget(Paragraph::new("  Simulator no longer available. Press any key to close.").style(theme.hint()), inner);
         return;
     };
     let rows = [
@@ -241,18 +236,10 @@ fn render_create_wizard(frame: &mut Frame, state: &AppState, theme: &Theme, wiza
     // Split inner area: optional filter banner, list/content, footer
     let filter_visible = wizard.is_device_type_filter_focused || !wizard.device_type_filter.is_empty();
     let filter_height = if filter_visible && wizard.step == CreateWizardStep::PickDeviceType { 1 } else { 0 };
-    let areas = Layout::vertical([
-        Constraint::Length(filter_height),
-        Constraint::Min(1),
-        Constraint::Length(1),
-    ])
-    .split(inner);
+    let areas = Layout::vertical([Constraint::Length(filter_height), Constraint::Min(1), Constraint::Length(1)]).split(inner);
 
     if filter_height > 0 {
-        frame.render_widget(
-            Paragraph::new(format!("  Filter: {}_", wizard.device_type_filter)).style(theme.base()),
-            areas[0],
-        );
+        frame.render_widget(Paragraph::new(format!("  Filter: {}_", wizard.device_type_filter)).style(theme.base()), areas[0]);
     }
 
     match wizard.step {
@@ -400,11 +387,8 @@ fn render_appearance(frame: &mut Frame, theme: &Theme, index: i64) {
     let options = ["Light", "Dark"];
     let mut lines = vec![Line::from("")];
     for (i, label) in options.iter().enumerate() {
-        let (bullet, style) = if i as i64 == index {
-            ("●", theme.base().add_modifier(Modifier::BOLD))
-        } else {
-            ("○", theme.hint())
-        };
+        let (bullet, style) =
+            if i as i64 == index { ("●", theme.base().add_modifier(Modifier::BOLD)) } else { ("○", theme.hint()) };
         lines.push(Line::styled(format!("  {bullet} {label}"), style));
     }
     lines.push(Line::from(""));
@@ -429,11 +413,8 @@ fn render_confirm(frame: &mut Frame, state: &AppState, theme: &Theme, id: uuid::
     let options = ["Yes", "No"];
     let mut lines = vec![Line::from("")];
     for (i, label) in options.iter().enumerate() {
-        let (bullet, style) = if i as i64 == index {
-            ("●", theme.base().add_modifier(Modifier::BOLD))
-        } else {
-            ("○", theme.hint())
-        };
+        let (bullet, style) =
+            if i as i64 == index { ("●", theme.base().add_modifier(Modifier::BOLD)) } else { ("○", theme.hint()) };
         lines.push(Line::styled(format!("  {bullet} {label}"), style));
     }
     lines.push(Line::from(""));
@@ -452,7 +433,7 @@ fn render_command_palette_overlay(frame: &mut Frame, state: &AppState, theme: &T
 
     frame.render_widget(Clear, popup);
     let block =
-        Block::default().borders(Borders::ALL).border_style(theme.accent()).title(" Command palette ").style(theme.base());
+        Block::default().borders(Borders::ALL).border_style(theme.accent_style()).title(" Command palette ").style(theme.base());
     let inner = block.inner(popup);
     frame.render_widget(block, popup);
 

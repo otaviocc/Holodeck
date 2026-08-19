@@ -26,10 +26,13 @@ pub enum ThemeName {
     CatppuccinMocha,
     /// [Solarized](https://ethanschoonover.com/solarized/) Dark.
     SolarizedDark,
+    /// [Vesper](https://github.com/raunofreiberg/vesper) — a restrained,
+    /// mostly-monochrome palette with warm pastel accents.
+    Vesper,
 }
 
 impl ThemeName {
-    pub const ALL: [ThemeName; 8] = [
+    pub const ALL: [ThemeName; 9] = [
         ThemeName::DefaultPlus,
         ThemeName::Ansi,
         ThemeName::TokyoNight,
@@ -38,6 +41,7 @@ impl ThemeName {
         ThemeName::Gruvbox,
         ThemeName::CatppuccinMocha,
         ThemeName::SolarizedDark,
+        ThemeName::Vesper,
     ];
 
     pub fn raw_value(self) -> &'static str {
@@ -50,6 +54,7 @@ impl ThemeName {
             ThemeName::Gruvbox => "gruvbox",
             ThemeName::CatppuccinMocha => "catppuccin-mocha",
             ThemeName::SolarizedDark => "solarized-dark",
+            ThemeName::Vesper => "vesper",
         }
     }
 }
@@ -73,6 +78,7 @@ mod tests {
         assert_eq!(serde_json::to_string(&ThemeName::Gruvbox).unwrap(), "\"gruvbox\"");
         assert_eq!(serde_json::to_string(&ThemeName::CatppuccinMocha).unwrap(), "\"catppuccin-mocha\"");
         assert_eq!(serde_json::to_string(&ThemeName::SolarizedDark).unwrap(), "\"solarized-dark\"");
+        assert_eq!(serde_json::to_string(&ThemeName::Vesper).unwrap(), "\"vesper\"");
     }
 
     #[test]

@@ -121,13 +121,7 @@ fn confirm(
     }
 }
 
-fn execute_confirm(
-    mut next: AppState,
-    id: Uuid,
-    status: &str,
-    operation: PendingOperation,
-    effect: SideEffect,
-) -> ReducerOutput {
+fn execute_confirm(mut next: AppState, id: Uuid, status: &str, operation: PendingOperation, effect: SideEffect) -> ReducerOutput {
     next.modal = None;
     // Don't clobber an unrelated in-flight intent (e.g. a pending
     // Boot when the user confirms Delete). The sibling reducers in

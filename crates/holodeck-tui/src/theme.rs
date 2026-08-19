@@ -10,9 +10,9 @@
 //! as an alternative that inherits the reader's own terminal scheme instead
 //! of asserting truecolor. A handful of other well-known terminal/TUI
 //! themes are also built in: [`Theme::tokyo_night`], [`Theme::nord`],
-//! [`Theme::dracula`], [`Theme::gruvbox`], [`Theme::catppuccin_mocha`], and
-//! [`Theme::solarized_dark`] — all ported from each project's own canonical
-//! palette values.
+//! [`Theme::dracula`], [`Theme::gruvbox`], [`Theme::catppuccin_mocha`],
+//! [`Theme::solarized_dark`], and [`Theme::vesper`] — all ported from each
+//! project's own canonical palette values.
 
 use holodeck_core::models::ThemeName;
 use ratatui::style::{Color, Modifier, Style};
@@ -27,12 +27,18 @@ pub struct Theme {
     pub muted_text: Color,
     pub selection_background: Color,
     pub selection_foreground: Color,
-    pub red: Color,
-    pub green: Color,
-    pub yellow: Color,
-    pub blue: Color,
-    pub magenta: Color,
-    pub cyan: Color,
+    /// Errors, validation failures, `last_error`.
+    pub error: Color,
+    /// Booted-simulator dot, confirmation affordances.
+    pub success: Color,
+    /// In-flight / transient status messages.
+    pub warning: Color,
+    /// Popup borders, command-palette chrome, runtime-group headers.
+    pub accent: Color,
+    /// Spare accent (blue slot in the original palette).
+    pub highlight: Color,
+    /// Spare accent (magenta slot in the original palette).
+    pub notice: Color,
 }
 
 impl Theme {
@@ -46,6 +52,7 @@ impl Theme {
             ThemeName::Gruvbox => Self::gruvbox(),
             ThemeName::CatppuccinMocha => Self::catppuccin_mocha(),
             ThemeName::SolarizedDark => Self::solarized_dark(),
+            ThemeName::Vesper => Self::vesper(),
         }
     }
 
@@ -60,12 +67,12 @@ impl Theme {
             muted_text: rgb(0x8E, 0x8E, 0x8E),
             selection_background: rgb(0x54, 0x55, 0x4A),
             selection_foreground: rgb(0xFF, 0xFF, 0xFF),
-            red: rgb(0xFC, 0x46, 0x51),
-            green: rgb(0x2E, 0xA8, 0x5B),
-            yellow: rgb(0xFF, 0xE7, 0x6D),
-            blue: rgb(0x35, 0xB0, 0xD8),
-            magenta: rgb(0xF2, 0x24, 0x8C),
-            cyan: rgb(0x56, 0xD0, 0xB3),
+            error: rgb(0xFC, 0x46, 0x51),
+            success: rgb(0x2E, 0xA8, 0x5B),
+            warning: rgb(0xFF, 0xE7, 0x6D),
+            accent: rgb(0x56, 0xD0, 0xB3),
+            highlight: rgb(0x35, 0xB0, 0xD8),
+            notice: rgb(0xF2, 0x24, 0x8C),
         }
     }
 
@@ -82,12 +89,12 @@ impl Theme {
             muted_text: Color::DarkGray,
             selection_background: Color::DarkGray,
             selection_foreground: Color::White,
-            red: Color::Red,
-            green: Color::Green,
-            yellow: Color::Yellow,
-            blue: Color::Blue,
-            magenta: Color::Magenta,
-            cyan: Color::Cyan,
+            error: Color::Red,
+            success: Color::Green,
+            warning: Color::Yellow,
+            accent: Color::Cyan,
+            highlight: Color::Blue,
+            notice: Color::Magenta,
         }
     }
 
@@ -101,12 +108,12 @@ impl Theme {
             muted_text: rgb(0x56, 0x5F, 0x89),
             selection_background: rgb(0x29, 0x2E, 0x42),
             selection_foreground: rgb(0xC0, 0xCA, 0xF5),
-            red: rgb(0xF7, 0x76, 0x8E),
-            green: rgb(0x9E, 0xCE, 0x6A),
-            yellow: rgb(0xE0, 0xAF, 0x68),
-            blue: rgb(0x7A, 0xA2, 0xF7),
-            magenta: rgb(0xBB, 0x9A, 0xF7),
-            cyan: rgb(0x7D, 0xCF, 0xFF),
+            error: rgb(0xF7, 0x76, 0x8E),
+            success: rgb(0x9E, 0xCE, 0x6A),
+            warning: rgb(0xE0, 0xAF, 0x68),
+            accent: rgb(0x7D, 0xCF, 0xFF),
+            highlight: rgb(0x7A, 0xA2, 0xF7),
+            notice: rgb(0xBB, 0x9A, 0xF7),
         }
     }
 
@@ -122,12 +129,12 @@ impl Theme {
             muted_text: rgb(0x4C, 0x56, 0x6A),
             selection_background: rgb(0x43, 0x4C, 0x5E),
             selection_foreground: rgb(0xEC, 0xEF, 0xF4),
-            red: rgb(0xBF, 0x61, 0x6A),
-            green: rgb(0xA3, 0xBE, 0x8C),
-            yellow: rgb(0xEB, 0xCB, 0x8B),
-            blue: rgb(0x81, 0xA1, 0xC1),
-            magenta: rgb(0xB4, 0x8E, 0xAD),
-            cyan: rgb(0x88, 0xC0, 0xD0),
+            error: rgb(0xBF, 0x61, 0x6A),
+            success: rgb(0xA3, 0xBE, 0x8C),
+            warning: rgb(0xEB, 0xCB, 0x8B),
+            accent: rgb(0x88, 0xC0, 0xD0),
+            highlight: rgb(0x81, 0xA1, 0xC1),
+            notice: rgb(0xB4, 0x8E, 0xAD),
         }
     }
 
@@ -142,12 +149,13 @@ impl Theme {
             muted_text: rgb(0x62, 0x72, 0xA4),
             selection_background: rgb(0x44, 0x47, 0x5A),
             selection_foreground: rgb(0xF8, 0xF8, 0xF2),
-            red: rgb(0xFF, 0x55, 0x55),
-            green: rgb(0x50, 0xFA, 0x7B),
-            yellow: rgb(0xF1, 0xFA, 0x8C),
-            blue: rgb(0xBD, 0x93, 0xF9),
-            magenta: rgb(0xFF, 0x79, 0xC6),
-            cyan: rgb(0x8B, 0xE9, 0xFD),
+            error: rgb(0xFF, 0x55, 0x55),
+            success: rgb(0x50, 0xFA, 0x7B),
+            warning: rgb(0xF1, 0xFA, 0x8C),
+            accent: rgb(0x8B, 0xE9, 0xFD),
+            // Dracula's own ANSI spec maps "blue" to the purple hex.
+            highlight: rgb(0xBD, 0x93, 0xF9),
+            notice: rgb(0xFF, 0x79, 0xC6),
         }
     }
 
@@ -163,12 +171,12 @@ impl Theme {
             muted_text: rgb(0x92, 0x83, 0x74),
             selection_background: rgb(0x50, 0x49, 0x45),
             selection_foreground: rgb(0xFB, 0xF1, 0xC7),
-            red: rgb(0xFB, 0x49, 0x34),
-            green: rgb(0xB8, 0xBB, 0x26),
-            yellow: rgb(0xFA, 0xBD, 0x2F),
-            blue: rgb(0x83, 0xA5, 0x98),
-            magenta: rgb(0xD3, 0x86, 0x9B),
-            cyan: rgb(0x8E, 0xC0, 0x7C),
+            error: rgb(0xFB, 0x49, 0x34),
+            success: rgb(0xB8, 0xBB, 0x26),
+            warning: rgb(0xFA, 0xBD, 0x2F),
+            accent: rgb(0x8E, 0xC0, 0x7C),
+            highlight: rgb(0x83, 0xA5, 0x98),
+            notice: rgb(0xD3, 0x86, 0x9B),
         }
     }
 
@@ -182,12 +190,12 @@ impl Theme {
             muted_text: rgb(0xA6, 0xAD, 0xC8),
             selection_background: rgb(0x45, 0x47, 0x5A),
             selection_foreground: rgb(0xCD, 0xD6, 0xF4),
-            red: rgb(0xF3, 0x8B, 0xA8),
-            green: rgb(0xA6, 0xE3, 0xA1),
-            yellow: rgb(0xF9, 0xE2, 0xAF),
-            blue: rgb(0x89, 0xB4, 0xFA),
-            magenta: rgb(0xCB, 0xA6, 0xF7),
-            cyan: rgb(0x94, 0xE2, 0xD5),
+            error: rgb(0xF3, 0x8B, 0xA8),
+            success: rgb(0xA6, 0xE3, 0xA1),
+            warning: rgb(0xF9, 0xE2, 0xAF),
+            accent: rgb(0x94, 0xE2, 0xD5),
+            highlight: rgb(0x89, 0xB4, 0xFA),
+            notice: rgb(0xCB, 0xA6, 0xF7),
         }
     }
 
@@ -201,12 +209,32 @@ impl Theme {
             muted_text: rgb(0x58, 0x6E, 0x75),
             selection_background: rgb(0x07, 0x36, 0x42),
             selection_foreground: rgb(0x93, 0xA1, 0xA1),
-            red: rgb(0xDC, 0x32, 0x2F),
-            green: rgb(0x85, 0x99, 0x00),
-            yellow: rgb(0xB5, 0x89, 0x00),
-            blue: rgb(0x26, 0x8B, 0xD2),
-            magenta: rgb(0xD3, 0x36, 0x82),
-            cyan: rgb(0x2A, 0xA1, 0x98),
+            error: rgb(0xDC, 0x32, 0x2F),
+            success: rgb(0x85, 0x99, 0x00),
+            warning: rgb(0xB5, 0x89, 0x00),
+            accent: rgb(0x2A, 0xA1, 0x98),
+            highlight: rgb(0x26, 0x8B, 0xD2),
+            notice: rgb(0xD3, 0x36, 0x82),
+        }
+    }
+
+    /// [Vesper](https://github.com/raunofreiberg/vesper) — an ultra-muted,
+    /// near-monochromatic palette with warm pastel accents. Values taken
+    /// from the canonical VS Code theme.
+    pub fn vesper() -> Self {
+        Self {
+            background: rgb(0x10, 0x10, 0x10),
+            foreground: rgb(0xFF, 0xFF, 0xFF),
+            muted: rgb(0x50, 0x50, 0x50),
+            muted_text: rgb(0x7E, 0x7E, 0x7E),
+            selection_background: rgb(0x23, 0x23, 0x23),
+            selection_foreground: rgb(0xFF, 0xFF, 0xFF),
+            error: rgb(0xFF, 0x80, 0x80),
+            success: rgb(0x90, 0xB9, 0x9F),
+            warning: rgb(0xFF, 0xC7, 0x99),
+            accent: rgb(0xFF, 0xC7, 0x99),
+            highlight: rgb(0xF5, 0x91, 0xB2),
+            notice: rgb(0xEC, 0xAA, 0xD6),
         }
     }
 
@@ -219,28 +247,28 @@ impl Theme {
 
     /// The title bar / breadcrumb chrome.
     pub fn header(&self) -> Style {
-        Style::new().fg(self.cyan).add_modifier(Modifier::BOLD)
+        Style::new().fg(self.accent).add_modifier(Modifier::BOLD)
     }
 
     /// Runtime group headers, the command-palette border — anything drawing
     /// attention without signaling success/warning/error.
-    pub fn accent(&self) -> Style {
-        Style::new().fg(self.cyan).add_modifier(Modifier::BOLD)
+    pub fn accent_style(&self) -> Style {
+        Style::new().fg(self.accent).add_modifier(Modifier::BOLD)
     }
 
     /// A booted simulator's indicator dot, confirmation affordances.
     pub fn success(&self) -> Style {
-        Style::new().fg(self.green)
+        Style::new().fg(self.success)
     }
 
     /// In-flight/transient status messages, confirm-prompt banners.
     pub fn warning(&self) -> Style {
-        Style::new().fg(self.yellow)
+        Style::new().fg(self.warning)
     }
 
     /// `last_error`, validation failures.
     pub fn error(&self) -> Style {
-        Style::new().fg(self.red)
+        Style::new().fg(self.error)
     }
 
     /// Footer key hints, "press any key to close", the ghost autocomplete
@@ -285,12 +313,11 @@ mod tests {
         assert_eq!(Theme::from_name(ThemeName::Gruvbox), Theme::gruvbox());
         assert_eq!(Theme::from_name(ThemeName::CatppuccinMocha), Theme::catppuccin_mocha());
         assert_eq!(Theme::from_name(ThemeName::SolarizedDark), Theme::solarized_dark());
+        assert_eq!(Theme::from_name(ThemeName::Vesper), Theme::vesper());
     }
 
     #[test]
     fn every_built_in_theme_is_reachable_from_its_theme_name() {
-        // Guards against a theme being added to ThemeName::ALL without a
-        // matching arm in Theme::from_name (or vice versa).
         for name in ThemeName::ALL {
             let _ = Theme::from_name(name);
         }
@@ -301,8 +328,8 @@ mod tests {
         let theme = Theme::tokyo_night();
         assert_eq!(theme.background, Color::Rgb(0x1A, 0x1B, 0x26));
         assert_eq!(theme.foreground, Color::Rgb(0xC0, 0xCA, 0xF5));
-        assert_eq!(theme.blue, Color::Rgb(0x7A, 0xA2, 0xF7));
-        assert_eq!(theme.red, Color::Rgb(0xF7, 0x76, 0x8E));
+        assert_eq!(theme.highlight, Color::Rgb(0x7A, 0xA2, 0xF7));
+        assert_eq!(theme.error, Color::Rgb(0xF7, 0x76, 0x8E));
     }
 
     #[test]
@@ -310,18 +337,18 @@ mod tests {
         let theme = Theme::nord();
         assert_eq!(theme.background, Color::Rgb(0x2E, 0x34, 0x40));
         assert_eq!(theme.foreground, Color::Rgb(0xD8, 0xDE, 0xE9));
-        assert_eq!(theme.cyan, Color::Rgb(0x88, 0xC0, 0xD0));
-        assert_eq!(theme.red, Color::Rgb(0xBF, 0x61, 0x6A));
+        assert_eq!(theme.accent, Color::Rgb(0x88, 0xC0, 0xD0));
+        assert_eq!(theme.error, Color::Rgb(0xBF, 0x61, 0x6A));
     }
 
     #[test]
-    fn dracula_matches_the_canonical_hexes_and_blue_borrows_purple() {
+    fn dracula_matches_the_canonical_hexes_and_highlight_borrows_purple() {
         let theme = Theme::dracula();
         assert_eq!(theme.background, Color::Rgb(0x28, 0x2A, 0x36));
         assert_eq!(theme.foreground, Color::Rgb(0xF8, 0xF8, 0xF2));
-        assert_eq!(theme.cyan, Color::Rgb(0x8B, 0xE9, 0xFD));
+        assert_eq!(theme.accent, Color::Rgb(0x8B, 0xE9, 0xFD));
         // Dracula's own ANSI spec maps "blue" to the purple hex.
-        assert_eq!(theme.blue, Color::Rgb(0xBD, 0x93, 0xF9));
+        assert_eq!(theme.highlight, Color::Rgb(0xBD, 0x93, 0xF9));
     }
 
     #[test]
@@ -329,7 +356,7 @@ mod tests {
         let theme = Theme::gruvbox();
         assert_eq!(theme.background, Color::Rgb(0x28, 0x28, 0x28));
         assert_eq!(theme.foreground, Color::Rgb(0xEB, 0xDB, 0xB2));
-        assert_eq!(theme.yellow, Color::Rgb(0xFA, 0xBD, 0x2F));
+        assert_eq!(theme.warning, Color::Rgb(0xFA, 0xBD, 0x2F));
     }
 
     #[test]
@@ -337,8 +364,18 @@ mod tests {
         let theme = Theme::catppuccin_mocha();
         assert_eq!(theme.background, Color::Rgb(0x1E, 0x1E, 0x2E));
         assert_eq!(theme.foreground, Color::Rgb(0xCD, 0xD6, 0xF4));
-        assert_eq!(theme.blue, Color::Rgb(0x89, 0xB4, 0xFA));
-        assert_eq!(theme.magenta, Color::Rgb(0xCB, 0xA6, 0xF7));
+        assert_eq!(theme.highlight, Color::Rgb(0x89, 0xB4, 0xFA));
+        assert_eq!(theme.notice, Color::Rgb(0xCB, 0xA6, 0xF7));
+    }
+
+    #[test]
+    fn vesper_matches_the_canonical_hexes() {
+        let theme = Theme::vesper();
+        assert_eq!(theme.background, Color::Rgb(0x10, 0x10, 0x10));
+        assert_eq!(theme.foreground, Color::Rgb(0xFF, 0xFF, 0xFF));
+        assert_eq!(theme.muted, Color::Rgb(0x50, 0x50, 0x50));
+        assert_eq!(theme.error, Color::Rgb(0xFF, 0x80, 0x80));
+        assert_eq!(theme.accent, Color::Rgb(0xFF, 0xC7, 0x99));
     }
 
     #[test]
@@ -346,8 +383,8 @@ mod tests {
         let theme = Theme::solarized_dark();
         assert_eq!(theme.background, Color::Rgb(0x00, 0x2B, 0x36));
         assert_eq!(theme.foreground, Color::Rgb(0x83, 0x94, 0x96));
-        assert_eq!(theme.blue, Color::Rgb(0x26, 0x8B, 0xD2));
-        assert_eq!(theme.yellow, Color::Rgb(0xB5, 0x89, 0x00));
+        assert_eq!(theme.highlight, Color::Rgb(0x26, 0x8B, 0xD2));
+        assert_eq!(theme.warning, Color::Rgb(0xB5, 0x89, 0x00));
     }
 
     #[test]
@@ -365,15 +402,15 @@ mod tests {
         let theme = Theme::default_plus();
         assert_eq!(theme.background, Color::Rgb(0x1E, 0x1E, 0x1E));
         assert_eq!(theme.selection_background, Color::Rgb(0x54, 0x55, 0x4A));
-        assert_eq!(theme.green, Color::Rgb(0x2E, 0xA8, 0x5B));
-        assert_eq!(theme.red, Color::Rgb(0xFC, 0x46, 0x51));
+        assert_eq!(theme.success, Color::Rgb(0x2E, 0xA8, 0x5B));
+        assert_eq!(theme.error, Color::Rgb(0xFC, 0x46, 0x51));
     }
 
     #[test]
     fn ansi_theme_uses_named_terminal_colors_not_truecolor() {
         let theme = Theme::ansi();
-        assert_eq!(theme.red, Color::Red);
-        assert_eq!(theme.cyan, Color::Cyan);
+        assert_eq!(theme.error, Color::Red);
+        assert_eq!(theme.accent, Color::Cyan);
     }
 
     #[test]

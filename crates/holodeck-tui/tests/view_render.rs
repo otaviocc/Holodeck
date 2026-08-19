@@ -182,7 +182,10 @@ fn booted_and_shutdown_dots_use_success_and_hint_colors() {
     let (_, buffer) = render_to_text_and_buffer(&state, &theme);
     let dots: Vec<_> = buffer.content().iter().filter(|cell| cell.symbol() == "●" || cell.symbol() == "○").collect();
     assert_eq!(dots.len(), 3, "expected two booted dots and one shutdown dot");
-    assert!(dots.iter().any(|cell| cell.symbol() == "●" && cell.fg == theme.green), "an unselected booted dot should be green");
+    assert!(
+        dots.iter().any(|cell| cell.symbol() == "●" && cell.fg == theme.success),
+        "an unselected booted dot should be success-colored"
+    );
     assert!(dots.iter().any(|cell| cell.symbol() == "○" && cell.fg == theme.muted_text), "the shutdown dot should be muted");
 }
 
@@ -193,7 +196,7 @@ fn status_bar_uses_error_color_over_bar_background() {
     let theme = Theme::default_plus();
     let (_, buffer) = render_to_text_and_buffer(&state, &theme);
     let cell = &buffer[(1, 23)]; // inside "boom" on the bottom status-bar row
-    assert_eq!(cell.fg, theme.red);
+    assert_eq!(cell.fg, theme.error);
     assert_eq!(cell.bg, theme.selection_background);
 }
 
