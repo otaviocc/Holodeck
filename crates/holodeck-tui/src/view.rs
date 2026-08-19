@@ -83,8 +83,10 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
     }
 
     let mut constraints = vec![Constraint::Length(1)]; // header
+    constraints.push(Constraint::Length(1)); // rule below header
     constraints.push(Constraint::Length(banner_rows.len() as u16));
     constraints.push(Constraint::Min(1)); // list
+    constraints.push(Constraint::Length(1)); // rule above status bar
     constraints.push(Constraint::Length(1)); // status bar
     let areas = Layout::vertical(constraints).split(frame.area());
 
@@ -94,16 +96,23 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
     let right_width = header_right.chars().count();
     let gap = (state.cols as usize).saturating_sub(left_width + right_width);
     let header_line = Line::from(vec![
-        Span::styled(header_left, theme.bar()),
-        Span::styled(" ".repeat(gap), theme.bar()),
-        Span::styled(header_right, theme.bar()),
+        Span::styled(header_left, Style::new().fg(theme.chrome).add_modifier(Modifier::BOLD)),
+        Span::styled(" ".repeat(gap), Style::new()),
+        Span::styled(header_right, theme.hint()),
     ]);
     frame.render_widget(Paragraph::new(header_line), areas[0]);
+
+    let rule_line = Line::styled("─".repeat(state.cols as usize), theme.rule());
+    frame.render_widget(Paragraph::new(rule_line), areas[1]);
+
     if !banner_rows.is_empty() {
-        frame.render_widget(Paragraph::new(banner_rows), areas[1]);
+        frame.render_widget(Paragraph::new(banner_rows), areas[2]);
     }
-    render_simulator_list(frame, state, theme, areas[2]);
-    render_status_bar(frame, state, theme, areas[3]);
+    render_simulator_list(frame, state, theme, areas[3]);
+
+    let bottom_rule = Line::styled("─".repeat(state.cols as usize), theme.rule());
+    frame.render_widget(Paragraph::new(bottom_rule), areas[4]);
+    render_status_bar(frame, state, theme, areas[5]);
 }
 
 fn render_simulator_list(frame: &mut Frame, state: &AppState, theme: &Theme, area: Rect) {
@@ -145,15 +154,14 @@ fn render_simulator_list(frame: &mut Frame, state: &AppState, theme: &Theme, are
 }
 
 fn render_status_bar(frame: &mut Frame, state: &AppState, theme: &Theme, area: Rect) {
-    let bar = theme.bar();
     let (text, style) = if let Some(err) = &state.last_error {
-        (err.clone(), bar.fg(theme.error))
+        (err.clone(), theme.error())
     } else if let Some(msg) = &state.status_message {
-        (msg.clone(), bar.fg(theme.warning))
+        (msg.clone(), theme.warning())
     } else if let Some(sim) = state.selected_simulator() {
-        (format!("{} — {}", sim.name, sim.id), bar)
+        (format!("{} — {}", sim.name, sim.id), theme.hint())
     } else {
-        (String::new(), bar)
+        (String::new(), theme.hint())
     };
     frame.render_widget(Paragraph::new(text).style(style), area);
 }

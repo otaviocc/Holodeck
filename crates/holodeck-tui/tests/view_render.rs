@@ -11,6 +11,7 @@ use holodeck_simctl_tui::state::{AppState, CommandPalette, CreateWizard, Modal, 
 use holodeck_simctl_tui::view::render;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
+use ratatui::style::Color;
 use support::{booted, shutdown, state_with};
 
 fn rendered(state: &AppState) -> String {
@@ -197,7 +198,7 @@ fn status_bar_uses_error_color_over_bar_background() {
     let (_, buffer) = render_to_text_and_buffer(&state, &theme);
     let cell = &buffer[(1, 23)]; // inside "boom" on the bottom status-bar row
     assert_eq!(cell.fg, theme.error);
-    assert_eq!(cell.bg, theme.selection_background);
+    assert_eq!(cell.bg, Color::Reset);
 }
 
 #[test]

@@ -35,6 +35,8 @@ pub struct Theme {
     pub warning: Color,
     /// Popup borders, command-palette chrome, runtime-group headers.
     pub accent: Color,
+    /// Header text, readout numbers, chrome accents.
+    pub chrome: Color,
     /// Spare accent (blue slot in the original palette).
     pub highlight: Color,
     /// Spare accent (magenta slot in the original palette).
@@ -71,6 +73,7 @@ impl Theme {
             success: rgb(0x2E, 0xA8, 0x5B),
             warning: rgb(0xFF, 0xE7, 0x6D),
             accent: rgb(0x56, 0xD0, 0xB3),
+            chrome: rgb(0x56, 0xD0, 0xB3),
             highlight: rgb(0x35, 0xB0, 0xD8),
             notice: rgb(0xF2, 0x24, 0x8C),
         }
@@ -93,6 +96,7 @@ impl Theme {
             success: Color::Green,
             warning: Color::Yellow,
             accent: Color::Cyan,
+            chrome: Color::Cyan,
             highlight: Color::Blue,
             notice: Color::Magenta,
         }
@@ -112,6 +116,7 @@ impl Theme {
             success: rgb(0x9E, 0xCE, 0x6A),
             warning: rgb(0xE0, 0xAF, 0x68),
             accent: rgb(0x7D, 0xCF, 0xFF),
+            chrome: rgb(0x7A, 0xA2, 0xF7),
             highlight: rgb(0x7A, 0xA2, 0xF7),
             notice: rgb(0xBB, 0x9A, 0xF7),
         }
@@ -133,6 +138,7 @@ impl Theme {
             success: rgb(0xA3, 0xBE, 0x8C),
             warning: rgb(0xEB, 0xCB, 0x8B),
             accent: rgb(0x88, 0xC0, 0xD0),
+            chrome: rgb(0x88, 0xC0, 0xD0),
             highlight: rgb(0x81, 0xA1, 0xC1),
             notice: rgb(0xB4, 0x8E, 0xAD),
         }
@@ -153,6 +159,7 @@ impl Theme {
             success: rgb(0x50, 0xFA, 0x7B),
             warning: rgb(0xF1, 0xFA, 0x8C),
             accent: rgb(0x8B, 0xE9, 0xFD),
+            chrome: rgb(0xBD, 0x93, 0xF9),
             // Dracula's own ANSI spec maps "blue" to the purple hex.
             highlight: rgb(0xBD, 0x93, 0xF9),
             notice: rgb(0xFF, 0x79, 0xC6),
@@ -175,6 +182,7 @@ impl Theme {
             success: rgb(0xB8, 0xBB, 0x26),
             warning: rgb(0xFA, 0xBD, 0x2F),
             accent: rgb(0x8E, 0xC0, 0x7C),
+            chrome: rgb(0x8E, 0xC0, 0x7C),
             highlight: rgb(0x83, 0xA5, 0x98),
             notice: rgb(0xD3, 0x86, 0x9B),
         }
@@ -194,6 +202,7 @@ impl Theme {
             success: rgb(0xA6, 0xE3, 0xA1),
             warning: rgb(0xF9, 0xE2, 0xAF),
             accent: rgb(0x94, 0xE2, 0xD5),
+            chrome: rgb(0x89, 0xB4, 0xFA),
             highlight: rgb(0x89, 0xB4, 0xFA),
             notice: rgb(0xCB, 0xA6, 0xF7),
         }
@@ -213,6 +222,7 @@ impl Theme {
             success: rgb(0x85, 0x99, 0x00),
             warning: rgb(0xB5, 0x89, 0x00),
             accent: rgb(0x2A, 0xA1, 0x98),
+            chrome: rgb(0x26, 0x8B, 0xD2),
             highlight: rgb(0x26, 0x8B, 0xD2),
             notice: rgb(0xD3, 0x36, 0x82),
         }
@@ -233,6 +243,7 @@ impl Theme {
             success: rgb(0x90, 0xB9, 0x9F),
             warning: rgb(0xFF, 0xC7, 0x99),
             accent: rgb(0xFF, 0xC7, 0x99),
+            chrome: rgb(0xF5, 0x91, 0xB2),
             highlight: rgb(0xF5, 0x91, 0xB2),
             notice: rgb(0xEC, 0xAA, 0xD6),
         }
@@ -277,10 +288,20 @@ impl Theme {
         Style::new().fg(self.muted_text)
     }
 
-    /// The main list's selected row, and the header/status/wizard-breadcrumb
-    /// bars — the same filled-bar look everywhere it appears.
+    /// The main list's selected row — the same filled-bar look for every
+    /// highlighted row across the UI.
     pub fn bar(&self) -> Style {
         Style::new().fg(self.selection_foreground).bg(self.selection_background)
+    }
+
+    /// Full-row background wash for header and status bar.
+    pub fn chrome_bar(&self) -> Style {
+        Style::new().bg(self.muted)
+    }
+
+    /// Horizontal rule (hairline) between bars and content.
+    pub fn rule(&self) -> Style {
+        Style::new().fg(self.muted)
     }
 }
 
@@ -376,6 +397,7 @@ mod tests {
         assert_eq!(theme.muted, Color::Rgb(0x50, 0x50, 0x50));
         assert_eq!(theme.error, Color::Rgb(0xFF, 0x80, 0x80));
         assert_eq!(theme.accent, Color::Rgb(0xFF, 0xC7, 0x99));
+        assert_eq!(theme.chrome, Color::Rgb(0xF5, 0x91, 0xB2));
     }
 
     #[test]
@@ -419,5 +441,21 @@ mod tests {
         let style = theme.bar();
         assert_eq!(style.bg, Some(theme.selection_background));
         assert_eq!(style.fg, Some(theme.selection_foreground));
+    }
+
+    #[test]
+    fn chrome_bar_uses_muted_as_background() {
+        let theme = Theme::default_plus();
+        let style = theme.chrome_bar();
+        assert_eq!(style.bg, Some(theme.muted));
+        assert_eq!(style.fg, None);
+    }
+
+    #[test]
+    fn rule_uses_muted_as_foreground() {
+        let theme = Theme::default_plus();
+        let style = theme.rule();
+        assert_eq!(style.fg, Some(theme.muted));
+        assert_eq!(style.bg, None);
     }
 }
