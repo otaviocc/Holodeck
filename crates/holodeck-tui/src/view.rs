@@ -128,7 +128,7 @@ fn render_simulator_list(frame: &mut Frame, state: &AppState, theme: &Theme, are
     let mut current_runtime = None;
     for (i, sim) in visible.iter().enumerate() {
         if current_runtime != Some(&sim.runtime) {
-            items.push(ListItem::new(Line::styled(sim.runtime.display_name(), theme.accent_style())));
+            items.push(ListItem::new(Line::styled(format!(" {}", sim.runtime.display_name()), theme.accent_style())));
             current_runtime = Some(&sim.runtime);
         }
         if i as i64 == state.selected_index {
@@ -155,11 +155,11 @@ fn render_simulator_list(frame: &mut Frame, state: &AppState, theme: &Theme, are
 
 fn render_status_bar(frame: &mut Frame, state: &AppState, theme: &Theme, area: Rect) {
     let (text, style) = if let Some(err) = &state.last_error {
-        (err.clone(), theme.error())
+        (format!(" {err}"), theme.error())
     } else if let Some(msg) = &state.status_message {
-        (msg.clone(), theme.warning())
+        (format!(" {msg}"), theme.warning())
     } else if let Some(sim) = state.selected_simulator() {
-        (format!("{} — {}", sim.name, sim.id), theme.hint())
+        (format!(" {} — {}", sim.name, sim.id), theme.hint())
     } else {
         (String::new(), theme.hint())
     };
