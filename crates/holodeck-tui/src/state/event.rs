@@ -33,6 +33,8 @@ pub enum AppEvent {
     UrlHistoryLoaded(Vec<String>),
     UrlOpened { url: String, history: Vec<String> },
     UrlOpenFailed(String),
+    AppLaunched { bundle_id: String },
+    AppLaunchFailed(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -53,6 +55,7 @@ pub enum SideEffect {
     ApplyPrivacy { udid: Uuid, action: PrivacyAction, permission: PrivacyPermission, bundle_id: String },
     LoadUrlHistory,
     OpenUrl { udid: Uuid, url: String },
+    LaunchApp { udid: Uuid, bundle_id: String, language: Option<String> },
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -5,7 +5,8 @@ use uuid::Uuid;
 use holodeck_core::models::{Simulator, SimulatorState};
 
 use super::app_state::{
-    AppState, CreateWizard, CreateWizardStep, Modal, OpenUrlPrompt, PendingOperation, PrivacyWizard, PrivacyWizardStep,
+    AppState, CreateWizard, CreateWizardStep, LaunchAppPrompt, LaunchAppStep, Modal, OpenUrlPrompt, PendingOperation,
+    PrivacyWizard, PrivacyWizardStep,
 };
 use super::event::{AppEvent, ReducerOutput, SideEffect};
 use super::key::{Key, is_printable};
@@ -171,19 +172,34 @@ pub fn reduce(state: &AppState, event: AppEvent) -> ReducerOutput {
         }
 
         AppEvent::AppsLoaded(apps) => {
-            if let Some(Modal::PrivacyWizard(wizard)) = &next.modal {
-                let mut updated = wizard.clone();
-                updated.all_apps = apps;
-                updated.app_index = 0;
-                updated.step = PrivacyWizardStep::PickApp;
-                updated.error = None;
-                next.modal = Some(Modal::PrivacyWizard(updated));
+            // Both the privacy wizard and the launch modal request apps
+            // through the same `LoadInstalledApps` effect. The modal that's
+            // open is the record of who asked, so route on it rather than
+            // tagging the effect or the event.
+            match &next.modal {
+                Some(Modal::PrivacyWizard(wizard)) => {
+                    let mut updated = wizard.clone();
+                    updated.all_apps = apps;
+                    updated.app_index = 0;
+                    updated.step = PrivacyWizardStep::PickApp;
+                    updated.error = None;
+                    next.modal = Some(Modal::PrivacyWizard(updated));
+                }
+                Some(Modal::LaunchApp(prompt)) => {
+                    let mut updated = prompt.clone();
+                    updated.all_apps = apps;
+                    updated.app_index = 0;
+                    updated.step = LaunchAppStep::PickApp;
+                    updated.error = None;
+                    next.modal = Some(Modal::LaunchApp(updated));
+                }
+                _ => {}
             }
             ReducerOutput::new(next)
         }
 
         AppEvent::AppsLoadFailed(message) => {
-            if let Some(Modal::PrivacyWizard(_)) = &next.modal {
+            if matches!(next.modal, Some(Modal::PrivacyWizard(_)) | Some(Modal::LaunchApp(_))) {
                 next.modal = None;
             }
             next.last_error = Some(message);
@@ -232,6 +248,29 @@ pub fn reduce(state: &AppState, event: AppEvent) -> ReducerOutput {
                 updated.is_submitting = false;
                 updated.error = Some(message);
                 next.modal = Some(Modal::OpenUrl(updated));
+            }
+            ReducerOutput::new(next)
+        }
+
+        AppEvent::AppLaunched { bundle_id } => {
+            // Only surface the modal close + status message if the user is
+            // still on the launch modal — Esc during submission drops the
+            // modal first, mirroring `UrlOpened`.
+            if let Some(Modal::LaunchApp(_)) = &next.modal {
+                next.modal = None;
+            }
+            next.status_message = Some(format!("Launched {bundle_id}"));
+            ReducerOutput::new(next)
+        }
+
+        AppEvent::AppLaunchFailed(message) => {
+            if let Some(Modal::LaunchApp(prompt)) = &next.modal {
+                let mut updated = prompt.clone();
+                updated.step = LaunchAppStep::PickApp;
+                updated.error = Some(message);
+                next.modal = Some(Modal::LaunchApp(updated));
+            } else {
+                next.last_error = Some(message);
             }
             ReducerOutput::new(next)
         }
@@ -303,6 +342,7 @@ fn handle_key(state: &AppState, key: Key) -> ReducerOutput {
         Key::Char('n') => run_command(PaletteCommand::New, next),
         Key::Char('f') => run_command(PaletteCommand::Focus, next),
         Key::Char('P') => run_command(PaletteCommand::Privacy, next),
+        Key::Char('l') => run_command(PaletteCommand::Launch, next),
         Key::Char('?') => {
             next.modal = Some(Modal::Help);
             ReducerOutput::new(next)
@@ -445,6 +485,18 @@ pub fn run_command(command: PaletteCommand, state: AppState) -> ReducerOutput {
                 return ReducerOutput::new(next);
             }
             next.modal = Some(Modal::PrivacyWizard(PrivacyWizard::new(sim.id)));
+            ReducerOutput::with_effects(next, vec![SideEffect::LoadInstalledApps(sim.id)])
+        }
+
+        PaletteCommand::Launch => {
+            let Some(sim) = next.selected_simulator().cloned() else {
+                return ReducerOutput::new(next);
+            };
+            if sim.state != SimulatorState::Booted {
+                next.status_message = Some(format!("Cannot launch: {} is {}", sim.name, sim.state.raw_value()));
+                return ReducerOutput::new(next);
+            }
+            next.modal = Some(Modal::LaunchApp(LaunchAppPrompt::new(sim.id)));
             ReducerOutput::with_effects(next, vec![SideEffect::LoadInstalledApps(sim.id)])
         }
 

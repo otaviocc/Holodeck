@@ -8,6 +8,7 @@ pub enum PaletteCommand {
     Erase,
     Focus,
     Inspect,
+    Launch,
     New,
     Open,
     Privacy,
@@ -17,13 +18,14 @@ pub enum PaletteCommand {
 }
 
 impl PaletteCommand {
-    const CASES: [PaletteCommand; 12] = [
+    const CASES: [PaletteCommand; 13] = [
         PaletteCommand::Appearance,
         PaletteCommand::Boot,
         PaletteCommand::Delete,
         PaletteCommand::Erase,
         PaletteCommand::Focus,
         PaletteCommand::Inspect,
+        PaletteCommand::Launch,
         PaletteCommand::New,
         PaletteCommand::Open,
         PaletteCommand::Privacy,
@@ -50,6 +52,7 @@ impl PaletteCommand {
             PaletteCommand::Erase => "erase",
             PaletteCommand::Focus => "focus",
             PaletteCommand::Inspect => "inspect",
+            PaletteCommand::Launch => "launch",
             PaletteCommand::New => "new",
             PaletteCommand::Open => "open",
             PaletteCommand::Privacy => "privacy",
@@ -67,6 +70,7 @@ impl PaletteCommand {
             PaletteCommand::Erase => "Erase the selected (shutdown) simulator",
             PaletteCommand::Focus => "Bring Simulator.app to the front for the selection",
             PaletteCommand::Inspect => "Open the inspector for the selected simulator",
+            PaletteCommand::Launch => "Launch an installed app on the booted simulator",
             PaletteCommand::New => "Create a new simulator (wizard)",
             PaletteCommand::Open => "Open a URL or deep link on the booted simulator",
             PaletteCommand::Privacy => "Grant or revoke privacy permissions for an app",
@@ -84,9 +88,11 @@ impl PaletteCommand {
             PaletteCommand::Shutdown => simulator.is_some_and(|s| s.state == SimulatorState::Booted),
             PaletteCommand::Erase => simulator.is_some_and(|s| s.state == SimulatorState::Shutdown),
             PaletteCommand::Record => simulator.is_some_and(|s| s.state == SimulatorState::Booted) && !is_recording,
-            PaletteCommand::Screenshot | PaletteCommand::Appearance | PaletteCommand::Open | PaletteCommand::Privacy => {
-                simulator.is_some_and(|s| s.state == SimulatorState::Booted)
-            }
+            PaletteCommand::Screenshot
+            | PaletteCommand::Appearance
+            | PaletteCommand::Open
+            | PaletteCommand::Privacy
+            | PaletteCommand::Launch => simulator.is_some_and(|s| s.state == SimulatorState::Booted),
         }
     }
 

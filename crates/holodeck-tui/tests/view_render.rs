@@ -7,7 +7,7 @@ mod support;
 
 use holodeck_core::models::InstalledApp;
 use holodeck_simctl_tui::Theme;
-use holodeck_simctl_tui::state::{AppState, CommandPalette, CreateWizard, Modal, OpenUrlPrompt, PrivacyWizard};
+use holodeck_simctl_tui::state::{AppState, CommandPalette, CreateWizard, LaunchAppPrompt, Modal, OpenUrlPrompt, PrivacyWizard};
 use holodeck_simctl_tui::view::render;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -159,6 +159,53 @@ fn privacy_wizard_pick_app_lists_apps() {
     let text = rendered(&state);
     assert!(text.contains("Alpha"));
     assert!(text.contains("com.example.a"));
+}
+
+#[test]
+fn launch_modal_pick_app_lists_apps() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = holodeck_simctl_tui::state::LaunchAppStep::PickApp;
+    prompt.all_apps = vec![InstalledApp::new("com.example.a", "Alpha", None, true)];
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+    let text = rendered(&state);
+    assert!(text.contains("Alpha"));
+    assert!(text.contains("com.example.a"));
+}
+
+#[test]
+fn launch_modal_pick_language_lists_options() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = holodeck_simctl_tui::state::LaunchAppStep::PickLanguage;
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+    let text = rendered(&state);
+    assert!(text.contains("Portuguese (Brazil)"));
+}
+
+#[test]
+fn launch_modal_shows_the_filter_banner_when_focused() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = holodeck_simctl_tui::state::LaunchAppStep::PickLanguage;
+    prompt.is_language_filter_focused = true;
+    prompt.language_filter = "braz".to_string();
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+    let text = rendered(&state);
+    assert!(text.contains("Filter:"));
+    assert!(text.contains("braz"));
+    assert!(text.contains("Portuguese (Brazil)"));
+}
+
+#[test]
+fn launch_modal_renders_the_launch_failure() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = holodeck_simctl_tui::state::LaunchAppStep::PickApp;
+    prompt.error = Some("boom".to_string());
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+    let text = rendered(&state);
+    assert!(text.contains("boom"));
 }
 
 #[test]

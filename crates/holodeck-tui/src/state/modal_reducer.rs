@@ -6,6 +6,7 @@ use super::app_state::{AppState, CreateWizard, CreateWizardStep, Modal, PendingO
 use super::command_palette_reducer;
 use super::event::{ReducerOutput, SideEffect};
 use super::key::{Key, is_printable};
+use super::launch_app_reducer;
 use super::open_url_modal_reducer;
 use super::privacy_wizard_reducer;
 
@@ -26,6 +27,7 @@ pub fn handle(state: &AppState, key: Key) -> ReducerOutput {
             ReducerOutput::new(next)
         }
         Some(Modal::OpenUrl(prompt)) => open_url_modal_reducer::handle(&next, &prompt, key),
+        Some(Modal::LaunchApp(prompt)) => launch_app_reducer::handle(&next, &prompt, key),
         Some(Modal::CommandPalette(palette)) => command_palette_reducer::handle(&next, &palette, key),
         Some(Modal::Help) | None => {
             next.modal = None;

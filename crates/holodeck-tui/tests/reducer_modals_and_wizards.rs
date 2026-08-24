@@ -2,7 +2,8 @@ mod support;
 
 use holodeck_core::models::{DeviceType, InstalledApp, PrivacyAction, PrivacyPermission, Runtime};
 use holodeck_simctl_tui::state::{
-    AppEvent, CreateWizard, CreateWizardStep, Key, Modal, PendingOperation, PrivacyWizard, PrivacyWizardStep, SideEffect, reduce,
+    AppEvent, CreateWizard, CreateWizardStep, Key, LaunchAppPrompt, LaunchAppStep, Modal, PendingOperation, PrivacyWizard,
+    PrivacyWizardStep, SideEffect, reduce,
 };
 use support::{booted, shutdown, state_with};
 
@@ -294,4 +295,173 @@ fn privacy_applied_closes_modal_and_sets_status() {
     let out = reduce(&state, AppEvent::PrivacyApplied { bundle_id: "com.example.a".to_string() });
     assert_eq!(out.state.modal, None);
     assert!(out.state.status_message.unwrap().contains("com.example.a"));
+}
+
+// MARK: - Launch app
+
+#[test]
+fn l_key_opens_launch_modal_and_loads_apps() {
+    let state = state_with(vec![booted("A")]);
+    let out = reduce(&state, AppEvent::Key(Key::Char('l')));
+    assert!(matches!(out.state.modal, Some(Modal::LaunchApp(_))));
+    assert_eq!(out.effects, vec![SideEffect::LoadInstalledApps(state.simulators[0].id)]);
+}
+
+#[test]
+fn launch_modal_refused_for_a_shutdown_simulator() {
+    let state = state_with(vec![shutdown("A")]);
+    let out = reduce(&state, AppEvent::Key(Key::Char('l')));
+    assert_eq!(out.state.modal, None);
+}
+
+#[test]
+fn apps_loaded_populates_launch_modal_and_advances_to_pick_app() {
+    let mut state = state_with(vec![booted("A")]);
+    state.modal = Some(Modal::LaunchApp(LaunchAppPrompt::new(state.simulators[0].id)));
+    let out = reduce(&state, AppEvent::AppsLoaded(vec![app("com.example.a", true), app("com.example.b", false)]));
+    let Some(Modal::LaunchApp(p)) = out.state.modal else { panic!() };
+    assert_eq!(p.step, LaunchAppStep::PickApp);
+    assert_eq!(p.apps().len(), 1, "system apps hidden by default");
+}
+
+#[test]
+fn apps_loaded_still_populates_the_privacy_wizard() {
+    // Regression test for routing `AppsLoaded` by whichever modal is open,
+    // since both the privacy wizard and the launch modal share one
+    // `LoadInstalledApps` effect and event pair.
+    let mut state = state_with(vec![booted("A")]);
+    state.modal = Some(Modal::PrivacyWizard(PrivacyWizard::new(state.simulators[0].id)));
+    let out = reduce(&state, AppEvent::AppsLoaded(vec![app("com.example.a", true)]));
+    let Some(Modal::PrivacyWizard(w)) = out.state.modal else { panic!() };
+    assert_eq!(w.step, PrivacyWizardStep::PickApp);
+}
+
+#[test]
+fn apps_load_failed_closes_the_launch_modal() {
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(LaunchAppPrompt::new(uuid::Uuid::new_v4())));
+    let out = reduce(&state, AppEvent::AppsLoadFailed("boom".to_string()));
+    assert_eq!(out.state.modal, None);
+    assert_eq!(out.state.last_error, Some("boom".to_string()));
+}
+
+#[test]
+fn s_toggles_system_apps_in_launch_modal() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickApp;
+    prompt.all_apps = vec![app("com.example.a", true), app("com.example.b", false)];
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Char('s')));
+    let Some(Modal::LaunchApp(p)) = out.state.modal else { panic!() };
+    assert_eq!(p.apps().len(), 2);
+}
+
+#[test]
+fn enter_launches_the_selected_app_with_no_overrides() {
+    let sim_id = uuid::Uuid::new_v4();
+    let mut prompt = LaunchAppPrompt::new(sim_id);
+    prompt.step = LaunchAppStep::PickApp;
+    prompt.all_apps = vec![app("com.example.a", true)];
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Enter));
+    assert_eq!(out.effects, vec![SideEffect::LaunchApp { udid: sim_id, bundle_id: "com.example.a".to_string(), language: None }]);
+}
+
+#[test]
+fn l_opens_the_language_picker_for_the_selected_app() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickApp;
+    prompt.all_apps = vec![app("com.example.a", true)];
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Char('l')));
+    let Some(Modal::LaunchApp(p)) = &out.state.modal else { panic!() };
+    assert_eq!(p.step, LaunchAppStep::PickLanguage);
+}
+
+#[test]
+fn slash_focuses_the_language_filter_and_typing_narrows_the_list() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickLanguage;
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let after_slash = reduce(&state, AppEvent::Key(Key::Char('/')));
+    let Some(Modal::LaunchApp(p)) = &after_slash.state.modal else { panic!() };
+    assert!(p.is_language_filter_focused);
+
+    let after_b = reduce(&after_slash.state, AppEvent::Key(Key::Char('b')));
+    let after_r = reduce(&after_b.state, AppEvent::Key(Key::Char('r')));
+    let Some(Modal::LaunchApp(p)) = &after_r.state.modal else { panic!() };
+    assert_eq!(p.language_filter, "br");
+    assert!(p.visible_languages().iter().all(|l| l.display_name.to_lowercase().contains("br")));
+}
+
+#[test]
+fn enter_with_a_selected_language_launches_with_the_override() {
+    let sim_id = uuid::Uuid::new_v4();
+    let mut prompt = LaunchAppPrompt::new(sim_id);
+    prompt.step = LaunchAppStep::PickLanguage;
+    prompt.all_apps = vec![app("com.example.a", true)];
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Enter));
+    let expected = holodeck_core::models::LanguageOption::ALL[0].bcp47.to_string();
+    assert_eq!(
+        out.effects,
+        vec![SideEffect::LaunchApp { udid: sim_id, bundle_id: "com.example.a".to_string(), language: Some(expected) }]
+    );
+}
+
+#[test]
+fn escape_from_the_language_picker_returns_to_pick_app_without_a_language() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickLanguage;
+    prompt.language_filter = "br".to_string();
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Escape));
+    let Some(Modal::LaunchApp(p)) = &out.state.modal else { panic!() };
+    assert_eq!(p.step, LaunchAppStep::PickApp);
+    assert!(p.language_filter.is_empty());
+}
+
+#[test]
+fn escape_closes_the_launch_modal_from_pick_app() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickApp;
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Escape));
+    assert_eq!(out.state.modal, None);
+}
+
+#[test]
+fn app_launched_closes_the_modal_and_sets_status() {
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(LaunchAppPrompt::new(uuid::Uuid::new_v4())));
+    let out = reduce(&state, AppEvent::AppLaunched { bundle_id: "com.example.a".to_string() });
+    assert_eq!(out.state.modal, None);
+    assert!(out.state.status_message.unwrap().contains("com.example.a"));
+}
+
+#[test]
+fn app_launch_failed_returns_to_pick_app_with_error() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::Submitting;
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::AppLaunchFailed("boom".to_string()));
+    let Some(Modal::LaunchApp(p)) = out.state.modal else { panic!() };
+    assert_eq!(p.step, LaunchAppStep::PickApp);
+    assert_eq!(p.error, Some("boom".to_string()));
 }

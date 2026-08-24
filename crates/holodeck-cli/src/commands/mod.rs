@@ -4,6 +4,7 @@ pub mod create;
 pub mod delete;
 pub mod erase;
 pub mod keychain;
+pub mod launch;
 pub mod list;
 pub mod locale;
 pub mod location;

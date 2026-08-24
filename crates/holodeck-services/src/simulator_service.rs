@@ -201,6 +201,9 @@ mod tests {
         async fn focus_simulator_app(&self, _udid: Uuid) -> Result<(), SimctlError> {
             Ok(())
         }
+        async fn launch_app(&self, _udid: Uuid, _bundle_id: &str, _language: Option<&str>) -> Result<(), SimctlError> {
+            Ok(())
+        }
     }
 
     fn service(simulators: Vec<Simulator>) -> SimulatorService {

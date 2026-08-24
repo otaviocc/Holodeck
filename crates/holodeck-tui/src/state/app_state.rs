@@ -1,4 +1,4 @@
-use holodeck_core::models::{DeviceType, InstalledApp, PrivacyAction, PrivacyPermission, Runtime, Simulator};
+use holodeck_core::models::{DeviceType, InstalledApp, LanguageOption, PrivacyAction, PrivacyPermission, Runtime, Simulator};
 use uuid::Uuid;
 
 /// Intent behind an in-flight simctl operation. Lets the reducer reconcile
@@ -25,6 +25,7 @@ pub enum Modal {
     ConfirmDelete(Uuid, i64),
     CreateWizard(CreateWizard),
     PrivacyWizard(PrivacyWizard),
+    LaunchApp(LaunchAppPrompt),
     Inspector(Uuid),
     OpenUrl(OpenUrlPrompt),
     CommandPalette(CommandPalette),
@@ -39,6 +40,7 @@ impl Modal {
         match self {
             Modal::ConfirmErase(id, _) | Modal::ConfirmDelete(id, _) | Modal::Inspector(id) => Some(*id),
             Modal::OpenUrl(prompt) => Some(prompt.simulator_id),
+            Modal::LaunchApp(prompt) => Some(prompt.simulator_id),
             Modal::CommandPalette(palette) => palette.simulator_id,
             Modal::Appearance(_) | Modal::CreateWizard(_) | Modal::PrivacyWizard(_) | Modal::Help => None,
         }
@@ -128,6 +130,82 @@ impl PrivacyWizard {
 
     pub fn selected_permission(&self) -> Option<PrivacyPermission> {
         usize::try_from(self.permission_index).ok().and_then(|i| PrivacyPermission::ALL.get(i).copied())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LaunchAppStep {
+    LoadingApps,
+    PickApp,
+    PickLanguage,
+    Submitting,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct LaunchAppPrompt {
+    pub simulator_id: Uuid,
+    pub step: LaunchAppStep,
+    pub all_apps: Vec<InstalledApp>,
+    pub app_index: i64,
+    pub app_scroll_offset: i64,
+    pub show_system: bool,
+    pub language_index: i64,
+    pub language_scroll_offset: i64,
+    pub language_filter: String,
+    pub is_language_filter_focused: bool,
+    pub error: Option<String>,
+}
+
+impl LaunchAppPrompt {
+    pub fn new(simulator_id: Uuid) -> Self {
+        Self {
+            simulator_id,
+            step: LaunchAppStep::LoadingApps,
+            all_apps: Vec::new(),
+            app_index: 0,
+            app_scroll_offset: 0,
+            show_system: false,
+            language_index: 0,
+            language_scroll_offset: 0,
+            language_filter: String::new(),
+            is_language_filter_focused: false,
+            error: None,
+        }
+    }
+
+    pub fn app_viewport(rows: i64) -> i64 {
+        (rows - 5).max(3)
+    }
+
+    /// The language filter is a conditional banner (visible once focused or
+    /// once something has been typed) — mirrors
+    /// `CreateWizard::device_type_viewport`'s filter-banner accounting, and
+    /// the reducer's scroll math and the view's layout must agree on it.
+    pub fn language_viewport(&self, rows: i64) -> i64 {
+        let banner = i64::from(self.is_language_filter_focused || !self.language_filter.is_empty());
+        (Self::app_viewport(rows) - banner).max(1)
+    }
+
+    pub fn apps(&self) -> Vec<&InstalledApp> {
+        self.all_apps.iter().filter(|app| self.show_system || app.is_user_app).collect()
+    }
+
+    pub fn selected_app(&self) -> Option<&InstalledApp> {
+        let list = self.apps();
+        usize::try_from(self.app_index).ok().and_then(|i| list.get(i).copied())
+    }
+
+    pub fn visible_languages(&self) -> Vec<&'static LanguageOption> {
+        if self.language_filter.is_empty() {
+            return LanguageOption::ALL.iter().collect();
+        }
+        let needle = self.language_filter.to_lowercase();
+        LanguageOption::ALL.iter().filter(|l| l.display_name.to_lowercase().contains(&needle)).collect()
+    }
+
+    pub fn selected_language(&self) -> Option<&'static LanguageOption> {
+        let list = self.visible_languages();
+        usize::try_from(self.language_index).ok().and_then(|i| list.get(i).copied())
     }
 }
 

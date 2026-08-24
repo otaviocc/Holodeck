@@ -12,6 +12,7 @@ use commands::create::CreateArgs;
 use commands::delete::DeleteArgs;
 use commands::erase::EraseArgs;
 use commands::keychain::KeychainArgs;
+use commands::launch::LaunchArgs;
 use commands::list::ListArgs;
 use commands::locale::LocaleArgs;
 use commands::location::LocationArgs;
@@ -66,7 +67,9 @@ enum Commands {
     Apps(AppsArgs),
     /// Open a URL or deep link on a booted simulator.
     Openurl(OpenUrlArgs),
-    /// Launch the interactive simulator TUI.
+    /// Launch an installed app on a booted simulator.
+    Launch(LaunchArgs),
+    /// Start the interactive simulator TUI.
     Tui(TuiArgs),
 }
 
@@ -92,6 +95,7 @@ async fn main() {
         Some(Commands::Keychain(args)) => args.run().await,
         Some(Commands::Apps(args)) => args.run().await,
         Some(Commands::Openurl(args)) => args.run().await,
+        Some(Commands::Launch(args)) => args.run().await,
         Some(Commands::Tui(args)) => args.run().await,
         // Bare `holodeck` defaults to the TUI, matching the Swift
         // `defaultSubcommand: TUICommand.self`.

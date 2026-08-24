@@ -2,7 +2,8 @@ use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap};
 
 use crate::state::{
-    AppState, CommandPalette, CreateWizard, CreateWizardStep, Modal, OpenUrlPrompt, PrivacyWizard, PrivacyWizardStep,
+    AppState, CommandPalette, CreateWizard, CreateWizardStep, LaunchAppPrompt, LaunchAppStep, Modal, OpenUrlPrompt,
+    PrivacyWizard, PrivacyWizardStep,
 };
 use crate::theme::Theme;
 
@@ -18,6 +19,7 @@ const HELP_ENTRIES: &[(&str, &str)] = &[
     ("e", "Erase (shut-down sims only; y/n confirm)"),
     ("d", "Delete (y/n confirm)"),
     ("P", "Privacy wizard"),
+    ("l", "Launch an app (l again to pick a per-launch language)"),
     ("/", "Filter simulators by name"),
     ("i", "Inspect the selected simulator"),
     ("o", "Open a URL / deep link on the selected booted sim"),
@@ -36,6 +38,7 @@ pub fn render(frame: &mut Frame, state: &AppState, theme: &Theme) {
         Some(Modal::OpenUrl(prompt)) => render_open_url(frame, theme, prompt),
         Some(Modal::CreateWizard(wizard)) => render_create_wizard(frame, state, theme, wizard),
         Some(Modal::PrivacyWizard(wizard)) => render_privacy_wizard(frame, state, theme, wizard),
+        Some(Modal::LaunchApp(prompt)) => render_launch_app(frame, theme, prompt),
         Some(Modal::CommandPalette(palette)) => render_command_palette_overlay(frame, state, theme, palette, frame.area()),
         Some(Modal::Appearance(index)) => render_appearance(frame, theme, *index),
         Some(Modal::ConfirmErase(id, index)) => render_confirm(frame, state, theme, *id, *index, ConfirmKind::Erase),
@@ -384,6 +387,76 @@ fn privacy_footer_hint(step: PrivacyWizardStep) -> &'static str {
         PrivacyWizardStep::PickApp => "↑/↓ select · s toggle system apps · Enter next · Esc cancel",
         PrivacyWizardStep::PickPermission => "↑/↓ select · Enter next · b back · Esc cancel",
         PrivacyWizardStep::PickAction => "↑/↓ select · Enter apply · b back · Esc cancel",
+        _ => "Esc cancel",
+    }
+}
+
+// MARK: - Launch app
+
+fn render_launch_app(frame: &mut Frame, theme: &Theme, prompt: &LaunchAppPrompt) {
+    let inner = render_popup(frame, frame.area(), 80, 80, launch_breadcrumb(prompt.step), theme);
+
+    let filter_visible = prompt.is_language_filter_focused || !prompt.language_filter.is_empty();
+    let filter_height = u16::from(filter_visible && prompt.step == LaunchAppStep::PickLanguage);
+    let areas = Layout::vertical([Constraint::Length(filter_height), Constraint::Min(1), Constraint::Length(1)]).split(inner);
+
+    if filter_height > 0 {
+        frame.render_widget(Paragraph::new(format!("  Filter: {}_", prompt.language_filter)).style(theme.base()), areas[0]);
+    }
+
+    match prompt.step {
+        LaunchAppStep::LoadingApps | LaunchAppStep::Submitting => {
+            frame.render_widget(Paragraph::new("  Loading…").style(theme.hint()), areas[1]);
+        }
+        LaunchAppStep::PickApp => {
+            let apps = prompt.apps();
+            if apps.is_empty() {
+                frame.render_widget(Paragraph::new("  (no apps)").style(theme.hint()), areas[1]);
+            } else {
+                let items: Vec<ListItem> = apps
+                    .iter()
+                    .map(|a| ListItem::new(Span::styled(format!("  {} ({})", a.name, a.bundle_id), theme.base())))
+                    .collect();
+                let mut list_state = ListState::default();
+                list_state.select(usize::try_from(prompt.app_index).ok());
+                let list = List::new(items).highlight_style(theme.bar());
+                frame.render_stateful_widget(list, areas[1], &mut list_state);
+            }
+        }
+        LaunchAppStep::PickLanguage => {
+            let visible = prompt.visible_languages();
+            if visible.is_empty() {
+                frame.render_widget(Paragraph::new("  (no matches)").style(theme.hint()), areas[1]);
+            } else {
+                let items: Vec<ListItem> =
+                    visible.iter().map(|l| ListItem::new(Span::styled(format!("  {}", l.display_name), theme.base()))).collect();
+                let mut list_state = ListState::default();
+                list_state.select(usize::try_from(prompt.language_index).ok());
+                let list = List::new(items).highlight_style(theme.bar());
+                frame.render_stateful_widget(list, areas[1], &mut list_state);
+            }
+        }
+    }
+
+    match &prompt.error {
+        Some(error) => frame.render_widget(Paragraph::new(format!("  ⚠ {error}")).style(theme.error()), areas[2]),
+        None => frame.render_widget(Paragraph::new(launch_footer_hint(prompt)).style(theme.hint()), areas[2]),
+    }
+}
+
+fn launch_breadcrumb(step: LaunchAppStep) -> &'static str {
+    match step {
+        LaunchAppStep::LoadingApps => "Launch — loading apps…",
+        LaunchAppStep::PickApp => "Launch — pick an app",
+        LaunchAppStep::PickLanguage => "Launch — pick a language",
+        LaunchAppStep::Submitting => "Launch — launching…",
+    }
+}
+
+fn launch_footer_hint(prompt: &LaunchAppPrompt) -> &'static str {
+    match prompt.step {
+        LaunchAppStep::PickApp => "↑/↓ select · s toggle system apps · l language · Enter launch · Esc cancel",
+        LaunchAppStep::PickLanguage => "↑/↓ select · / filter · Enter launch · Esc back",
         _ => "Esc cancel",
     }
 }

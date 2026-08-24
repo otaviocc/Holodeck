@@ -68,6 +68,7 @@ holodeck record --help       # one subcommand's options
 | `keychain reset` | Reset the simulator's keychain |
 | `apps list` | List installed apps |
 | `openurl` | Open a URL or deep link |
+| `launch` | Launch an installed app, optionally forcing a per-launch language |
 | `tui` | Launch the interactive TUI (same as bare `holodeck`) |
 
 Every command that takes a simulator accepts either its full UDID or a
@@ -127,7 +128,7 @@ All fields are optional.
 crates/holodeck-core/      pkg: holodeck-simctl-core, models, SimctlClient trait + Live impl, decoders, config, recorder
 crates/holodeck-services/  pkg: holodeck-simctl-services, SimulatorService/RecordingService/ScreenshotService + AppDependencies
 crates/holodeck-tui/       pkg: holodeck-simctl-tui, state/ (pure, 6 reducers) + app.rs (event loop) + view.rs (ratatui) + theme.rs + input.rs
-crates/holodeck-cli/       pkg: holodeck-simctl, 18 clap subcommands, bin: holodeck
+crates/holodeck-cli/       pkg: holodeck-simctl, 19 clap subcommands, bin: holodeck
 ```
 
 Package names carry a `holodeck-simctl` prefix for crates.io (the bare

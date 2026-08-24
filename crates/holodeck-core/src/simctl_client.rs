@@ -11,7 +11,7 @@ use crate::models::{
 };
 use crate::process_runner::{ProcessRunning, TokioProcessRunner};
 
-/// The 20-operation `xcrun simctl` surface. The Rust analogue of Swift's
+/// The 21-operation `xcrun simctl` surface. The Rust analogue of Swift's
 /// `SimctlClient` protocol witness: a trait rather than a struct-of-closures,
 /// since Rust traits give the same live/mock seam without closure-capture
 /// boilerplate.
@@ -43,6 +43,7 @@ pub trait SimctlClient: Send + Sync {
     async fn reset_keychain(&self, udid: Uuid) -> Result<(), SimctlError>;
     async fn open_url(&self, udid: Uuid, url: &str) -> Result<(), SimctlError>;
     async fn focus_simulator_app(&self, udid: Uuid) -> Result<(), SimctlError>;
+    async fn launch_app(&self, udid: Uuid, bundle_id: &str, language: Option<&str>) -> Result<(), SimctlError>;
 }
 
 /// Builds the argv for `simctl io <udid> recordVideo`. Only constructs the
@@ -275,6 +276,19 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
 
     async fn open_url(&self, udid: Uuid, url: &str) -> Result<(), SimctlError> {
         self.run_simctl(vec!["openurl".to_string(), udid.to_string(), url.to_string()]).await?;
+        Ok(())
+    }
+
+    async fn launch_app(&self, udid: Uuid, bundle_id: &str, language: Option<&str>) -> Result<(), SimctlError> {
+        let mut args =
+            vec!["launch".to_string(), "--terminate-running-process".to_string(), udid.to_string(), bundle_id.to_string()];
+        if let Some(language) = language {
+            args.push("-AppleLanguages".to_string());
+            args.push(format!("({language})"));
+            args.push("-AppleLocale".to_string());
+            args.push(language.replace('-', "_"));
+        }
+        self.run_simctl(args).await?;
         Ok(())
     }
 

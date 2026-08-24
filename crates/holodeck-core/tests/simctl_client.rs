@@ -392,6 +392,54 @@ async fn open_url_argv() {
 }
 
 #[tokio::test]
+async fn launch_app_argv() {
+    let udid = Uuid::new_v4();
+    let calls = run(|client| async move {
+        client.launch_app(udid, "com.example.App", None).await.unwrap();
+    })
+    .await;
+    assert_eq!(
+        calls,
+        vec![(
+            "/usr/bin/xcrun".to_string(),
+            vec![
+                "simctl".to_string(),
+                "launch".to_string(),
+                "--terminate-running-process".to_string(),
+                udid.to_string(),
+                "com.example.App".to_string()
+            ]
+        )]
+    );
+}
+
+#[tokio::test]
+async fn launch_app_appends_language_overrides() {
+    let udid = Uuid::new_v4();
+    let calls = run(|client| async move {
+        client.launch_app(udid, "com.example.App", Some("pt-BR")).await.unwrap();
+    })
+    .await;
+    assert_eq!(
+        calls,
+        vec![(
+            "/usr/bin/xcrun".to_string(),
+            vec![
+                "simctl".to_string(),
+                "launch".to_string(),
+                "--terminate-running-process".to_string(),
+                udid.to_string(),
+                "com.example.App".to_string(),
+                "-AppleLanguages".to_string(),
+                "(pt-BR)".to_string(),
+                "-AppleLocale".to_string(),
+                "pt_BR".to_string()
+            ]
+        )]
+    );
+}
+
+#[tokio::test]
 async fn focus_simulator_app_shells_to_open_not_xcrun() {
     let udid = Uuid::new_v4();
     let calls = run(|client| async move {
