@@ -68,7 +68,7 @@ holodeck record --help       # one subcommand's options
 | `keychain reset` | Reset the simulator's keychain |
 | `apps list` | List installed apps |
 | `openurl` | Open a URL or deep link |
-| `launch` | Launch an installed app, optionally forcing a per-launch language |
+| `launch` | Launch an installed app, optionally forcing a per-launch language and/or region |
 | `tui` | Launch the interactive TUI (same as bare `holodeck`) |
 
 Every command that takes a simulator accepts either its full UDID or a

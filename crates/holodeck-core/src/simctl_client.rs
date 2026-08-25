@@ -43,7 +43,13 @@ pub trait SimctlClient: Send + Sync {
     async fn reset_keychain(&self, udid: Uuid) -> Result<(), SimctlError>;
     async fn open_url(&self, udid: Uuid, url: &str) -> Result<(), SimctlError>;
     async fn focus_simulator_app(&self, udid: Uuid) -> Result<(), SimctlError>;
-    async fn launch_app(&self, udid: Uuid, bundle_id: &str, language: Option<&str>) -> Result<(), SimctlError>;
+    async fn launch_app(
+        &self,
+        udid: Uuid,
+        bundle_id: &str,
+        language: Option<&str>,
+        region: Option<&str>,
+    ) -> Result<(), SimctlError>;
 }
 
 /// Builds the argv for `simctl io <udid> recordVideo`. Only constructs the
@@ -279,14 +285,40 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
         Ok(())
     }
 
-    async fn launch_app(&self, udid: Uuid, bundle_id: &str, language: Option<&str>) -> Result<(), SimctlError> {
+    async fn launch_app(
+        &self,
+        udid: Uuid,
+        bundle_id: &str,
+        language: Option<&str>,
+        region: Option<&str>,
+    ) -> Result<(), SimctlError> {
         let mut args =
             vec!["launch".to_string(), "--terminate-running-process".to_string(), udid.to_string(), bundle_id.to_string()];
         if let Some(language) = language {
             args.push("-AppleLanguages".to_string());
             args.push(format!("({language})"));
-            args.push("-AppleLocale".to_string());
-            args.push(language.replace('-', "_"));
+        }
+        match (language, region) {
+            (_, Some(region)) => {
+                // An explicit region always wins over whatever region the
+                // language tag implies. Without an explicit language, fall
+                // back to the simulator's own current language so we don't
+                // silently force English on a device already set up
+                // otherwise.
+                let language_subtag = match language {
+                    Some(language) => language.split(['-', '_']).next().unwrap_or(language).to_string(),
+                    None => self.current_language_subtag(udid).await,
+                };
+                args.push("-AppleLocale".to_string());
+                args.push(format!("{language_subtag}_{region}"));
+            }
+            (Some(language), None) => {
+                // No region override: locale mirrors the language tag's own
+                // region, same as before this override existed.
+                args.push("-AppleLocale".to_string());
+                args.push(language.replace('-', "_"));
+            }
+            (None, None) => {}
         }
         self.run_simctl(args).await?;
         Ok(())
@@ -334,4 +366,41 @@ impl<R: ProcessRunning> LiveSimctlClient<R> {
         }
         Ok(output.stdout)
     }
+
+    /// Best-effort read of the simulator's current primary language, used
+    /// only to pick a language subtag for a region-only launch override.
+    /// Never fails the launch: an unset default (a fresh simulator exits
+    /// non-zero here) or any other read/parse hiccup falls back to `en`
+    /// rather than surfacing an error for what is just a locale-tag default.
+    async fn current_language_subtag(&self, udid: Uuid) -> String {
+        let Ok(stdout) = self
+            .run_simctl(vec![
+                "spawn".to_string(),
+                udid.to_string(),
+                "defaults".to_string(),
+                "read".to_string(),
+                "-g".to_string(),
+                "AppleLanguages".to_string(),
+            ])
+            .await
+        else {
+            return "en".to_string();
+        };
+        parse_first_language_subtag(&stdout).unwrap_or_else(|| "en".to_string())
+    }
+}
+
+/// `defaults read -g AppleLanguages` prints an old-style plist array
+/// fragment, e.g. `(\n    "pt-BR",\n    en\n)`. Pulls out the first entry's
+/// language subtag (the part before `-`/`_`), tolerating both the quoted
+/// (`"pt-BR"`) and bare (`en`) forms `defaults` uses depending on whether the
+/// tag contains characters needing quotes.
+fn parse_first_language_subtag(stdout: &[u8]) -> Option<String> {
+    let text = String::from_utf8_lossy(stdout);
+    let inner = text.split_once('(')?.1.split_once(')')?.0;
+    let first = inner.split(',').next()?.trim().trim_matches('"');
+    if first.is_empty() {
+        return None;
+    }
+    Some(first.split(['-', '_']).next().unwrap_or(first).to_string())
 }

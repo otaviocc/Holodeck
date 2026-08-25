@@ -198,6 +198,28 @@ fn launch_modal_shows_the_filter_banner_when_focused() {
 }
 
 #[test]
+fn launch_modal_pick_region_lists_options() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = holodeck_simctl_tui::state::LaunchAppStep::PickRegion;
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+    let text = rendered(&state);
+    assert!(text.contains("Brazil"));
+}
+
+#[test]
+fn launch_modal_region_breadcrumb_shows_the_chained_language() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = holodeck_simctl_tui::state::LaunchAppStep::PickRegion;
+    prompt.chosen_language = Some(&holodeck_core::models::LanguageOption::ALL[0]);
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+    let text = rendered(&state);
+    assert!(text.contains("pick a region"));
+    assert!(text.contains(holodeck_core::models::LanguageOption::ALL[0].display_name));
+}
+
+#[test]
 fn launch_modal_renders_the_launch_failure() {
     let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
     prompt.step = holodeck_simctl_tui::state::LaunchAppStep::PickApp;

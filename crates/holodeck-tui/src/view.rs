@@ -19,7 +19,7 @@ const HELP_ENTRIES: &[(&str, &str)] = &[
     ("e", "Erase (shut-down sims only; y/n confirm)"),
     ("d", "Delete (y/n confirm)"),
     ("P", "Privacy wizard"),
-    ("l", "Launch an app (l again to pick a per-launch language)"),
+    ("l", "Launch an app (l language / r region, independent overrides)"),
     ("/", "Filter simulators by name"),
     ("i", "Inspect the selected simulator"),
     ("o", "Open a URL / deep link on the selected booted sim"),
@@ -394,14 +394,24 @@ fn privacy_footer_hint(step: PrivacyWizardStep) -> &'static str {
 // MARK: - Launch app
 
 fn render_launch_app(frame: &mut Frame, theme: &Theme, prompt: &LaunchAppPrompt) {
-    let inner = render_popup(frame, frame.area(), 80, 80, launch_breadcrumb(prompt.step), theme);
+    let inner = render_popup(frame, frame.area(), 80, 80, &launch_breadcrumb(prompt), theme);
 
-    let filter_visible = prompt.is_language_filter_focused || !prompt.language_filter.is_empty();
-    let filter_height = u16::from(filter_visible && prompt.step == LaunchAppStep::PickLanguage);
+    let filter_text = match prompt.step {
+        LaunchAppStep::PickLanguage => Some(&prompt.language_filter),
+        LaunchAppStep::PickRegion => Some(&prompt.region_filter),
+        _ => None,
+    };
+    let filter_focused = match prompt.step {
+        LaunchAppStep::PickLanguage => prompt.is_language_filter_focused,
+        LaunchAppStep::PickRegion => prompt.is_region_filter_focused,
+        _ => false,
+    };
+    let filter_height = u16::from(filter_text.is_some_and(|text| filter_focused || !text.is_empty()));
     let areas = Layout::vertical([Constraint::Length(filter_height), Constraint::Min(1), Constraint::Length(1)]).split(inner);
 
     if filter_height > 0 {
-        frame.render_widget(Paragraph::new(format!("  Filter: {}_", prompt.language_filter)).style(theme.base()), areas[0]);
+        let text = filter_text.expect("filter_height is only 1 when filter_text is Some");
+        frame.render_widget(Paragraph::new(format!("  Filter: {text}_")).style(theme.base()), areas[0]);
     }
 
     match prompt.step {
@@ -436,6 +446,19 @@ fn render_launch_app(frame: &mut Frame, theme: &Theme, prompt: &LaunchAppPrompt)
                 frame.render_stateful_widget(list, areas[1], &mut list_state);
             }
         }
+        LaunchAppStep::PickRegion => {
+            let visible = prompt.visible_regions();
+            if visible.is_empty() {
+                frame.render_widget(Paragraph::new("  (no matches)").style(theme.hint()), areas[1]);
+            } else {
+                let items: Vec<ListItem> =
+                    visible.iter().map(|r| ListItem::new(Span::styled(format!("  {}", r.display_name), theme.base()))).collect();
+                let mut list_state = ListState::default();
+                list_state.select(usize::try_from(prompt.region_index).ok());
+                let list = List::new(items).highlight_style(theme.bar());
+                frame.render_stateful_widget(list, areas[1], &mut list_state);
+            }
+        }
     }
 
     match &prompt.error {
@@ -444,19 +467,25 @@ fn render_launch_app(frame: &mut Frame, theme: &Theme, prompt: &LaunchAppPrompt)
     }
 }
 
-fn launch_breadcrumb(step: LaunchAppStep) -> &'static str {
-    match step {
-        LaunchAppStep::LoadingApps => "Launch — loading apps…",
-        LaunchAppStep::PickApp => "Launch — pick an app",
-        LaunchAppStep::PickLanguage => "Launch — pick a language",
-        LaunchAppStep::Submitting => "Launch — launching…",
+fn launch_breadcrumb(prompt: &LaunchAppPrompt) -> String {
+    match prompt.step {
+        LaunchAppStep::LoadingApps => "Launch — loading apps…".to_string(),
+        LaunchAppStep::PickApp => "Launch — pick an app".to_string(),
+        LaunchAppStep::PickLanguage => "Launch — pick a language".to_string(),
+        LaunchAppStep::PickRegion => match prompt.chosen_language {
+            Some(language) => format!("Launch — pick a region (language: {})", language.display_name),
+            None => "Launch — pick a region".to_string(),
+        },
+        LaunchAppStep::Submitting => "Launch — launching…".to_string(),
     }
 }
 
 fn launch_footer_hint(prompt: &LaunchAppPrompt) -> &'static str {
     match prompt.step {
-        LaunchAppStep::PickApp => "↑/↓ select · s toggle system apps · l language · Enter launch · Esc cancel",
-        LaunchAppStep::PickLanguage => "↑/↓ select · / filter · Enter launch · Esc back",
+        LaunchAppStep::PickApp => "↑/↓ select · s toggle system apps · l language · r region · Enter launch · Esc cancel",
+        LaunchAppStep::PickLanguage => "↑/↓ select · / filter · Enter next (region) · Esc back",
+        LaunchAppStep::PickRegion if prompt.chosen_language.is_some() => "↑/↓ select · / filter · Enter launch · Esc skip region",
+        LaunchAppStep::PickRegion => "↑/↓ select · / filter · Enter launch · Esc back",
         _ => "Esc cancel",
     }
 }

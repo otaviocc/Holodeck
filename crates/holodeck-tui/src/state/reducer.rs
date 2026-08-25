@@ -267,6 +267,7 @@ pub fn reduce(state: &AppState, event: AppEvent) -> ReducerOutput {
             if let Some(Modal::LaunchApp(prompt)) = &next.modal {
                 let mut updated = prompt.clone();
                 updated.step = LaunchAppStep::PickApp;
+                updated.chosen_language = None;
                 updated.error = Some(message);
                 next.modal = Some(Modal::LaunchApp(updated));
             } else {

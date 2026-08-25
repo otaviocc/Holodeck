@@ -247,11 +247,11 @@ impl HolodeckApp {
                 });
             }
 
-            SideEffect::LaunchApp { udid, bundle_id, language } => {
+            SideEffect::LaunchApp { udid, bundle_id, language, region } => {
                 let client = deps.simctl_client.clone();
                 let bundle_id_for_event = bundle_id.clone();
                 tokio::spawn(async move {
-                    match client.launch_app(udid, &bundle_id, language.as_deref()).await {
+                    match client.launch_app(udid, &bundle_id, language.as_deref(), region.as_deref()).await {
                         Ok(()) => {
                             let _ = tx.send(AppEvent::AppLaunched { bundle_id: bundle_id_for_event });
                         }

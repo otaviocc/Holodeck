@@ -395,7 +395,7 @@ async fn open_url_argv() {
 async fn launch_app_argv() {
     let udid = Uuid::new_v4();
     let calls = run(|client| async move {
-        client.launch_app(udid, "com.example.App", None).await.unwrap();
+        client.launch_app(udid, "com.example.App", None, None).await.unwrap();
     })
     .await;
     assert_eq!(
@@ -417,7 +417,7 @@ async fn launch_app_argv() {
 async fn launch_app_appends_language_overrides() {
     let udid = Uuid::new_v4();
     let calls = run(|client| async move {
-        client.launch_app(udid, "com.example.App", Some("pt-BR")).await.unwrap();
+        client.launch_app(udid, "com.example.App", Some("pt-BR"), None).await.unwrap();
     })
     .await;
     assert_eq!(
@@ -436,6 +436,130 @@ async fn launch_app_appends_language_overrides() {
                 "pt_BR".to_string()
             ]
         )]
+    );
+}
+
+#[tokio::test]
+async fn launch_app_with_language_and_region_uses_the_explicit_region_and_language_subtag() {
+    let udid = Uuid::new_v4();
+    let calls = run(|client| async move {
+        client.launch_app(udid, "com.example.App", Some("en-US"), Some("JP")).await.unwrap();
+    })
+    .await;
+    // Explicit language already supplies the subtag, so there is no
+    // `defaults read` probe — just the one `launch` call.
+    assert_eq!(
+        calls,
+        vec![(
+            "/usr/bin/xcrun".to_string(),
+            vec![
+                "simctl".to_string(),
+                "launch".to_string(),
+                "--terminate-running-process".to_string(),
+                udid.to_string(),
+                "com.example.App".to_string(),
+                "-AppleLanguages".to_string(),
+                "(en-US)".to_string(),
+                "-AppleLocale".to_string(),
+                "en_JP".to_string()
+            ]
+        )]
+    );
+}
+
+#[tokio::test]
+async fn launch_app_with_region_only_reads_the_current_language_for_the_subtag() {
+    #[derive(Default, Clone)]
+    struct CurrentLanguageStub {
+        calls: Arc<Mutex<Vec<Call>>>,
+    }
+    #[async_trait]
+    impl ProcessRunning for CurrentLanguageStub {
+        async fn run(&self, launch_path: &str, arguments: &[String]) -> std::io::Result<ProcessResult> {
+            self.calls.lock().unwrap().push((launch_path.to_string(), arguments.to_vec()));
+            if arguments.contains(&"read".to_string()) {
+                return Ok(ProcessResult {
+                    stdout: b"(\n    \"fr-FR\",\n    en\n)\n".to_vec(),
+                    stderr: Vec::new(),
+                    exit_code: 0,
+                });
+            }
+            Ok(ProcessResult { stdout: Vec::new(), stderr: Vec::new(), exit_code: 0 })
+        }
+    }
+    let udid = Uuid::new_v4();
+    let stub = CurrentLanguageStub::default();
+    let calls = stub.calls.clone();
+    let client = LiveSimctlClient::with_runner(stub);
+    client.launch_app(udid, "com.example.App", None, Some("BR")).await.unwrap();
+    let calls = calls.lock().unwrap().clone();
+    assert_eq!(calls.len(), 2, "expected a defaults-read probe followed by the launch call");
+    assert_eq!(
+        calls[0],
+        (
+            "/usr/bin/xcrun".to_string(),
+            vec![
+                "simctl".to_string(),
+                "spawn".to_string(),
+                udid.to_string(),
+                "defaults".to_string(),
+                "read".to_string(),
+                "-g".to_string(),
+                "AppleLanguages".to_string()
+            ]
+        )
+    );
+    assert_eq!(
+        calls[1],
+        (
+            "/usr/bin/xcrun".to_string(),
+            vec![
+                "simctl".to_string(),
+                "launch".to_string(),
+                "--terminate-running-process".to_string(),
+                udid.to_string(),
+                "com.example.App".to_string(),
+                "-AppleLocale".to_string(),
+                "fr_BR".to_string()
+            ]
+        )
+    );
+}
+
+#[tokio::test]
+async fn launch_app_falls_back_to_en_when_reading_current_language_fails() {
+    #[derive(Default, Clone)]
+    struct FailingReadStub {
+        calls: Arc<Mutex<Vec<Call>>>,
+    }
+    #[async_trait]
+    impl ProcessRunning for FailingReadStub {
+        async fn run(&self, launch_path: &str, arguments: &[String]) -> std::io::Result<ProcessResult> {
+            self.calls.lock().unwrap().push((launch_path.to_string(), arguments.to_vec()));
+            if arguments.contains(&"read".to_string()) {
+                return Ok(ProcessResult { stdout: Vec::new(), stderr: b"does not exist".to_vec(), exit_code: 1 });
+            }
+            Ok(ProcessResult { stdout: Vec::new(), stderr: Vec::new(), exit_code: 0 })
+        }
+    }
+    let udid = Uuid::new_v4();
+    let stub = FailingReadStub::default();
+    let calls = stub.calls.clone();
+    let client = LiveSimctlClient::with_runner(stub);
+    client.launch_app(udid, "com.example.App", None, Some("BR")).await.unwrap();
+    let calls = calls.lock().unwrap().clone();
+    assert_eq!(calls.len(), 2, "the failed probe must not stop the launch from proceeding");
+    assert_eq!(
+        calls[1].1,
+        vec![
+            "simctl".to_string(),
+            "launch".to_string(),
+            "--terminate-running-process".to_string(),
+            udid.to_string(),
+            "com.example.App".to_string(),
+            "-AppleLocale".to_string(),
+            "en_BR".to_string()
+        ]
     );
 }
 

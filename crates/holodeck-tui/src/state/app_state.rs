@@ -1,4 +1,6 @@
-use holodeck_core::models::{DeviceType, InstalledApp, LanguageOption, PrivacyAction, PrivacyPermission, Runtime, Simulator};
+use holodeck_core::models::{
+    DeviceType, InstalledApp, LanguageOption, PrivacyAction, PrivacyPermission, RegionOption, Runtime, Simulator,
+};
 use uuid::Uuid;
 
 /// Intent behind an in-flight simctl operation. Lets the reducer reconcile
@@ -138,6 +140,7 @@ pub enum LaunchAppStep {
     LoadingApps,
     PickApp,
     PickLanguage,
+    PickRegion,
     Submitting,
 }
 
@@ -149,10 +152,19 @@ pub struct LaunchAppPrompt {
     pub app_index: i64,
     pub app_scroll_offset: i64,
     pub show_system: bool,
+    /// Language attached while chaining through `PickLanguage` into
+    /// `PickRegion` (see `launch_app_reducer`). `None` when the region
+    /// picker was reached directly (a region-only launch), which also
+    /// distinguishes what `Esc` means once inside `PickRegion`.
+    pub chosen_language: Option<&'static LanguageOption>,
     pub language_index: i64,
     pub language_scroll_offset: i64,
     pub language_filter: String,
     pub is_language_filter_focused: bool,
+    pub region_index: i64,
+    pub region_scroll_offset: i64,
+    pub region_filter: String,
+    pub is_region_filter_focused: bool,
     pub error: Option<String>,
 }
 
@@ -165,10 +177,15 @@ impl LaunchAppPrompt {
             app_index: 0,
             app_scroll_offset: 0,
             show_system: false,
+            chosen_language: None,
             language_index: 0,
             language_scroll_offset: 0,
             language_filter: String::new(),
             is_language_filter_focused: false,
+            region_index: 0,
+            region_scroll_offset: 0,
+            region_filter: String::new(),
+            is_region_filter_focused: false,
             error: None,
         }
     }
@@ -183,6 +200,12 @@ impl LaunchAppPrompt {
     /// the reducer's scroll math and the view's layout must agree on it.
     pub fn language_viewport(&self, rows: i64) -> i64 {
         let banner = i64::from(self.is_language_filter_focused || !self.language_filter.is_empty());
+        (Self::app_viewport(rows) - banner).max(1)
+    }
+
+    /// Same accounting as `language_viewport`, for the region filter banner.
+    pub fn region_viewport(&self, rows: i64) -> i64 {
+        let banner = i64::from(self.is_region_filter_focused || !self.region_filter.is_empty());
         (Self::app_viewport(rows) - banner).max(1)
     }
 
@@ -206,6 +229,19 @@ impl LaunchAppPrompt {
     pub fn selected_language(&self) -> Option<&'static LanguageOption> {
         let list = self.visible_languages();
         usize::try_from(self.language_index).ok().and_then(|i| list.get(i).copied())
+    }
+
+    pub fn visible_regions(&self) -> Vec<&'static RegionOption> {
+        if self.region_filter.is_empty() {
+            return RegionOption::ALL.iter().collect();
+        }
+        let needle = self.region_filter.to_lowercase();
+        RegionOption::ALL.iter().filter(|r| r.display_name.to_lowercase().contains(&needle)).collect()
+    }
+
+    pub fn selected_region(&self) -> Option<&'static RegionOption> {
+        let list = self.visible_regions();
+        usize::try_from(self.region_index).ok().and_then(|i| list.get(i).copied())
     }
 }
 

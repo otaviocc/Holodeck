@@ -368,7 +368,10 @@ fn enter_launches_the_selected_app_with_no_overrides() {
     state.modal = Some(Modal::LaunchApp(prompt));
 
     let out = reduce(&state, AppEvent::Key(Key::Enter));
-    assert_eq!(out.effects, vec![SideEffect::LaunchApp { udid: sim_id, bundle_id: "com.example.a".to_string(), language: None }]);
+    assert_eq!(
+        out.effects,
+        vec![SideEffect::LaunchApp { udid: sim_id, bundle_id: "com.example.a".to_string(), language: None, region: None }]
+    );
 }
 
 #[test]
@@ -403,7 +406,7 @@ fn slash_focuses_the_language_filter_and_typing_narrows_the_list() {
 }
 
 #[test]
-fn enter_with_a_selected_language_launches_with_the_override() {
+fn enter_in_pick_language_chains_to_pick_region_instead_of_submitting() {
     let sim_id = uuid::Uuid::new_v4();
     let mut prompt = LaunchAppPrompt::new(sim_id);
     prompt.step = LaunchAppStep::PickLanguage;
@@ -412,11 +415,10 @@ fn enter_with_a_selected_language_launches_with_the_override() {
     state.modal = Some(Modal::LaunchApp(prompt));
 
     let out = reduce(&state, AppEvent::Key(Key::Enter));
-    let expected = holodeck_core::models::LanguageOption::ALL[0].bcp47.to_string();
-    assert_eq!(
-        out.effects,
-        vec![SideEffect::LaunchApp { udid: sim_id, bundle_id: "com.example.a".to_string(), language: Some(expected) }]
-    );
+    assert!(out.effects.is_empty(), "picking a language must not launch yet");
+    let Some(Modal::LaunchApp(p)) = &out.state.modal else { panic!() };
+    assert_eq!(p.step, LaunchAppStep::PickRegion);
+    assert_eq!(p.chosen_language.map(|l| l.bcp47), Some(holodeck_core::models::LanguageOption::ALL[0].bcp47));
 }
 
 #[test]
@@ -442,6 +444,124 @@ fn escape_closes_the_launch_modal_from_pick_app() {
 
     let out = reduce(&state, AppEvent::Key(Key::Escape));
     assert_eq!(out.state.modal, None);
+}
+
+// MARK: - Launch app: region picker
+
+#[test]
+fn r_opens_the_region_picker_directly() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickApp;
+    prompt.all_apps = vec![app("com.example.a", true)];
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Char('r')));
+    let Some(Modal::LaunchApp(p)) = &out.state.modal else { panic!() };
+    assert_eq!(p.step, LaunchAppStep::PickRegion);
+    assert!(p.chosen_language.is_none());
+}
+
+#[test]
+fn enter_in_pick_region_after_language_chain_submits_both() {
+    let sim_id = uuid::Uuid::new_v4();
+    let mut prompt = LaunchAppPrompt::new(sim_id);
+    prompt.step = LaunchAppStep::PickRegion;
+    prompt.all_apps = vec![app("com.example.a", true)];
+    prompt.chosen_language = Some(&holodeck_core::models::LanguageOption::ALL[0]);
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Enter));
+    let expected_language = holodeck_core::models::LanguageOption::ALL[0].bcp47.to_string();
+    let expected_region = holodeck_core::models::RegionOption::ALL[0].region_code.to_string();
+    assert_eq!(
+        out.effects,
+        vec![SideEffect::LaunchApp {
+            udid: sim_id,
+            bundle_id: "com.example.a".to_string(),
+            language: Some(expected_language),
+            region: Some(expected_region)
+        }]
+    );
+}
+
+#[test]
+fn escape_in_pick_region_after_language_chain_skips_region_and_submits() {
+    let sim_id = uuid::Uuid::new_v4();
+    let mut prompt = LaunchAppPrompt::new(sim_id);
+    prompt.step = LaunchAppStep::PickRegion;
+    prompt.all_apps = vec![app("com.example.a", true)];
+    prompt.chosen_language = Some(&holodeck_core::models::LanguageOption::ALL[0]);
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Escape));
+    let expected_language = holodeck_core::models::LanguageOption::ALL[0].bcp47.to_string();
+    assert_eq!(
+        out.effects,
+        vec![SideEffect::LaunchApp {
+            udid: sim_id,
+            bundle_id: "com.example.a".to_string(),
+            language: Some(expected_language),
+            region: None
+        }]
+    );
+}
+
+#[test]
+fn escape_in_pick_region_reached_directly_cancels_to_pick_app() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickRegion;
+    prompt.region_filter = "br".to_string();
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Escape));
+    assert!(out.effects.is_empty());
+    let Some(Modal::LaunchApp(p)) = &out.state.modal else { panic!() };
+    assert_eq!(p.step, LaunchAppStep::PickApp);
+    assert!(p.region_filter.is_empty());
+}
+
+#[test]
+fn enter_in_pick_region_reached_directly_submits_region_only() {
+    let sim_id = uuid::Uuid::new_v4();
+    let mut prompt = LaunchAppPrompt::new(sim_id);
+    prompt.step = LaunchAppStep::PickRegion;
+    prompt.all_apps = vec![app("com.example.a", true)];
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let out = reduce(&state, AppEvent::Key(Key::Enter));
+    let expected_region = holodeck_core::models::RegionOption::ALL[0].region_code.to_string();
+    assert_eq!(
+        out.effects,
+        vec![SideEffect::LaunchApp {
+            udid: sim_id,
+            bundle_id: "com.example.a".to_string(),
+            language: None,
+            region: Some(expected_region)
+        }]
+    );
+}
+
+#[test]
+fn slash_focuses_the_region_filter_and_typing_narrows_the_list() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickRegion;
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    let after_slash = reduce(&state, AppEvent::Key(Key::Char('/')));
+    let Some(Modal::LaunchApp(p)) = &after_slash.state.modal else { panic!() };
+    assert!(p.is_region_filter_focused);
+
+    let after_b = reduce(&after_slash.state, AppEvent::Key(Key::Char('b')));
+    let after_r = reduce(&after_b.state, AppEvent::Key(Key::Char('r')));
+    let Some(Modal::LaunchApp(p)) = &after_r.state.modal else { panic!() };
+    assert_eq!(p.region_filter, "br");
+    assert!(p.visible_regions().iter().all(|r| r.display_name.to_lowercase().contains("br")));
 }
 
 #[test]

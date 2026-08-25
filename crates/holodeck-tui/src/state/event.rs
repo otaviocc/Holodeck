@@ -55,7 +55,7 @@ pub enum SideEffect {
     ApplyPrivacy { udid: Uuid, action: PrivacyAction, permission: PrivacyPermission, bundle_id: String },
     LoadUrlHistory,
     OpenUrl { udid: Uuid, url: String },
-    LaunchApp { udid: Uuid, bundle_id: String, language: Option<String> },
+    LaunchApp { udid: Uuid, bundle_id: String, language: Option<String>, region: Option<String> },
 }
 
 #[derive(Debug, Clone, PartialEq)]
