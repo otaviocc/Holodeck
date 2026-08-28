@@ -3,9 +3,8 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use crate::state::Key;
 
 /// Maps a crossterm `KeyEvent` onto the reducer's terminal-independent `Key`.
-/// Only key-press events are forwarded — crossterm (with
-/// `PushKeyboardEnhancementFlags`) can also report key-release events on
-/// terminals that support it, which the Swift `InputParser` never produced.
+/// Only key-press events map to a `Key`; key-release events (reported by
+/// terminals supporting `PushKeyboardEnhancementFlags`) yield `None`.
 pub fn map_key_event(event: KeyEvent) -> Option<Key> {
     if event.kind != KeyEventKind::Press {
         return None;

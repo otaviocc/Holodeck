@@ -1,6 +1,6 @@
-//! Manual smoke test that a SIGINT-stopped recording produces a *playable*
-//! MP4 (plan §6.2 / §8) — not part of `cargo test` since it needs a booted
-//! simulator and takes several real seconds.
+//! Manual smoke test that a SIGINT-stopped recording produces a playable
+//! MP4. Not part of `cargo test`: it needs a booted simulator and takes
+//! several real seconds.
 //! Run with: cargo run -p holodeck-core --example record_smoke -- <udid>
 
 use std::path::PathBuf;

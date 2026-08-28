@@ -25,7 +25,7 @@ pub struct CreateArgs {
 }
 
 /// Exact (case-insensitive) matches win outright; otherwise falls back to
-/// substring matches. Mirrors the Swift `CreateCommand.bestMatches`.
+/// substring matches.
 fn best_matches<'a, T>(items: &'a [T], query: &str, label: impl Fn(&T) -> String) -> Vec<&'a T> {
     let needle = query.to_lowercase();
     let mut exact = Vec::new();

@@ -1,13 +1,11 @@
 /// A human-readable Region for the TUI's launch-region picker — the same
 /// concept as Settings → General → Language & Region → Region on a real
-/// device, e.g. "Brazil" → `BR`. Curated rather than exhaustive: the App
-/// Store territories engineers actually test region-gated features against,
-/// not every ISO 3166-1 code. The CLI's `--region` flag bypasses this table
-/// entirely and takes a raw code, so it is unaffected by what is or isn't
-/// listed here.
+/// device, e.g. "Brazil" → `BR`. The table lists common App Store
+/// territories rather than every ISO 3166-1 code. The CLI's `--region` flag
+/// takes a raw code and does not read this table.
 ///
-/// Deliberately distinct from `holodeck location` (GPS coordinates) —
-/// "Region" here never means a physical place.
+/// Distinct from `holodeck location` (GPS coordinates): "Region" here is a
+/// storefront/locale setting, not a physical place.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RegionOption {
     pub display_name: &'static str,

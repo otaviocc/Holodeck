@@ -1,10 +1,8 @@
 use tokio::process::Child;
 use tokio::sync::Mutex;
 
-/// Owns the long-running child process. Sending SIGINT — not SIGKILL — is
-/// required for `simctl io recordVideo` to finalize a valid MP4; Rust's
-/// `Child::kill()` only sends SIGKILL, so this shells out to `libc::kill`
-/// directly (see plan §6.2 / §3a).
+/// Owns the long-running child process. Stops it with SIGINT via `libc::kill`
+/// — the signal `simctl io recordVideo` needs to finalize a valid MP4.
 #[derive(Default)]
 pub struct Recorder {
     child: Mutex<Option<Child>>,
@@ -23,8 +21,7 @@ impl Recorder {
         }
     }
 
-    /// Idempotent: a second `start()` while already recording is a no-op,
-    /// matching the Swift `RecorderActor.start`.
+    /// Idempotent: a second `start()` while already recording is a no-op.
     pub async fn start(&self, launch_path: &str, arguments: &[String]) -> std::io::Result<()> {
         let mut guard = self.child.lock().await;
         if let Some(child) = guard.as_mut()

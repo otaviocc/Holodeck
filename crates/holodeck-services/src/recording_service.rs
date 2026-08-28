@@ -7,15 +7,12 @@ use uuid::Uuid;
 
 /// Orchestrates a single in-flight recording: ensures the output directory
 /// exists, starts the `Recorder`, and remembers the output path so `stop()`
-/// can hand it back exactly once (mirrors the Swift `RecordingService`'s
-/// take-once `RecordingState` actor).
+/// can hand it back exactly once.
 pub struct RecordingService {
     recorder: Recorder,
     current_output: Mutex<Option<PathBuf>>,
-    // Serializes `start()` calls so the `is_recording()` precheck and the
-    // `current_output` write happen atomically with `Recorder::start()`'s own
-    // idempotent no-op, preventing two overlapping starts from leaving
-    // `current_output` pointing at a path nobody is actually recording to.
+    // Serializes `start()` calls: the `is_recording()` precheck, the
+    // `current_output` write, and `Recorder::start()` run as one unit.
     start_lock: Mutex<()>,
 }
 
@@ -75,8 +72,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let service = RecordingService::new();
         let output = dir.path().join("out.mp4");
-        // Use `sleep` as a stand-in long-running process instead of real
-        // simctl, so this test doesn't depend on a booted simulator.
+        // `sleep` stands in for the long-running simctl child process.
         service.recorder.start("/bin/sleep", &["5".to_string()]).await.unwrap();
         let err = service.start(Uuid::new_v4(), &output, VideoCodec::H264).await.unwrap_err();
         assert!(matches!(err, SimctlError::UnsupportedOperation { .. }));

@@ -5,10 +5,9 @@ use holodeck_core::{SimctlClient, SimctlError};
 use unicase::UniCase;
 use uuid::Uuid;
 
-/// Thin facade over `SimctlClient` — the only real logic here is
-/// `resolve(query)`'s exact/substring/ambiguous precedence, mirroring the
-/// Swift `SimulatorService`. The other pass-through operations exist mainly
-/// so callers (CLI, TUI) don't need to hold a `dyn SimctlClient` themselves.
+/// Facade over `SimctlClient`. Adds `resolve(query)`'s
+/// exact/substring/ambiguous precedence; every other operation forwards to
+/// the client unchanged.
 #[derive(Clone)]
 pub struct SimulatorService {
     client: Arc<dyn SimctlClient>,

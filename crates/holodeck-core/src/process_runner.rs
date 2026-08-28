@@ -7,17 +7,15 @@ pub struct ProcessResult {
     pub exit_code: i32,
 }
 
-/// Injectable process execution seam — the Rust analogue of Swift's
-/// `ProcessRunning` protocol witness, kept so `SimctlClient` tests can pin
-/// exact argv without spawning real processes.
+/// Injectable process execution seam. Implementations run a launch path with
+/// an argument list and return its captured output.
 #[async_trait]
 pub trait ProcessRunning: Send + Sync {
     async fn run(&self, launch_path: &str, arguments: &[String]) -> std::io::Result<ProcessResult>;
 }
 
-/// `tokio::process::Command::output()` drains stdout and stderr concurrently
-/// by construction, so the pipe-drain deadlock the Swift `ProcessRunner` had
-/// to guard against (see CLAUDE.md) cannot happen here.
+/// Runs processes with `tokio::process::Command::output()`, which drains
+/// stdout and stderr concurrently.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct TokioProcessRunner;
 

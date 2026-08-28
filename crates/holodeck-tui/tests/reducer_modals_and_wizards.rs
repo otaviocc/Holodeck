@@ -326,9 +326,8 @@ fn apps_loaded_populates_launch_modal_and_advances_to_pick_app() {
 
 #[test]
 fn apps_loaded_still_populates_the_privacy_wizard() {
-    // Regression test for routing `AppsLoaded` by whichever modal is open,
-    // since both the privacy wizard and the launch modal share one
-    // `LoadInstalledApps` effect and event pair.
+    // The privacy wizard and the launch modal share one `LoadInstalledApps`
+    // effect and event pair; `AppsLoaded` routes by whichever modal is open.
     let mut state = state_with(vec![booted("A")]);
     state.modal = Some(Modal::PrivacyWizard(PrivacyWizard::new(state.simulators[0].id)));
     let out = reduce(&state, AppEvent::AppsLoaded(vec![app("com.example.a", true)]));

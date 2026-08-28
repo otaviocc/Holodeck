@@ -97,8 +97,7 @@ async fn main() {
         Some(Commands::Openurl(args)) => args.run().await,
         Some(Commands::Launch(args)) => args.run().await,
         Some(Commands::Tui(args)) => args.run().await,
-        // Bare `holodeck` defaults to the TUI, matching the Swift
-        // `defaultSubcommand: TUICommand.self`.
+        // Bare `holodeck` defaults to the TUI.
         None => TuiArgs {}.run().await,
     };
 

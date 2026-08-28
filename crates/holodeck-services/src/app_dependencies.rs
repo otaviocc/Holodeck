@@ -6,9 +6,9 @@ use crate::recording_service::RecordingService;
 use crate::screenshot_service::ScreenshotService;
 use crate::simulator_service::SimulatorService;
 
-/// Composition root — the Rust analogue of Swift's `AppDependencies`. Builds
-/// every facade from one shared `SimctlClient`, so callers (CLI subcommands,
-/// the TUI) construct this once and read everything off it.
+/// Composition root. Builds every facade from one shared `SimctlClient`;
+/// callers (CLI subcommands, the TUI) construct this once and read
+/// everything off it.
 pub struct AppDependencies {
     pub configuration: Config,
     pub simctl_client: Arc<dyn SimctlClient>,
@@ -30,8 +30,8 @@ impl AppDependencies {
         }
     }
 
-    /// Falls back to `Config::default()` if the on-disk config fails to
-    /// load, matching the Swift `AppDependencies.live()`.
+    /// Builds the live dependencies, falling back to `Config::default()`
+    /// when the on-disk config fails to load.
     pub fn live() -> Self {
         let resolver = ConfigResolver::live();
         let configuration = ConfigLoader::new(&resolver).load_or_default();

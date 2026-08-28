@@ -28,8 +28,7 @@ impl TextField {
         self.cursor
     }
 
-    /// Replaces the whole buffer and parks the caret at the end — what
-    /// history recall and completion want.
+    /// Replaces the whole buffer and parks the caret at the end.
     pub fn set(&mut self, value: &str) {
         self.value.clear();
         self.value.push_str(value);

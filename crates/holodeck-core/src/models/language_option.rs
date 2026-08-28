@@ -1,9 +1,8 @@
 /// A human-readable language/region pairing for the TUI's launch-language
-/// picker, e.g. "Portuguese (Brazil)" → `pt-BR`. Curated rather than
-/// exhaustive: the common languages and regional variants engineers actually
-/// test with, not every BCP-47 tag iOS recognizes. The CLI's `--language`
-/// flag bypasses this table entirely and takes a raw tag, so it is unaffected
-/// by what is or isn't listed here.
+/// picker, e.g. "Portuguese (Brazil)" → `pt-BR`. The table lists common
+/// languages and regional variants rather than every BCP-47 tag iOS
+/// recognizes. The CLI's `--language` flag takes a raw tag and does not read
+/// this table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LanguageOption {
     pub display_name: &'static str,

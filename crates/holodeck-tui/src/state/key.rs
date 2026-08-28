@@ -1,6 +1,5 @@
 /// Reducer-facing key abstraction, independent of the terminal backend.
-/// Phase 5 maps crossterm's `KeyEvent` onto this; keeping the reducer
-/// decoupled from crossterm is what lets these tests run without a terminal.
+/// `input::map_key_event` maps crossterm's `KeyEvent` onto this.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Key {
     Up,

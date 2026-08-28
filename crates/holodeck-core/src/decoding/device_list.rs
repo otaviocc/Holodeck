@@ -45,9 +45,8 @@ struct RawRuntime {
     is_available: Option<bool>,
 }
 
-/// Apple TV simulators aren't usable from holodeck today (the create flow
-/// only pairs with iOS/watchOS/visionOS runtimes), so they're omitted from
-/// the picker and from CLI substring matches.
+/// Omits Apple TV simulators from the picker and from CLI substring
+/// matches; the create flow pairs only with iOS/watchOS/visionOS runtimes.
 const APPLE_TV_MARKER: &str = ".Apple-TV-";
 
 pub fn decode_available_targets(data: &[u8]) -> Result<AvailableTargets, serde_json::Error> {

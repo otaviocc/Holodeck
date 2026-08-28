@@ -11,10 +11,8 @@ use crate::models::{
 };
 use crate::process_runner::{ProcessRunning, TokioProcessRunner};
 
-/// The 21-operation `xcrun simctl` surface. The Rust analogue of Swift's
-/// `SimctlClient` protocol witness: a trait rather than a struct-of-closures,
-/// since Rust traits give the same live/mock seam without closure-capture
-/// boilerplate.
+/// The 21-operation `xcrun simctl` surface. `LiveSimctlClient` shells out to
+/// the real tool; tests substitute their own implementation.
 #[async_trait]
 pub trait SimctlClient: Send + Sync {
     async fn list_devices(&self, include_unavailable: bool) -> Result<Vec<Simulator>, SimctlError>;
@@ -52,9 +50,8 @@ pub trait SimctlClient: Send + Sync {
     ) -> Result<(), SimctlError>;
 }
 
-/// Builds the argv for `simctl io <udid> recordVideo`. Only constructs the
-/// command — spawning and owning the child process is `Recorder`'s job,
-/// because the SIGINT-to-finalize semantics live there.
+/// Builds the argv for `simctl io <udid> recordVideo`. Spawning and owning
+/// the child process is `Recorder`'s job.
 pub fn record_video_command(udid: Uuid, output: &Path, codec: VideoCodec) -> (&'static str, Vec<String>) {
     (
         "/usr/bin/xcrun",
@@ -342,10 +339,8 @@ impl<R: ProcessRunning> SimctlClient for LiveSimctlClient<R> {
 }
 
 impl<R: ProcessRunning> LiveSimctlClient<R> {
-    /// `simctl listapps` emits an OpenStep/ASCII property list, which no
-    /// pure-Rust crate parses (the `plist` crate reads XML/binary only).
-    /// Piping through `plutil -convert json -o - -` avoids hand-writing an
-    /// ASCII-plist parser.
+    /// `simctl listapps` emits an OpenStep/ASCII property list, which is
+    /// piped through `plutil -convert json -o - -` before decoding.
     async fn plist_to_json(&self, plist: Vec<u8>) -> Result<Vec<u8>, SimctlError> {
         use tokio::io::AsyncWriteExt;
         let mut child = tokio::process::Command::new("/usr/bin/plutil")
@@ -367,11 +362,10 @@ impl<R: ProcessRunning> LiveSimctlClient<R> {
         Ok(output.stdout)
     }
 
-    /// Best-effort read of the simulator's current primary language, used
-    /// only to pick a language subtag for a region-only launch override.
-    /// Never fails the launch: an unset default (a fresh simulator exits
-    /// non-zero here) or any other read/parse hiccup falls back to `en`
-    /// rather than surfacing an error for what is just a locale-tag default.
+    /// Reads the simulator's current primary language, used to pick a
+    /// language subtag for a region-only launch override. An unset default
+    /// (a fresh simulator exits non-zero here) or any other read/parse
+    /// failure yields `en`; this never returns an error.
     async fn current_language_subtag(&self, udid: Uuid) -> String {
         let Ok(stdout) = self
             .run_simctl(vec![

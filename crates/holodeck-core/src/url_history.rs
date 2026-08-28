@@ -6,8 +6,8 @@ pub const CAPACITY: usize = 20;
 
 const HISTORY_FILE_NAME: &str = "url-history.json";
 
-/// Pure list-update logic, kept separate from disk I/O so it can be tested
-/// without a filesystem.
+/// Returns `history` with `url` moved to the front, deduplicated, and
+/// truncated to `CAPACITY`.
 pub fn updated(history: &[String], url: &str) -> Vec<String> {
     let mut list: Vec<String> = history.iter().filter(|existing| existing.as_str() != url).cloned().collect();
     list.insert(0, url.to_string());
@@ -24,8 +24,7 @@ impl UrlHistoryStore {
         Self { path: resolver.file(HISTORY_FILE_NAME) }
     }
 
-    /// Load failures (missing file, malformed JSON) degrade silently to `[]`,
-    /// matching the Swift `URLHistoryStore.live().load`.
+    /// Load failures (missing file, malformed JSON) return `[]`.
     pub fn load(&self) -> Vec<String> {
         std::fs::read(&self.path).ok().and_then(|data| serde_json::from_slice(&data).ok()).unwrap_or_default()
     }

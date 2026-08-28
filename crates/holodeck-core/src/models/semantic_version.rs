@@ -14,7 +14,7 @@ impl SemanticVersion {
     }
 
     /// Lenient parse: requires a parseable major component; an unparseable
-    /// minor or patch silently becomes 0 (matching the Swift `init?(string:)`).
+    /// minor or patch becomes 0.
     pub fn parse(string: &str) -> Option<Self> {
         let parts: Vec<&str> = string.split('.').collect();
         let major = parts.first()?.parse::<i64>().ok()?;

@@ -1,5 +1,5 @@
-//! Manual smoke test against the real `xcrun simctl` on this machine —
-//! not part of `cargo test` since it depends on real simulator state.
+//! Manual smoke test against the real `xcrun simctl` on this machine. Not
+//! part of `cargo test`: it depends on real simulator state.
 //! Run with: cargo run -p holodeck-core --example smoke
 
 use holodeck_simctl_core::{LiveSimctlClient, SimctlClient};

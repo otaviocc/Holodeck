@@ -28,10 +28,9 @@ const HELP_ENTRIES: &[(&str, &str)] = &[
     ("q / Esc", "Quit (or cancel the active modal)"),
 ];
 
-/// Renders one text input as `prefix` plus the field's text with a block
-/// caret drawn at the cursor. The caret is a reversed cell rather than the
-/// terminal's own cursor: several inputs can be on screen at once (a popup
-/// over the main filter), and there is only one real cursor to place.
+/// Renders one text input as `prefix` plus the field's text, with the caret
+/// drawn as a reversed cell at the cursor position. Several inputs can be on
+/// screen at once (a popup over the main filter), each drawing its own caret.
 fn input_spans<'a>(prefix: &'a str, field: &TextField, theme: &Theme) -> Vec<Span<'a>> {
     let before: String = field.chars().take(field.cursor()).collect();
     let at = field.chars().nth(field.cursor()).unwrap_or(' ');

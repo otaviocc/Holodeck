@@ -58,8 +58,7 @@ impl HolodeckApp {
 
         let size = terminal.size()?;
         let mut state = AppState { rows: i64::from(size.height), cols: i64::from(size.width), ..AppState::default() };
-        // Resolved once at launch, like the Swift TUI's other config reads
-        // (`pollIntervalSeconds`) — a theme change requires a restart.
+        // Resolved once at launch: a theme change takes effect on restart.
         let theme = Theme::from_name(self.dependencies.configuration.theme);
 
         self.dispatch(SideEffect::Refresh, tx.clone());
@@ -265,8 +264,7 @@ impl HolodeckApp {
     }
 }
 
-/// One generic spawner replacing the ~18 near-identical `AppSpawn` helper
-/// functions in the Swift original.
+/// Spawns `work` and posts either `on_ok` or `on_err` back on `tx`.
 fn spawn<Fut, T>(
     tx: UnboundedSender<AppEvent>,
     work: Fut,
@@ -305,10 +303,8 @@ where
     });
 }
 
-/// Blocking input loop, run on a plain OS thread rather than a tokio task
-/// since `crossterm::event::{poll, read}` are blocking calls. Sending on an
-/// `UnboundedSender` from outside the tokio runtime is fine — it's a plain
-/// non-blocking queue push.
+/// Blocking input loop. Runs on a plain OS thread — `crossterm::event::{poll,
+/// read}` block — and forwards key and resize events on `tx`.
 fn input_loop(tx: UnboundedSender<AppEvent>) {
     loop {
         let ready = match event::poll(Duration::from_millis(100)) {

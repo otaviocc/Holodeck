@@ -5,8 +5,7 @@ use holodeck_core::models::ScreenshotType;
 use holodeck_core::{SimctlClient, SimctlError, default_media_path};
 use uuid::Uuid;
 
-/// Not a pure pass-through: ensures the output directory exists before
-/// capturing, unlike the other one-line facades that were collapsed away.
+/// Captures screenshots, creating the output directory when it is missing.
 #[derive(Clone)]
 pub struct ScreenshotService {
     client: Arc<dyn SimctlClient>,

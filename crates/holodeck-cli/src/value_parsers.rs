@@ -1,12 +1,8 @@
-//! Lowercased-string-to-enum conversions for `clap` `value_parser`s. The
-//! Rust analogue of Swift's `ExpressibleByArgument`/`LowercasedRawArgument`
-//! conformances in `ArgumentParserSupport.swift`.
+//! Lowercased-string-to-enum conversions for `clap` `value_parser`s.
 //!
-//! These live in the CLI crate rather than as `clap::ValueEnum` impls on the
-//! `holodeck-core` types because Rust's orphan rules forbid implementing a
-//! foreign trait (`ValueEnum`, from `clap`) for a foreign type from a third
-//! crate — free parser functions sidestep that without adding a `clap`
-//! dependency to `holodeck-core`.
+//! These are free functions in the CLI crate rather than `clap::ValueEnum`
+//! impls on the `holodeck-core` types, so `holodeck-core` carries no `clap`
+//! dependency.
 
 use holodeck_core::models::{Appearance, BatteryState, Platform, PrivacyAction, PrivacyPermission, ScreenshotType, VideoCodec};
 

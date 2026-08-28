@@ -1,18 +1,15 @@
 //! Named semantic colors for the TUI, resolved once at startup from
-//! `Config::theme` (Rust analogue of vigia's `theme.rs`: a struct of named
-//! `Style`s with built-in palettes, rather than `Color` literals scattered
-//! through the view layer).
+//! `Config::theme` into a struct of named `Style`s the view layer reads.
 //!
 //! The shipped default is [`Theme::default_plus`] — the
 //! [Default+](https://github.com/otaviocc/default-plus) colorscheme, ported
-//! here from its canonical `palette.yaml` (base colors + the 6 "hero"
-//! accents reused across every other Default+ port). [`Theme::ansi`] is kept
-//! as an alternative that inherits the reader's own terminal scheme instead
-//! of asserting truecolor. A handful of other well-known terminal/TUI
-//! themes are also built in: [`Theme::tokyo_night`], [`Theme::nord`],
-//! [`Theme::dracula`], [`Theme::gruvbox`], [`Theme::catppuccin_mocha`],
-//! [`Theme::solarized_dark`], and [`Theme::vesper`] — all ported from each
-//! project's own canonical palette values.
+//! from its canonical `palette.yaml` (base colors + the 6 "hero" accents
+//! reused across every other Default+ port). [`Theme::ansi`] inherits the
+//! reader's own terminal scheme instead of asserting truecolor. Also built
+//! in: [`Theme::tokyo_night`], [`Theme::nord`], [`Theme::dracula`],
+//! [`Theme::gruvbox`], [`Theme::catppuccin_mocha`],
+//! [`Theme::solarized_dark`], and [`Theme::vesper`] — each ported from its
+//! own project's canonical palette values.
 
 use holodeck_core::models::ThemeName;
 use ratatui::style::{Color, Modifier, Style};
@@ -79,11 +76,8 @@ impl Theme {
         }
     }
 
-    /// The terminal's own 16-color scheme. Correct on a background whose
-    /// depth/appearance nothing here has detected, at the cost of not
-    /// matching Default+ exactly on every terminal — see vigia's `theme.rs`
-    /// for the same reasoning about why an ANSI-named palette is the safe
-    /// fallback rather than the default.
+    /// The terminal's own 16-color scheme, using ANSI color names so every
+    /// style follows the reader's palette instead of fixed truecolor values.
     pub fn ansi() -> Self {
         Self {
             background: Color::Reset,
@@ -123,9 +117,8 @@ impl Theme {
     }
 
     /// [Nord](https://www.nordtheme.com), values taken from the official
-    /// palette (`nord0`-`nord15`). Uses `nord8` ("frost", light blue-cyan)
-    /// as the accent rather than `nord7`, matching how most terminal ports
-    /// pick the brightest frost tone for emphasis.
+    /// palette (`nord0`-`nord15`), with `nord8` ("frost", light blue-cyan)
+    /// as the accent.
     pub fn nord() -> Self {
         Self {
             background: rgb(0x2E, 0x34, 0x40),
@@ -145,8 +138,7 @@ impl Theme {
     }
 
     /// [Dracula](https://draculatheme.com), values taken from the official
-    /// spec. Dracula has no distinct "blue" — its own ANSI spec maps the
-    /// blue slot to the purple hex, which this mirrors.
+    /// spec, whose ANSI mapping fills the blue slot with the purple hex.
     pub fn dracula() -> Self {
         Self {
             background: rgb(0x28, 0x2A, 0x36),
@@ -166,10 +158,9 @@ impl Theme {
         }
     }
 
-    /// [Gruvbox](https://github.com/morhetz/gruvbox) dark, "bright" accent
-    /// set (gruvbox's neutral tones are deliberately desaturated/earthy;
-    /// the bright set reads better as foreground text on its own dark
-    /// background, which is how most terminal ports use it for ANSI 8-15).
+    /// [Gruvbox](https://github.com/morhetz/gruvbox) dark, using the
+    /// "bright" accent set (the palette's ANSI 8-15 range) for foreground
+    /// text.
     pub fn gruvbox() -> Self {
         Self {
             background: rgb(0x28, 0x28, 0x28),

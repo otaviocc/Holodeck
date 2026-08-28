@@ -33,9 +33,8 @@ pub fn reduce(state: &AppState, event: AppEvent) -> ReducerOutput {
             }
             let reconciled = reconcile_pending(&next.pending_operations, &next.simulators);
             if reconciled.len() != next.pending_operations.len() && reconciled.is_empty() {
-                // Every tracked operation reached its target; the status
-                // banner that announced it ('Booting A…', 'Shutting down
-                // A…') would otherwise outlive the operation it described.
+                // Every tracked operation reached its target, so the banner
+                // announcing it ('Booting A…', 'Shutting down A…') clears.
                 next.status_message = None;
             }
             next.pending_operations = reconciled;
@@ -56,20 +55,17 @@ pub fn reduce(state: &AppState, event: AppEvent) -> ReducerOutput {
         }
 
         AppEvent::PollTick => {
-            // Keep polling even while recording: `simctl list` is a
-            // read-only, independent process from the recording child, and
-            // skipping it left simulator/operation state stale for the
-            // entire (potentially multi-minute) recording.
+            // Polling continues during a recording: `simctl list` is a
+            // read-only process independent of the recording child.
             ReducerOutput::with_effects(next, vec![SideEffect::Refresh])
         }
 
         AppEvent::Key(key) => handle_key(&next, key),
 
         AppEvent::OperationCompleted(id) => {
-            // If reconcile_pending already dropped the entry on an earlier
-            // Refreshed, the user has moved on (possibly issued another op)
-            // and clobbering status_message here would wipe the newer op's
-            // banner. Only respond to events for still-tracked operations.
+            // Only still-tracked operations are handled; an entry
+            // `reconcile_pending` already dropped on an earlier Refreshed
+            // leaves state (including any newer op's banner) untouched.
             if next.pending_operations.remove(&id).is_none() {
                 return ReducerOutput::new(next);
             }

@@ -34,10 +34,8 @@ impl PaletteCommand {
         PaletteCommand::Shutdown,
     ];
 
-    /// Alphabetical ordering, used for deterministic ghost-autocomplete
-    /// matching. All display names happen to already sort this way, so this
-    /// is just `CASES` — kept as a function to mirror the Swift `all` and to
-    /// stay correct if a display name ever changes.
+    /// Every command in alphabetical display-name order, as used for
+    /// ghost-autocomplete matching.
     pub fn all() -> Vec<PaletteCommand> {
         let mut all = Self::CASES.to_vec();
         all.sort_by_key(|c| c.display_name());

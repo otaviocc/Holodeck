@@ -1,18 +1,16 @@
 use serde::{Deserialize, Serialize};
 
-/// Which built-in TUI color theme to use. The actual colors live in
-/// `holodeck-tui::theme` (a rendering concern) — this is just the selector,
-/// kept in Core alongside the rest of `Config` so it round-trips through
-/// `~/.config/holodeck/config.json` like `videoCodec`/`screenshotType`.
+/// Selects a built-in TUI color theme. The colors themselves live in
+/// `holodeck-tui::theme`; this selector round-trips through
+/// `~/.config/holodeck/config.json` alongside the rest of `Config`.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ThemeName {
     /// The [Default+](https://github.com/otaviocc/default-plus) colorscheme.
     #[default]
     DefaultPlus,
-    /// The terminal's own 16-color scheme — correct on a background whose
-    /// depth/appearance nothing has detected, at the cost of not matching
-    /// any specific palette exactly on every terminal.
+    /// The terminal's own 16-color scheme, inheriting the reader's palette
+    /// instead of asserting truecolor values.
     Ansi,
     /// [Tokyo Night](https://github.com/folke/tokyonight.nvim).
     TokyoNight,

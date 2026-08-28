@@ -1,7 +1,5 @@
-//! Verifies rendering logic with `ratatui::backend::TestBackend` rather than
-//! a live PTY (this environment has none — see the port plan's testing
-//! notes on ratatui's `TestBackend` as the CI-friendly analogue of the Swift
-//! suite's ANSI-stripped `contains(...)` view assertions).
+//! Verifies rendering logic against `ratatui::backend::TestBackend`, so the
+//! assertions run without a live PTY.
 
 mod support;
 

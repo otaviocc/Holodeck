@@ -86,9 +86,8 @@ fn confirm(
 ) -> ReducerOutput {
     let mut next = state.clone();
 
-    // Helper: rebuild the modal variant with an updated index, preserving
-    // whether this is an Erase or Delete confirm. We detect by checking the
-    // current modal since `effect` is moved later.
+    // Rebuilds the modal variant with an updated index, preserving whether
+    // this is an Erase or Delete confirm.
     let with_index = |idx: i64| match &state.modal {
         Some(Modal::ConfirmErase(uid, _)) => Modal::ConfirmErase(*uid, idx),
         _ => Modal::ConfirmDelete(id, idx),
@@ -125,9 +124,8 @@ fn confirm(
 
 fn execute_confirm(mut next: AppState, id: Uuid, status: &str, operation: PendingOperation, effect: SideEffect) -> ReducerOutput {
     next.modal = None;
-    // Don't clobber an unrelated in-flight intent (e.g. a pending
-    // Boot when the user confirms Delete). The sibling reducers in
-    // reducer.rs apply the same guard on their own paths.
+    // Leaves an unrelated in-flight intent in place (e.g. a pending Boot
+    // when the user confirms Delete).
     if next.pending_operations.contains_key(&id) {
         next.status_message = Some("Simulator already has a pending operation".to_string());
         return ReducerOutput::new(next);
@@ -165,8 +163,8 @@ fn wizard_handle(state: &AppState, wizard: &CreateWizard, key: Key) -> ReducerOu
             if wizard.is_device_type_filter_focused {
                 match key {
                     Key::Enter => updated.is_device_type_filter_focused = false,
-                    // Caret moves must not re-anchor the list, so only a real
-                    // text change resets index and scroll.
+                    // Only a real text change resets index and scroll; a bare
+                    // caret move leaves the list anchored where it was.
                     _ => {
                         if updated.device_type_filter.handle(key) {
                             updated.device_type_index = 0;
@@ -185,10 +183,9 @@ fn wizard_handle(state: &AppState, wizard: &CreateWizard, key: Key) -> ReducerOu
                 }
                 Key::Char('/') => {
                     updated.is_device_type_filter_focused = true;
-                    // Preserve an existing filter so the user can keep
-                    // editing — Esc is the affordance for clearing. Only
-                    // reset cursor/scroll when entering edit mode fresh (no
-                    // query yet).
+                    // An existing filter is preserved for further editing
+                    // (Esc clears it); cursor and scroll reset only when
+                    // entering edit mode with no query yet.
                     if updated.device_type_filter.is_empty() {
                         updated.device_type_index = 0;
                         updated.device_type_scroll_offset = 0;

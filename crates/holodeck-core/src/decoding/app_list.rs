@@ -19,10 +19,9 @@ struct RawApp {
     application_type: Option<String>,
 }
 
-/// `simctl listapps` emits an OpenStep/ASCII property list, which no pure-Rust
-/// crate parses. `data` here is expected to already be JSON — produced by
-/// piping the raw plist through `plutil -convert json -o - -` (see
-/// `SimctlClient::list_apps`) rather than by decoding the plist directly.
+/// Decodes the app listing. `data` is expected to already be JSON — the raw
+/// OpenStep/ASCII plist from `simctl listapps` piped through
+/// `plutil -convert json -o - -` (see `SimctlClient::list_apps`).
 pub fn decode(data: &[u8]) -> Result<Vec<InstalledApp>, serde_json::Error> {
     let raw: std::collections::HashMap<String, RawApp> = serde_json::from_slice(data)?;
     let mut apps: Vec<InstalledApp> = raw

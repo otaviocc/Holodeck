@@ -197,9 +197,8 @@ impl LaunchAppPrompt {
     }
 
     /// The language filter is a conditional banner (visible once focused or
-    /// once something has been typed) — mirrors
-    /// `CreateWizard::device_type_viewport`'s filter-banner accounting, and
-    /// the reducer's scroll math and the view's layout must agree on it.
+    /// once something has been typed); the reducer's scroll math and the
+    /// view's layout use the same accounting.
     pub fn language_viewport(&self, rows: i64) -> i64 {
         let banner = i64::from(self.is_language_filter_focused || !self.language_filter.is_empty());
         (Self::app_viewport(rows) - banner).max(1)
@@ -280,9 +279,9 @@ impl CreateWizard {
         (rows - 5).max(3)
     }
 
-    /// Device-type list viewport accounting for the filter banner (one row).
-    /// The reducer's scroll math and the view's row clamp must agree on this
-    /// number — otherwise the selected row can sit just off the bottom edge.
+    /// Device-type list viewport, accounting for the filter banner (one
+    /// row). The reducer's scroll math and the view's row clamp read the
+    /// same number.
     pub fn device_type_viewport(&self, rows: i64) -> i64 {
         let banner = if self.is_device_type_filter_focused || !self.device_type_filter.is_empty() { 1 } else { 0 };
         (Self::viewport(rows) - banner).max(1)

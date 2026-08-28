@@ -1,9 +1,8 @@
 use holodeck_core::models::{Simulator, SimulatorState};
 use holodeck_services::SimulatorService;
 
-/// Resolves `query` then asserts it's in `required_state`, mirroring the
-/// Swift `SimulatorService.resolveInState(_:_:purpose:)` helper shared by
-/// most subcommands.
+/// Resolves `query` to a simulator and errors unless it is in
+/// `required_state`.
 pub async fn resolve_in_state(
     service: &SimulatorService,
     query: &str,

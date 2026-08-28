@@ -1,6 +1,4 @@
-//! Pins the exact argv `LiveSimctlClient` shells out to for every operation —
-//! the Rust analogue of the Swift suite's `SimctlClientTests`, and the best
-//! available spec for this layer per the port plan.
+//! Pins the exact argv `LiveSimctlClient` shells out to for every operation.
 
 use std::sync::{Arc, Mutex};
 
