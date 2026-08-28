@@ -3,6 +3,8 @@ use holodeck_core::models::{
 };
 use uuid::Uuid;
 
+use super::text_input::TextField;
+
 /// Intent behind an in-flight simctl operation. Lets the reducer reconcile
 /// `pending_operations` against an arriving `Refreshed` listing — if the sim
 /// already reached the target state we can drop the pending entry even when
@@ -56,13 +58,13 @@ pub struct CommandPalette {
     /// that drops the underlying sim auto-dismisses the palette before it
     /// can run a command against the wrong target.
     pub simulator_id: Option<Uuid>,
-    pub query: String,
+    pub query: TextField,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OpenUrlPrompt {
     pub simulator_id: Uuid,
-    pub url: String,
+    pub url: TextField,
     pub history_index: i64,
     pub is_submitting: bool,
     pub error: Option<String>,
@@ -70,7 +72,7 @@ pub struct OpenUrlPrompt {
 
 impl OpenUrlPrompt {
     pub fn new(simulator_id: Uuid) -> Self {
-        Self { simulator_id, url: String::new(), history_index: -1, is_submitting: false, error: None }
+        Self { simulator_id, url: TextField::new(), history_index: -1, is_submitting: false, error: None }
     }
 }
 
@@ -159,11 +161,11 @@ pub struct LaunchAppPrompt {
     pub chosen_language: Option<&'static LanguageOption>,
     pub language_index: i64,
     pub language_scroll_offset: i64,
-    pub language_filter: String,
+    pub language_filter: TextField,
     pub is_language_filter_focused: bool,
     pub region_index: i64,
     pub region_scroll_offset: i64,
-    pub region_filter: String,
+    pub region_filter: TextField,
     pub is_region_filter_focused: bool,
     pub error: Option<String>,
 }
@@ -180,11 +182,11 @@ impl LaunchAppPrompt {
             chosen_language: None,
             language_index: 0,
             language_scroll_offset: 0,
-            language_filter: String::new(),
+            language_filter: TextField::new(),
             is_language_filter_focused: false,
             region_index: 0,
             region_scroll_offset: 0,
-            region_filter: String::new(),
+            region_filter: TextField::new(),
             is_region_filter_focused: false,
             error: None,
         }
@@ -264,7 +266,7 @@ pub struct CreateWizard {
     pub device_type_scroll_offset: i64,
     pub runtime_index: i64,
     pub runtime_scroll_offset: i64,
-    pub device_type_filter: String,
+    pub device_type_filter: TextField,
     pub is_device_type_filter_focused: bool,
     pub error: Option<String>,
 }
@@ -316,7 +318,7 @@ pub struct AppState {
     pub simulators: Vec<Simulator>,
     pub selected_index: i64,
     pub main_scroll_offset: i64,
-    pub filter_query: String,
+    pub filter_query: TextField,
     pub is_filter_focused: bool,
     pub status_message: Option<String>,
     pub last_error: Option<String>,
@@ -336,7 +338,7 @@ impl Default for AppState {
             simulators: Vec::new(),
             selected_index: 0,
             main_scroll_offset: 0,
-            filter_query: String::new(),
+            filter_query: TextField::new(),
             is_filter_focused: false,
             status_message: None,
             last_error: None,

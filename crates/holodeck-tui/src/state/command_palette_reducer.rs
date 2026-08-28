@@ -1,6 +1,6 @@
 use super::app_state::{AppState, CommandPalette, Modal};
 use super::event::ReducerOutput;
-use super::key::{Key, is_printable};
+use super::key::Key;
 use super::palette_command::PaletteCommand;
 use super::reducer::run_command;
 
@@ -31,23 +31,15 @@ pub fn handle(state: &AppState, palette: &CommandPalette, key: Key) -> ReducerOu
                 // Preserve the user's typed casing; only append the
                 // unmatched suffix.
                 let name = command.display_name();
-                let suffix = if name.chars().count() > updated.query.chars().count() {
-                    name.chars().skip(updated.query.chars().count()).collect::<String>()
-                } else {
-                    String::new()
-                };
-                updated.query.push_str(&suffix);
+                if name.chars().count() > updated.query.chars().count() {
+                    let suffix = name.chars().skip(updated.query.chars().count()).collect::<String>();
+                    updated.query.set(&format!("{}{suffix}", updated.query));
+                }
             }
         }
-        Key::Backspace => {
-            if !updated.query.is_empty() {
-                updated.query.pop();
-            }
+        _ => {
+            updated.query.handle(key);
         }
-        Key::Char(c) if is_printable(c) => {
-            updated.query.push(c);
-        }
-        _ => {}
     }
 
     next.modal = Some(Modal::CommandPalette(updated));

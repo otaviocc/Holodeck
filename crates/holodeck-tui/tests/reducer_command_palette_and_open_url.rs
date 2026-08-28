@@ -1,6 +1,6 @@
 mod support;
 
-use holodeck_simctl_tui::state::{AppEvent, CommandPalette, Key, Modal, OpenUrlPrompt, SideEffect, reduce};
+use holodeck_simctl_tui::state::{AppEvent, CommandPalette, Key, Modal, OpenUrlPrompt, SideEffect, TextField, reduce};
 use support::{booted, shutdown, state_with};
 
 // MARK: - Command palette
@@ -32,7 +32,7 @@ fn typing_and_backspace_edit_the_palette_query() {
 fn tab_completes_to_the_top_matching_command_preserving_typed_casing() {
     let mut state = state_with(vec![booted("A")]);
     state.modal =
-        Some(Modal::CommandPalette(CommandPalette { simulator_id: Some(state.simulators[0].id), query: "Sh".to_string() }));
+        Some(Modal::CommandPalette(CommandPalette { simulator_id: Some(state.simulators[0].id), query: TextField::from("Sh") }));
     let out = reduce(&state, AppEvent::Key(Key::Tab));
     let Some(Modal::CommandPalette(p)) = &out.state.modal else { panic!() };
     assert_eq!(p.query, "Shutdown");
@@ -51,7 +51,7 @@ fn enter_on_empty_query_closes_the_palette_without_running_anything() {
 fn enter_with_no_matching_command_surfaces_an_error() {
     let mut state = state_with(vec![booted("A")]);
     state.modal =
-        Some(Modal::CommandPalette(CommandPalette { simulator_id: Some(state.simulators[0].id), query: "zzz".to_string() }));
+        Some(Modal::CommandPalette(CommandPalette { simulator_id: Some(state.simulators[0].id), query: TextField::from("zzz") }));
     let out = reduce(&state, AppEvent::Key(Key::Enter));
     assert_eq!(out.state.modal, None);
     assert!(out.state.last_error.unwrap().contains("zzz"));
@@ -60,8 +60,10 @@ fn enter_with_no_matching_command_surfaces_an_error() {
 #[test]
 fn enter_with_a_matching_command_runs_it() {
     let mut state = state_with(vec![shutdown("A")]);
-    state.modal =
-        Some(Modal::CommandPalette(CommandPalette { simulator_id: Some(state.simulators[0].id), query: "boot".to_string() }));
+    state.modal = Some(Modal::CommandPalette(CommandPalette {
+        simulator_id: Some(state.simulators[0].id),
+        query: TextField::from("boot"),
+    }));
     let out = reduce(&state, AppEvent::Key(Key::Enter));
     assert_eq!(out.state.modal, None);
     assert_eq!(out.effects, vec![SideEffect::Boot(state.simulators[0].id)]);
@@ -102,6 +104,57 @@ fn typing_builds_the_url_and_backspace_edits_it() {
 }
 
 #[test]
+fn arrows_move_the_caret_so_typing_inserts_mid_url() {
+    let mut state = state_with(vec![]);
+    let mut prompt = OpenUrlPrompt::new(uuid::Uuid::new_v4());
+    prompt.url = TextField::from("https://aple.com");
+    state.modal = Some(Modal::OpenUrl(prompt));
+
+    // Walk the caret back over ".com" + "ple" and insert the missing "p".
+    let mut out = state.clone();
+    for _ in 0..7 {
+        out = reduce(&out, AppEvent::Key(Key::Left)).state;
+    }
+    let typed = reduce(&out, AppEvent::Key(Key::Char('p')));
+    let Some(Modal::OpenUrl(p)) = &typed.state.modal else { panic!() };
+    assert_eq!(p.url, "https://apple.com");
+}
+
+#[test]
+fn home_end_and_delete_edit_the_url_in_place() {
+    let mut state = state_with(vec![]);
+    let mut prompt = OpenUrlPrompt::new(uuid::Uuid::new_v4());
+    prompt.url = TextField::from("xhttps://apple.com");
+    state.modal = Some(Modal::OpenUrl(prompt));
+
+    let home = reduce(&state, AppEvent::Key(Key::Home));
+    let deleted = reduce(&home.state, AppEvent::Key(Key::Delete));
+    let Some(Modal::OpenUrl(p)) = &deleted.state.modal else { panic!() };
+    assert_eq!(p.url, "https://apple.com");
+
+    // Delete at the end of the line is a no-op.
+    let end = reduce(&deleted.state, AppEvent::Key(Key::End));
+    let noop = reduce(&end.state, AppEvent::Key(Key::Delete));
+    let Some(Modal::OpenUrl(p)) = &noop.state.modal else { panic!() };
+    assert_eq!(p.url, "https://apple.com");
+}
+
+#[test]
+fn recalled_history_can_be_edited_from_the_end() {
+    let mut state = state_with(vec![]);
+    state.url_history = vec!["https://apple.com".to_string()];
+    state.modal = Some(Modal::OpenUrl(OpenUrlPrompt::new(uuid::Uuid::new_v4())));
+
+    // Up parks the caret at the end, so Backspace trims the tail rather than
+    // deleting from position zero.
+    let recalled = reduce(&state, AppEvent::Key(Key::Up));
+    let trimmed = reduce(&recalled.state, AppEvent::Key(Key::Backspace));
+    let Some(Modal::OpenUrl(p)) = &trimmed.state.modal else { panic!() };
+    assert_eq!(p.url, "https://apple.co");
+    assert_eq!(p.history_index, -1);
+}
+
+#[test]
 fn up_recalls_history_and_down_walks_back_to_empty() {
     let mut state = state_with(vec![]);
     state.url_history = vec!["https://b.com".to_string(), "https://a.com".to_string()];
@@ -128,7 +181,7 @@ fn up_recalls_history_and_down_walks_back_to_empty() {
 fn enter_with_a_url_submits_and_marks_submitting() {
     let sim_id = uuid::Uuid::new_v4();
     let mut prompt = OpenUrlPrompt::new(sim_id);
-    prompt.url = "https://apple.com".to_string();
+    prompt.url = TextField::from("https://apple.com");
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::OpenUrl(prompt));
 

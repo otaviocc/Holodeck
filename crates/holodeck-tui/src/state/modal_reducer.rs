@@ -5,7 +5,7 @@ use holodeck_core::models::Appearance;
 use super::app_state::{AppState, CreateWizard, CreateWizardStep, Modal, PendingOperation};
 use super::command_palette_reducer;
 use super::event::{ReducerOutput, SideEffect};
-use super::key::{Key, is_printable};
+use super::key::Key;
 use super::launch_app_reducer;
 use super::open_url_modal_reducer;
 use super::privacy_wizard_reducer;
@@ -165,19 +165,14 @@ fn wizard_handle(state: &AppState, wizard: &CreateWizard, key: Key) -> ReducerOu
             if wizard.is_device_type_filter_focused {
                 match key {
                     Key::Enter => updated.is_device_type_filter_focused = false,
-                    Key::Backspace => {
-                        if !updated.device_type_filter.is_empty() {
-                            updated.device_type_filter.pop();
+                    // Caret moves must not re-anchor the list, so only a real
+                    // text change resets index and scroll.
+                    _ => {
+                        if updated.device_type_filter.handle(key) {
+                            updated.device_type_index = 0;
+                            updated.device_type_scroll_offset = 0;
                         }
-                        updated.device_type_index = 0;
-                        updated.device_type_scroll_offset = 0;
                     }
-                    Key::Char(c) if is_printable(c) => {
-                        updated.device_type_filter.push(c);
-                        updated.device_type_index = 0;
-                        updated.device_type_scroll_offset = 0;
-                    }
-                    _ => {}
                 }
                 next.modal = Some(Modal::CreateWizard(updated));
                 return ReducerOutput::new(next);

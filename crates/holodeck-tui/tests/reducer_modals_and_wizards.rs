@@ -3,7 +3,7 @@ mod support;
 use holodeck_core::models::{DeviceType, InstalledApp, PrivacyAction, PrivacyPermission, Runtime};
 use holodeck_simctl_tui::state::{
     AppEvent, CreateWizard, CreateWizardStep, Key, LaunchAppPrompt, LaunchAppStep, Modal, PendingOperation, PrivacyWizard,
-    PrivacyWizardStep, SideEffect, reduce,
+    PrivacyWizardStep, SideEffect, TextField, reduce,
 };
 use support::{booted, shutdown, state_with};
 
@@ -167,7 +167,7 @@ fn device_type_navigation_and_filter_and_enter_advances_to_runtime() {
 fn escape_clears_a_live_filter_before_closing_the_wizard() {
     let mut wizard = CreateWizard::new();
     wizard.step = CreateWizardStep::PickDeviceType;
-    wizard.device_type_filter = "pro".to_string();
+    wizard.device_type_filter = TextField::from("pro");
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::CreateWizard(wizard));
 
@@ -406,6 +406,32 @@ fn slash_focuses_the_language_filter_and_typing_narrows_the_list() {
 }
 
 #[test]
+fn editing_the_language_filter_caret_does_not_reset_the_selection() {
+    let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
+    prompt.step = LaunchAppStep::PickLanguage;
+    prompt.is_language_filter_focused = true;
+    prompt.language_filter = TextField::from("br");
+    prompt.language_index = 1;
+    prompt.language_scroll_offset = 1;
+    let mut state = state_with(vec![]);
+    state.modal = Some(Modal::LaunchApp(prompt));
+
+    // A bare caret move leaves the highlighted row where it was…
+    let moved = reduce(&state, AppEvent::Key(Key::Left));
+    let Some(Modal::LaunchApp(p)) = &moved.state.modal else { panic!() };
+    assert_eq!(p.language_filter, "br");
+    assert_eq!(p.language_index, 1);
+    assert_eq!(p.language_scroll_offset, 1);
+
+    // …while an edit at the caret re-anchors the list.
+    let typed = reduce(&moved.state, AppEvent::Key(Key::Char('a')));
+    let Some(Modal::LaunchApp(p)) = &typed.state.modal else { panic!() };
+    assert_eq!(p.language_filter, "bar");
+    assert_eq!(p.language_index, 0);
+    assert_eq!(p.language_scroll_offset, 0);
+}
+
+#[test]
 fn enter_in_pick_language_chains_to_pick_region_instead_of_submitting() {
     let sim_id = uuid::Uuid::new_v4();
     let mut prompt = LaunchAppPrompt::new(sim_id);
@@ -425,7 +451,7 @@ fn enter_in_pick_language_chains_to_pick_region_instead_of_submitting() {
 fn escape_from_the_language_picker_returns_to_pick_app_without_a_language() {
     let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
     prompt.step = LaunchAppStep::PickLanguage;
-    prompt.language_filter = "br".to_string();
+    prompt.language_filter = TextField::from("br");
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::LaunchApp(prompt));
 
@@ -513,7 +539,7 @@ fn escape_in_pick_region_after_language_chain_skips_region_and_submits() {
 fn escape_in_pick_region_reached_directly_cancels_to_pick_app() {
     let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
     prompt.step = LaunchAppStep::PickRegion;
-    prompt.region_filter = "br".to_string();
+    prompt.region_filter = TextField::from("br");
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::LaunchApp(prompt));
 

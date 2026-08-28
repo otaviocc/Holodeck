@@ -9,9 +9,10 @@ use super::app_state::{
     PrivacyWizard, PrivacyWizardStep,
 };
 use super::event::{AppEvent, ReducerOutput, SideEffect};
-use super::key::{Key, is_printable};
+use super::key::Key;
 use super::modal_reducer;
 use super::palette_command::PaletteCommand;
+use super::text_input::TextField;
 
 pub fn reduce(state: &AppState, event: AppEvent) -> ReducerOutput {
     let mut next = state.clone();
@@ -312,7 +313,7 @@ fn handle_key(state: &AppState, key: Key) -> ReducerOutput {
         Key::Char(':') => {
             next.modal = Some(Modal::CommandPalette(super::app_state::CommandPalette {
                 simulator_id: next.selected_simulator().map(|s| s.id),
-                query: String::new(),
+                query: TextField::new(),
             }));
             ReducerOutput::new(next)
         }
@@ -363,19 +364,15 @@ fn handle_filter_key(state: &AppState, key: Key) -> ReducerOutput {
             next.main_scroll_offset = 0;
         }
         Key::Enter => next.is_filter_focused = false,
-        Key::Backspace => {
-            if !next.filter_query.is_empty() {
-                next.filter_query.pop();
+        // Editing keys (typing, Backspace/Delete, ←/→, Home/End) go to the
+        // query; only a text change re-anchors the list selection, so moving
+        // the caret leaves the highlighted row alone.
+        _ => {
+            if next.filter_query.handle(key) {
+                next.selected_index = 0;
+                next.main_scroll_offset = 0;
             }
-            next.selected_index = 0;
-            next.main_scroll_offset = 0;
         }
-        Key::Char(c) if is_printable(c) => {
-            next.filter_query.push(c);
-            next.selected_index = 0;
-            next.main_scroll_offset = 0;
-        }
-        _ => {}
     }
     ReducerOutput::new(next)
 }

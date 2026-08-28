@@ -3,7 +3,7 @@ use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragra
 
 use crate::state::{
     AppState, CommandPalette, CreateWizard, CreateWizardStep, LaunchAppPrompt, LaunchAppStep, Modal, OpenUrlPrompt,
-    PrivacyWizard, PrivacyWizardStep,
+    PrivacyWizard, PrivacyWizardStep, TextField,
 };
 use crate::theme::Theme;
 
@@ -27,6 +27,25 @@ const HELP_ENTRIES: &[(&str, &str)] = &[
     ("?", "Help overlay"),
     ("q / Esc", "Quit (or cancel the active modal)"),
 ];
+
+/// Renders one text input as `prefix` plus the field's text with a block
+/// caret drawn at the cursor. The caret is a reversed cell rather than the
+/// terminal's own cursor: several inputs can be on screen at once (a popup
+/// over the main filter), and there is only one real cursor to place.
+fn input_spans<'a>(prefix: &'a str, field: &TextField, theme: &Theme) -> Vec<Span<'a>> {
+    let before: String = field.chars().take(field.cursor()).collect();
+    let at = field.chars().nth(field.cursor()).unwrap_or(' ');
+    let after: String = field.chars().skip(field.cursor() + 1).collect();
+    vec![
+        Span::styled(format!("{prefix}{before}"), theme.base()),
+        Span::styled(at.to_string(), theme.base().add_modifier(Modifier::REVERSED)),
+        Span::styled(after, theme.base()),
+    ]
+}
+
+fn input_line<'a>(prefix: &'a str, field: &TextField, theme: &Theme) -> Line<'a> {
+    Line::from(input_spans(prefix, field, theme))
+}
 
 pub fn render(frame: &mut Frame, state: &AppState, theme: &Theme) {
     // Always render the main simulator list first, then overlay the active modal on top.
@@ -82,7 +101,7 @@ fn render_main(frame: &mut Frame, state: &AppState, theme: &Theme) {
     }
 
     if state.is_filter_focused || !state.filter_query.is_empty() {
-        banner_rows.push(Line::styled(format!(" Filter: {}_", state.filter_query), theme.base()));
+        banner_rows.push(input_line(" Filter: ", &state.filter_query, theme));
     }
 
     let mut constraints = vec![Constraint::Length(1)]; // header
@@ -225,7 +244,7 @@ fn render_open_url(frame: &mut Frame, theme: &Theme, prompt: &OpenUrlPrompt) {
     let inner = render_popup(frame, frame.area(), 70, 40, "Open URL", theme);
 
     let mut lines = vec![Line::from("")];
-    lines.push(Line::styled(format!("  {}_", prompt.url), theme.base()));
+    lines.push(input_line("  ", &prompt.url, theme));
     lines.push(Line::from(""));
     if let Some(error) = &prompt.error {
         lines.push(Line::styled(format!("  ⚠ {error}"), theme.error()));
@@ -235,7 +254,7 @@ fn render_open_url(frame: &mut Frame, theme: &Theme, prompt: &OpenUrlPrompt) {
         lines.push(Line::from(""));
     }
     lines.push(Line::from(""));
-    lines.push(Line::styled("  ↑/↓ history · Enter open · Esc cancel", theme.hint()));
+    lines.push(Line::styled("  ←/→ move · ↑/↓ history · Enter open · Esc cancel", theme.hint()));
     frame.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), inner);
 }
 
@@ -250,7 +269,7 @@ fn render_create_wizard(frame: &mut Frame, state: &AppState, theme: &Theme, wiza
     let areas = Layout::vertical([Constraint::Length(filter_height), Constraint::Min(1), Constraint::Length(1)]).split(inner);
 
     if filter_height > 0 {
-        frame.render_widget(Paragraph::new(format!("  Filter: {}_", wizard.device_type_filter)).style(theme.base()), areas[0]);
+        frame.render_widget(Paragraph::new(input_line("  Filter: ", &wizard.device_type_filter, theme)), areas[0]);
     }
 
     match wizard.step {
@@ -411,7 +430,7 @@ fn render_launch_app(frame: &mut Frame, theme: &Theme, prompt: &LaunchAppPrompt)
 
     if filter_height > 0 {
         let text = filter_text.expect("filter_height is only 1 when filter_text is Some");
-        frame.render_widget(Paragraph::new(format!("  Filter: {text}_")).style(theme.base()), areas[0]);
+        frame.render_widget(Paragraph::new(input_line("  Filter: ", text, theme)), areas[0]);
     }
 
     match prompt.step {
@@ -556,8 +575,9 @@ fn render_command_palette_overlay(frame: &mut Frame, state: &AppState, theme: &T
         .map(|name| name[palette.query.chars().count()..].to_string())
         .unwrap_or_default();
 
-    let mut lines =
-        vec![Line::from(vec![Span::styled(format!("> {}", palette.query), theme.base()), Span::styled(ghost, theme.hint())])];
+    let mut spans = input_spans("> ", &palette.query, theme);
+    spans.push(Span::styled(ghost, theme.hint()));
+    let mut lines = vec![Line::from(spans)];
     if let Some(command) = matched {
         lines.push(Line::from(""));
         lines.push(Line::styled(command.description(), theme.hint()));

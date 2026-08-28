@@ -1,6 +1,6 @@
 use super::app_state::{AppState, LaunchAppPrompt, LaunchAppStep, Modal};
 use super::event::{ReducerOutput, SideEffect};
-use super::key::{Key, is_printable};
+use super::key::Key;
 
 pub fn handle(state: &AppState, prompt: &LaunchAppPrompt, key: Key) -> ReducerOutput {
     let mut next = state.clone();
@@ -48,23 +48,20 @@ pub fn handle(state: &AppState, prompt: &LaunchAppPrompt, key: Key) -> ReducerOu
             if updated.is_language_filter_focused {
                 match key {
                     Key::Enter => updated.is_language_filter_focused = false,
-                    Key::Backspace => {
-                        updated.language_filter.pop();
-                        updated.language_index = 0;
-                        updated.language_scroll_offset = 0;
-                    }
-                    Key::Char(c) if is_printable(c) => {
-                        updated.language_filter.push(c);
-                        updated.language_index = 0;
-                        updated.language_scroll_offset = 0;
-                    }
                     Key::Escape => {
                         updated.language_filter.clear();
                         updated.is_language_filter_focused = false;
                         updated.language_index = 0;
                         updated.language_scroll_offset = 0;
                     }
-                    _ => {}
+                    // Caret moves must not re-anchor the list, so only a real
+                    // text change resets index and scroll.
+                    _ => {
+                        if updated.language_filter.handle(key) {
+                            updated.language_index = 0;
+                            updated.language_scroll_offset = 0;
+                        }
+                    }
                 }
                 next.modal = Some(Modal::LaunchApp(updated));
                 return ReducerOutput::new(next);
@@ -107,23 +104,20 @@ pub fn handle(state: &AppState, prompt: &LaunchAppPrompt, key: Key) -> ReducerOu
             if updated.is_region_filter_focused {
                 match key {
                     Key::Enter => updated.is_region_filter_focused = false,
-                    Key::Backspace => {
-                        updated.region_filter.pop();
-                        updated.region_index = 0;
-                        updated.region_scroll_offset = 0;
-                    }
-                    Key::Char(c) if is_printable(c) => {
-                        updated.region_filter.push(c);
-                        updated.region_index = 0;
-                        updated.region_scroll_offset = 0;
-                    }
                     Key::Escape => {
                         updated.region_filter.clear();
                         updated.is_region_filter_focused = false;
                         updated.region_index = 0;
                         updated.region_scroll_offset = 0;
                     }
-                    _ => {}
+                    // Caret moves must not re-anchor the list, so only a real
+                    // text change resets index and scroll.
+                    _ => {
+                        if updated.region_filter.handle(key) {
+                            updated.region_index = 0;
+                            updated.region_scroll_offset = 0;
+                        }
+                    }
                 }
                 next.modal = Some(Modal::LaunchApp(updated));
                 return ReducerOutput::new(next);

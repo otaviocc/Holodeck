@@ -7,7 +7,9 @@ mod support;
 
 use holodeck_core::models::InstalledApp;
 use holodeck_simctl_tui::Theme;
-use holodeck_simctl_tui::state::{AppState, CommandPalette, CreateWizard, LaunchAppPrompt, Modal, OpenUrlPrompt, PrivacyWizard};
+use holodeck_simctl_tui::state::{
+    AppState, CommandPalette, CreateWizard, LaunchAppPrompt, Modal, OpenUrlPrompt, PrivacyWizard, TextField,
+};
 use holodeck_simctl_tui::view::render;
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -61,7 +63,7 @@ fn empty_simulator_list_shows_placeholder() {
 fn filter_banner_appears_when_filter_is_focused() {
     let mut state = state_with(vec![booted("A")]);
     state.is_filter_focused = true;
-    state.filter_query = "iPh".to_string();
+    state.filter_query = TextField::from("iPh");
     let text = rendered(&state);
     assert!(text.contains("Filter: iPh"));
 }
@@ -126,7 +128,7 @@ fn inspector_shows_simulator_details() {
 #[test]
 fn open_url_prompt_shows_typed_url_and_error() {
     let mut prompt = OpenUrlPrompt::new(uuid::Uuid::new_v4());
-    prompt.url = "https://apple.com".to_string();
+    prompt.url = TextField::from("https://apple.com");
     prompt.error = Some("bad url".to_string());
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::OpenUrl(prompt));
@@ -188,7 +190,7 @@ fn launch_modal_shows_the_filter_banner_when_focused() {
     let mut prompt = LaunchAppPrompt::new(uuid::Uuid::new_v4());
     prompt.step = holodeck_simctl_tui::state::LaunchAppStep::PickLanguage;
     prompt.is_language_filter_focused = true;
-    prompt.language_filter = "braz".to_string();
+    prompt.language_filter = TextField::from("braz");
     let mut state = state_with(vec![]);
     state.modal = Some(Modal::LaunchApp(prompt));
     let text = rendered(&state);
@@ -234,7 +236,7 @@ fn launch_modal_renders_the_launch_failure() {
 fn command_palette_overlay_shows_query_and_ghost_suffix() {
     let mut state = state_with(vec![shutdown("A")]);
     state.modal =
-        Some(Modal::CommandPalette(CommandPalette { simulator_id: Some(state.simulators[0].id), query: "bo".to_string() }));
+        Some(Modal::CommandPalette(CommandPalette { simulator_id: Some(state.simulators[0].id), query: TextField::from("bo") }));
     let text = rendered(&state);
     assert!(text.contains("Command palette"));
     assert!(text.contains("bo"));

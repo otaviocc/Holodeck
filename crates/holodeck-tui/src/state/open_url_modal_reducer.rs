@@ -1,6 +1,6 @@
 use super::app_state::{AppState, Modal, OpenUrlPrompt};
 use super::event::{ReducerOutput, SideEffect};
-use super::key::{Key, is_printable};
+use super::key::Key;
 
 pub fn handle(state: &AppState, prompt: &OpenUrlPrompt, key: Key) -> ReducerOutput {
     let mut next = state.clone();
@@ -18,22 +18,15 @@ pub fn handle(state: &AppState, prompt: &OpenUrlPrompt, key: Key) -> ReducerOutp
             }
             updated.is_submitting = true;
             updated.error = None;
-            let effect = SideEffect::OpenUrl { udid: updated.simulator_id, url: updated.url.clone() };
+            let effect = SideEffect::OpenUrl { udid: updated.simulator_id, url: updated.url.to_string() };
             next.modal = Some(Modal::OpenUrl(updated));
             return ReducerOutput::with_effects(next, vec![effect]);
-        }
-        Key::Backspace => {
-            if !updated.url.is_empty() {
-                updated.url.pop();
-            }
-            updated.history_index = -1;
-            updated.error = None;
         }
         Key::Up => {
             let history = &state.url_history;
             if !history.is_empty() {
                 updated.history_index = (updated.history_index + 1).min(history.len() as i64 - 1);
-                updated.url = history[updated.history_index as usize].clone();
+                updated.url.set(&history[updated.history_index as usize]);
                 updated.error = None;
             }
         }
@@ -41,18 +34,21 @@ pub fn handle(state: &AppState, prompt: &OpenUrlPrompt, key: Key) -> ReducerOutp
             let history = &state.url_history;
             updated.history_index = (updated.history_index - 1).max(-1);
             if updated.history_index >= 0 && (updated.history_index as usize) < history.len() {
-                updated.url = history[updated.history_index as usize].clone();
+                updated.url.set(&history[updated.history_index as usize]);
             } else {
-                updated.url = String::new();
+                updated.url.clear();
             }
             updated.error = None;
         }
-        Key::Char(c) if is_printable(c) => {
-            updated.url.push(c);
-            updated.history_index = -1;
-            updated.error = None;
+        // ←/→, Home/End, Backspace, Delete and printable characters all edit
+        // the URL in place; only an actual text change drops out of history
+        // browsing.
+        _ => {
+            if updated.url.handle(key) {
+                updated.history_index = -1;
+                updated.error = None;
+            }
         }
-        _ => {}
     }
 
     next.modal = Some(Modal::OpenUrl(updated));

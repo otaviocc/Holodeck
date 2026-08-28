@@ -11,6 +11,9 @@ pub enum Key {
     Escape,
     Tab,
     Backspace,
+    Delete,
+    Home,
+    End,
     Char(char),
     Unknown,
 }

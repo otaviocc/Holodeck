@@ -19,6 +19,9 @@ pub fn map_key_event(event: KeyEvent) -> Option<Key> {
         KeyCode::Esc => Key::Escape,
         KeyCode::Tab => Key::Tab,
         KeyCode::Backspace => Key::Backspace,
+        KeyCode::Delete => Key::Delete,
+        KeyCode::Home => Key::Home,
+        KeyCode::End => Key::End,
         KeyCode::Char(c) => Key::Char(c),
         _ => Key::Unknown,
     })
@@ -41,6 +44,9 @@ mod tests {
         assert_eq!(map_key_event(press(KeyCode::Enter)), Some(Key::Enter));
         assert_eq!(map_key_event(press(KeyCode::Esc)), Some(Key::Escape));
         assert_eq!(map_key_event(press(KeyCode::Backspace)), Some(Key::Backspace));
+        assert_eq!(map_key_event(press(KeyCode::Delete)), Some(Key::Delete));
+        assert_eq!(map_key_event(press(KeyCode::Home)), Some(Key::Home));
+        assert_eq!(map_key_event(press(KeyCode::End)), Some(Key::End));
     }
 
     #[test]
