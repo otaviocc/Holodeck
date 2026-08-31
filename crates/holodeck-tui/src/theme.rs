@@ -10,7 +10,8 @@
 //! [`Theme::gruvbox`], all four Catppuccin flavors
 //! ([`Theme::catppuccin_latte`], [`Theme::catppuccin_frappe`],
 //! [`Theme::catppuccin_macchiato`], [`Theme::catppuccin_mocha`]),
-//! [`Theme::solarized_dark`], and [`Theme::vesper`] — each ported from its
+//! [`Theme::kanagawa_dragon`], [`Theme::solarized_dark`], and
+//! [`Theme::vesper`] — each ported from its
 //! own project's canonical palette values. Catppuccin Latte is the only
 //! light built-in.
 
@@ -56,6 +57,7 @@ impl Theme {
             ThemeName::CatppuccinFrappe => Self::catppuccin_frappe(),
             ThemeName::CatppuccinMacchiato => Self::catppuccin_macchiato(),
             ThemeName::CatppuccinMocha => Self::catppuccin_mocha(),
+            ThemeName::KanagawaDragon => Self::kanagawa_dragon(),
             ThemeName::SolarizedDark => Self::solarized_dark(),
             ThemeName::Vesper => Self::vesper(),
         }
@@ -267,6 +269,39 @@ impl Theme {
         }
     }
 
+    /// [Kanagawa](https://github.com/rebelot/kanagawa.nvim) Dragon, values
+    /// taken from that project's `colors.lua`, assigned per the roles its
+    /// `themes.lua` gives them in the `dragon` block. Dragon is deliberately
+    /// low-chroma and warm — its background is `#181616`, warm-neutral rather
+    /// than the blue-tinted near-blacks the other dark themes here use.
+    ///
+    /// Two choices worth naming. `accent` is `dragonYellow`: Kanagawa declares
+    /// no single accent the way Catppuccin parameterizes one, so this picks the
+    /// warmest prominent colour in the palette. `selection_background` is
+    /// `waveBlue1`, which Dragon borrows from the Wave variant for its own
+    /// `bg_visual` — it is the one cool colour in the theme, and nothing warm
+    /// gives a selected row enough contrast against a background this dark.
+    /// The three diagnostics (`error`/`success`/`warning`) come from Dragon's
+    /// `diag` table and are far more saturated than everything else, which is
+    /// upstream's intent: the muted syntax colours would not read as alarming.
+    pub fn kanagawa_dragon() -> Self {
+        Self {
+            background: rgb(0x18, 0x16, 0x16),
+            foreground: rgb(0xC5, 0xC9, 0xC5),
+            muted: rgb(0x62, 0x5E, 0x5A),
+            muted_text: rgb(0x9E, 0x9B, 0x93),
+            selection_background: rgb(0x22, 0x32, 0x49),
+            selection_foreground: rgb(0xC5, 0xC9, 0xC5),
+            error: rgb(0xE8, 0x24, 0x24),
+            success: rgb(0x98, 0xBB, 0x6C),
+            warning: rgb(0xFF, 0x9E, 0x3B),
+            accent: rgb(0xC4, 0xB2, 0x8A),
+            chrome: rgb(0x8B, 0xA4, 0xB0),
+            highlight: rgb(0x8B, 0xA4, 0xB0),
+            notice: rgb(0xA2, 0x92, 0xA3),
+        }
+    }
+
     /// [Solarized](https://ethanschoonover.com/solarized/) Dark, values
     /// taken from the official base16 spec (`base03`-`base3`).
     pub fn solarized_dark() -> Self {
@@ -402,6 +437,7 @@ mod tests {
         assert_eq!(Theme::from_name(ThemeName::CatppuccinFrappe), Theme::catppuccin_frappe());
         assert_eq!(Theme::from_name(ThemeName::CatppuccinMacchiato), Theme::catppuccin_macchiato());
         assert_eq!(Theme::from_name(ThemeName::CatppuccinMocha), Theme::catppuccin_mocha());
+        assert_eq!(Theme::from_name(ThemeName::KanagawaDragon), Theme::kanagawa_dragon());
         assert_eq!(Theme::from_name(ThemeName::SolarizedDark), Theme::solarized_dark());
         assert_eq!(Theme::from_name(ThemeName::Vesper), Theme::vesper());
     }
@@ -531,6 +567,23 @@ mod tests {
         assert_eq!(theme.error, Color::Rgb(0xFF, 0x80, 0x80));
         assert_eq!(theme.accent, Color::Rgb(0xFF, 0xC7, 0x99));
         assert_eq!(theme.chrome, Color::Rgb(0xF5, 0x91, 0xB2));
+    }
+
+    #[test]
+    fn kanagawa_dragon_matches_the_canonical_hexes_and_is_the_warmest_built_in() {
+        let theme = Theme::kanagawa_dragon();
+        assert_eq!(theme.background, Color::Rgb(0x18, 0x16, 0x16));
+        assert_eq!(theme.foreground, Color::Rgb(0xC5, 0xC9, 0xC5));
+        assert_eq!(theme.accent, Color::Rgb(0xC4, 0xB2, 0x8A));
+        assert_eq!(theme.notice, Color::Rgb(0xA2, 0x92, 0xA3));
+        // Dragon's whole point is a warm-neutral background rather than the
+        // blue-tinted near-blacks the other dark themes use: red channel at
+        // least as high as blue. Guards against pasting in a Wave or Lotus
+        // background, both of which are cooler.
+        let Color::Rgb(r, _, b) = theme.background else {
+            panic!("Kanagawa Dragon should be a truecolor theme");
+        };
+        assert!(r >= b, "Dragon's background should be warm-neutral, got r={r} b={b}");
     }
 
     #[test]

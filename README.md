@@ -93,6 +93,7 @@ any of the values below (default: `default-plus`):
 | `catppuccin-frappe` | Catppuccin Frappe | [catppuccin.com](https://catppuccin.com) |
 | `catppuccin-macchiato` | Catppuccin Macchiato | [catppuccin.com](https://catppuccin.com) |
 | `catppuccin-mocha` | Catppuccin Mocha | [catppuccin.com](https://catppuccin.com) |
+| `kanagawa-dragon` | Kanagawa Dragon | [rebelot/kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) |
 | `solarized-dark` | Solarized Dark | [ethanschoonover.com/solarized](https://ethanschoonover.com/solarized/) |
 | `vesper` | Vesper | [raunofreiberg/vesper](https://github.com/raunofreiberg/vesper) |
 
@@ -114,6 +115,14 @@ their palette values: `base`/`text`/`overlay0`/`subtext0`/`surface1` for the
 neutrals, then `red`, `green`, `yellow`, `teal`, `blue` and `mauve` for the
 accents. `catppuccin-latte` is Catppuccin's light flavor, and the only
 built-in theme whose background is lighter than its foreground.
+
+`kanagawa-dragon` is the warmest built-in: its background is `#181616`,
+warm-neutral rather than the blue-tinted near-blacks every other dark theme
+here uses, and its accents are deliberately low-chroma. Kanagawa declares no
+single accent, so `dragonYellow` was picked as the warmest prominent colour;
+its `selection_background` is `waveBlue1`, the one cool colour Dragon keeps,
+because nothing warm gives a selected row enough contrast. A test asserts the
+background stays warm, to catch a Wave or Lotus value being pasted in.
 
 Every theme paints its own `background` across the whole frame, rather than
 tinting the text and letting the terminal's background show through. That is

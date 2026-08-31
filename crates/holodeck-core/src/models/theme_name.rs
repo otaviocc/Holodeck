@@ -29,6 +29,10 @@ pub enum ThemeName {
     CatppuccinMacchiato,
     /// [Catppuccin](https://catppuccin.com) Mocha.
     CatppuccinMocha,
+    /// [Kanagawa](https://github.com/rebelot/kanagawa.nvim) Dragon — the
+    /// darkest and warmest of Kanagawa's three variants, deliberately
+    /// low-chroma.
+    KanagawaDragon,
     /// [Solarized](https://ethanschoonover.com/solarized/) Dark.
     SolarizedDark,
     /// [Vesper](https://github.com/raunofreiberg/vesper) — a restrained,
@@ -37,7 +41,7 @@ pub enum ThemeName {
 }
 
 impl ThemeName {
-    pub const ALL: [ThemeName; 12] = [
+    pub const ALL: [ThemeName; 13] = [
         ThemeName::DefaultPlus,
         ThemeName::Ansi,
         ThemeName::TokyoNight,
@@ -48,6 +52,7 @@ impl ThemeName {
         ThemeName::CatppuccinFrappe,
         ThemeName::CatppuccinMacchiato,
         ThemeName::CatppuccinMocha,
+        ThemeName::KanagawaDragon,
         ThemeName::SolarizedDark,
         ThemeName::Vesper,
     ];
@@ -64,6 +69,7 @@ impl ThemeName {
             ThemeName::CatppuccinFrappe => "catppuccin-frappe",
             ThemeName::CatppuccinMacchiato => "catppuccin-macchiato",
             ThemeName::CatppuccinMocha => "catppuccin-mocha",
+            ThemeName::KanagawaDragon => "kanagawa-dragon",
             ThemeName::SolarizedDark => "solarized-dark",
             ThemeName::Vesper => "vesper",
         }
@@ -91,6 +97,7 @@ mod tests {
         assert_eq!(serde_json::to_string(&ThemeName::CatppuccinFrappe).unwrap(), "\"catppuccin-frappe\"");
         assert_eq!(serde_json::to_string(&ThemeName::CatppuccinMacchiato).unwrap(), "\"catppuccin-macchiato\"");
         assert_eq!(serde_json::to_string(&ThemeName::CatppuccinMocha).unwrap(), "\"catppuccin-mocha\"");
+        assert_eq!(serde_json::to_string(&ThemeName::KanagawaDragon).unwrap(), "\"kanagawa-dragon\"");
         assert_eq!(serde_json::to_string(&ThemeName::SolarizedDark).unwrap(), "\"solarized-dark\"");
         assert_eq!(serde_json::to_string(&ThemeName::Vesper).unwrap(), "\"vesper\"");
     }
