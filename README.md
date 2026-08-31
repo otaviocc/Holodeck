@@ -89,8 +89,12 @@ any of the values below (default: `default-plus`):
 | `nord` | Nord | [nordtheme.com](https://www.nordtheme.com) |
 | `dracula` | Dracula | [draculatheme.com](https://draculatheme.com) |
 | `gruvbox` | Gruvbox (dark) | [morhetz/gruvbox](https://github.com/morhetz/gruvbox) |
+| `catppuccin-latte` | Catppuccin Latte *(light)* | [catppuccin.com](https://catppuccin.com) |
+| `catppuccin-frappe` | Catppuccin Frappe | [catppuccin.com](https://catppuccin.com) |
+| `catppuccin-macchiato` | Catppuccin Macchiato | [catppuccin.com](https://catppuccin.com) |
 | `catppuccin-mocha` | Catppuccin Mocha | [catppuccin.com](https://catppuccin.com) |
 | `solarized-dark` | Solarized Dark | [ethanschoonover.com/solarized](https://ethanschoonover.com/solarized/) |
+| `vesper` | Vesper | [raunofreiberg/vesper](https://github.com/raunofreiberg/vesper) |
 
 ```json
 {
@@ -104,6 +108,20 @@ canonical palette — see `Theme::default_plus()`/`Theme::nord()`/etc. in
 `theme.rs` for the exact hex values and a note on any per-theme quirks (e.g.
 Dracula has no distinct "blue" and borrows its purple for that slot, matching
 Dracula's own ANSI spec).
+
+All four Catppuccin flavors share one slot mapping, so they differ only in
+their palette values: `base`/`text`/`overlay0`/`subtext0`/`surface1` for the
+neutrals, then `red`, `green`, `yellow`, `teal`, `blue` and `mauve` for the
+accents. `catppuccin-latte` is Catppuccin's light flavor, and the only
+built-in theme whose background is lighter than its foreground.
+
+Every theme paints its own `background` across the whole frame, rather than
+tinting the text and letting the terminal's background show through. That is
+what makes a light theme like `catppuccin-latte` usable in a dark terminal,
+and what makes popups opaque over the list behind them. The one exception is
+`ansi`, whose `background` is `Color::Reset` — it keeps inheriting the
+terminal's background by design, so it is also the theme to pick if you want
+a translucent terminal to stay translucent.
 
 ## Configuration
 

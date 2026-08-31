@@ -20,6 +20,13 @@ pub enum ThemeName {
     Dracula,
     /// [Gruvbox](https://github.com/morhetz/gruvbox) dark.
     Gruvbox,
+    /// [Catppuccin](https://catppuccin.com) Latte — the light flavor, and the
+    /// only built-in theme that is not dark.
+    CatppuccinLatte,
+    /// [Catppuccin](https://catppuccin.com) Frappe.
+    CatppuccinFrappe,
+    /// [Catppuccin](https://catppuccin.com) Macchiato.
+    CatppuccinMacchiato,
     /// [Catppuccin](https://catppuccin.com) Mocha.
     CatppuccinMocha,
     /// [Solarized](https://ethanschoonover.com/solarized/) Dark.
@@ -30,13 +37,16 @@ pub enum ThemeName {
 }
 
 impl ThemeName {
-    pub const ALL: [ThemeName; 9] = [
+    pub const ALL: [ThemeName; 12] = [
         ThemeName::DefaultPlus,
         ThemeName::Ansi,
         ThemeName::TokyoNight,
         ThemeName::Nord,
         ThemeName::Dracula,
         ThemeName::Gruvbox,
+        ThemeName::CatppuccinLatte,
+        ThemeName::CatppuccinFrappe,
+        ThemeName::CatppuccinMacchiato,
         ThemeName::CatppuccinMocha,
         ThemeName::SolarizedDark,
         ThemeName::Vesper,
@@ -50,6 +60,9 @@ impl ThemeName {
             ThemeName::Nord => "nord",
             ThemeName::Dracula => "dracula",
             ThemeName::Gruvbox => "gruvbox",
+            ThemeName::CatppuccinLatte => "catppuccin-latte",
+            ThemeName::CatppuccinFrappe => "catppuccin-frappe",
+            ThemeName::CatppuccinMacchiato => "catppuccin-macchiato",
             ThemeName::CatppuccinMocha => "catppuccin-mocha",
             ThemeName::SolarizedDark => "solarized-dark",
             ThemeName::Vesper => "vesper",
@@ -74,6 +87,9 @@ mod tests {
         assert_eq!(serde_json::to_string(&ThemeName::Nord).unwrap(), "\"nord\"");
         assert_eq!(serde_json::to_string(&ThemeName::Dracula).unwrap(), "\"dracula\"");
         assert_eq!(serde_json::to_string(&ThemeName::Gruvbox).unwrap(), "\"gruvbox\"");
+        assert_eq!(serde_json::to_string(&ThemeName::CatppuccinLatte).unwrap(), "\"catppuccin-latte\"");
+        assert_eq!(serde_json::to_string(&ThemeName::CatppuccinFrappe).unwrap(), "\"catppuccin-frappe\"");
+        assert_eq!(serde_json::to_string(&ThemeName::CatppuccinMacchiato).unwrap(), "\"catppuccin-macchiato\"");
         assert_eq!(serde_json::to_string(&ThemeName::CatppuccinMocha).unwrap(), "\"catppuccin-mocha\"");
         assert_eq!(serde_json::to_string(&ThemeName::SolarizedDark).unwrap(), "\"solarized-dark\"");
         assert_eq!(serde_json::to_string(&ThemeName::Vesper).unwrap(), "\"vesper\"");

@@ -260,14 +260,52 @@ fn booted_and_shutdown_dots_use_success_and_hint_colors() {
 }
 
 #[test]
-fn status_bar_uses_error_color_over_bar_background() {
+fn status_bar_uses_error_color_over_the_theme_background() {
     let mut state = state_with(vec![]);
     state.last_error = Some("boom".to_string());
     let theme = Theme::default_plus();
     let (_, buffer) = render_to_text_and_buffer(&state, &theme);
     let cell = &buffer[(1, 23)]; // inside "boom" on the bottom status-bar row
     assert_eq!(cell.fg, theme.error);
-    assert_eq!(cell.bg, Color::Reset);
+    assert_eq!(cell.bg, theme.background);
+}
+
+#[test]
+fn every_truecolor_theme_washes_the_whole_frame_in_its_own_background() {
+    // A theme that only tints text and inherits the terminal's background
+    // silently breaks any light theme on a dark terminal, so the full-frame
+    // wash is a guarantee worth pinning.
+    let state = state_with(vec![booted("A"), shutdown("B")]);
+    for name in holodeck_core::models::ThemeName::ALL {
+        let theme = Theme::from_name(name);
+        let (_, buffer) = render_to_text_and_buffer(&state, &theme);
+        let painted = buffer.content().iter().filter(|cell| cell.bg == theme.background).count();
+        if name == holodeck_core::models::ThemeName::Ansi {
+            // `ansi` deliberately opts out: its background is `Color::Reset`,
+            // so the terminal's own background still shows through.
+            assert_eq!(theme.background, Color::Reset, "ansi should keep inheriting the terminal background");
+            continue;
+        }
+        assert_ne!(theme.background, Color::Reset, "{name:?} should assert a real background");
+        assert!(painted > 0, "{name:?} should paint its own background somewhere on the frame");
+    }
+}
+
+#[test]
+fn the_light_catppuccin_latte_paints_a_background_lighter_than_its_text() {
+    // The regression this guards: Latte's dark slate foreground rendered over
+    // an unpainted (i.e. dark, on most terminals) background was unreadable.
+    let state = state_with(vec![booted("A"), shutdown("B")]);
+    let theme = Theme::catppuccin_latte();
+    let (_, buffer) = render_to_text_and_buffer(&state, &theme);
+    let luma = |color| match color {
+        Color::Rgb(r, g, b) => u32::from(r) * 299 + u32::from(g) * 587 + u32::from(b) * 114,
+        other => panic!("expected a truecolor value, got {other:?}"),
+    };
+    let body =
+        buffer.content().iter().find(|cell| cell.fg == theme.foreground).expect("some cell should carry Latte's foreground");
+    assert_eq!(body.bg, theme.background);
+    assert!(luma(body.bg) > luma(body.fg), "Latte's text must sit on a lighter background, not a darker one");
 }
 
 #[test]

@@ -7,9 +7,12 @@
 //! reused across every other Default+ port). [`Theme::ansi`] inherits the
 //! reader's own terminal scheme instead of asserting truecolor. Also built
 //! in: [`Theme::tokyo_night`], [`Theme::nord`], [`Theme::dracula`],
-//! [`Theme::gruvbox`], [`Theme::catppuccin_mocha`],
+//! [`Theme::gruvbox`], all four Catppuccin flavors
+//! ([`Theme::catppuccin_latte`], [`Theme::catppuccin_frappe`],
+//! [`Theme::catppuccin_macchiato`], [`Theme::catppuccin_mocha`]),
 //! [`Theme::solarized_dark`], and [`Theme::vesper`] — each ported from its
-//! own project's canonical palette values.
+//! own project's canonical palette values. Catppuccin Latte is the only
+//! light built-in.
 
 use holodeck_core::models::ThemeName;
 use ratatui::style::{Color, Modifier, Style};
@@ -49,6 +52,9 @@ impl Theme {
             ThemeName::Nord => Self::nord(),
             ThemeName::Dracula => Self::dracula(),
             ThemeName::Gruvbox => Self::gruvbox(),
+            ThemeName::CatppuccinLatte => Self::catppuccin_latte(),
+            ThemeName::CatppuccinFrappe => Self::catppuccin_frappe(),
+            ThemeName::CatppuccinMacchiato => Self::catppuccin_macchiato(),
             ThemeName::CatppuccinMocha => Self::catppuccin_mocha(),
             ThemeName::SolarizedDark => Self::solarized_dark(),
             ThemeName::Vesper => Self::vesper(),
@@ -179,6 +185,68 @@ impl Theme {
         }
     }
 
+    /// [Catppuccin](https://catppuccin.com) Latte, values taken from the
+    /// official palette. This is Catppuccin's light flavor and the only
+    /// built-in theme with a light background, so `foreground` is a dark
+    /// slate rather than the near-white every other theme uses.
+    pub fn catppuccin_latte() -> Self {
+        Self {
+            background: rgb(0xEF, 0xF1, 0xF5),
+            foreground: rgb(0x4C, 0x4F, 0x69),
+            muted: rgb(0x9C, 0xA0, 0xB0),
+            muted_text: rgb(0x6C, 0x6F, 0x85),
+            selection_background: rgb(0xBC, 0xC0, 0xCC),
+            selection_foreground: rgb(0x4C, 0x4F, 0x69),
+            error: rgb(0xD2, 0x0F, 0x39),
+            success: rgb(0x40, 0xA0, 0x2B),
+            warning: rgb(0xDF, 0x8E, 0x1D),
+            accent: rgb(0x17, 0x92, 0x99),
+            chrome: rgb(0x1E, 0x66, 0xF5),
+            highlight: rgb(0x1E, 0x66, 0xF5),
+            notice: rgb(0x88, 0x39, 0xEF),
+        }
+    }
+
+    /// [Catppuccin](https://catppuccin.com) Frappe, values taken from the
+    /// official palette. The lightest of the three dark flavors.
+    pub fn catppuccin_frappe() -> Self {
+        Self {
+            background: rgb(0x30, 0x34, 0x46),
+            foreground: rgb(0xC6, 0xD0, 0xF5),
+            muted: rgb(0x73, 0x79, 0x94),
+            muted_text: rgb(0xA5, 0xAD, 0xCE),
+            selection_background: rgb(0x51, 0x57, 0x6D),
+            selection_foreground: rgb(0xC6, 0xD0, 0xF5),
+            error: rgb(0xE7, 0x82, 0x84),
+            success: rgb(0xA6, 0xD1, 0x89),
+            warning: rgb(0xE5, 0xC8, 0x90),
+            accent: rgb(0x81, 0xC8, 0xBE),
+            chrome: rgb(0x8C, 0xAA, 0xEE),
+            highlight: rgb(0x8C, 0xAA, 0xEE),
+            notice: rgb(0xCA, 0x9E, 0xE6),
+        }
+    }
+
+    /// [Catppuccin](https://catppuccin.com) Macchiato, values taken from the
+    /// official palette. Sits between Frappe and Mocha in contrast.
+    pub fn catppuccin_macchiato() -> Self {
+        Self {
+            background: rgb(0x24, 0x27, 0x3A),
+            foreground: rgb(0xCA, 0xD3, 0xF5),
+            muted: rgb(0x6E, 0x73, 0x8D),
+            muted_text: rgb(0xA5, 0xAD, 0xCB),
+            selection_background: rgb(0x49, 0x4D, 0x64),
+            selection_foreground: rgb(0xCA, 0xD3, 0xF5),
+            error: rgb(0xED, 0x87, 0x96),
+            success: rgb(0xA6, 0xDA, 0x95),
+            warning: rgb(0xEE, 0xD4, 0x9F),
+            accent: rgb(0x8B, 0xD5, 0xCA),
+            chrome: rgb(0x8A, 0xAD, 0xF4),
+            highlight: rgb(0x8A, 0xAD, 0xF4),
+            notice: rgb(0xC6, 0xA0, 0xF6),
+        }
+    }
+
     /// [Catppuccin](https://catppuccin.com) Mocha, values taken from the
     /// official palette.
     pub fn catppuccin_mocha() -> Self {
@@ -242,9 +310,16 @@ impl Theme {
 
     // MARK: - Semantic accessors
 
-    /// Regular body text.
+    /// Regular body text, over the theme's own background.
+    ///
+    /// The background matters as much as the foreground here: it is what the
+    /// full-frame wash in `view::render` paints, and what makes popups opaque
+    /// over the list behind them. Without it a theme would only ever tint the
+    /// text and inherit the terminal's background, which silently breaks any
+    /// light theme on a dark terminal. [`Theme::ansi`] sets `background` to
+    /// [`Color::Reset`], so for that theme this stays a no-op by design.
     pub fn base(&self) -> Style {
-        Style::new().fg(self.foreground)
+        Style::new().fg(self.foreground).bg(self.background)
     }
 
     /// The title bar / breadcrumb chrome.
@@ -323,6 +398,9 @@ mod tests {
         assert_eq!(Theme::from_name(ThemeName::Nord), Theme::nord());
         assert_eq!(Theme::from_name(ThemeName::Dracula), Theme::dracula());
         assert_eq!(Theme::from_name(ThemeName::Gruvbox), Theme::gruvbox());
+        assert_eq!(Theme::from_name(ThemeName::CatppuccinLatte), Theme::catppuccin_latte());
+        assert_eq!(Theme::from_name(ThemeName::CatppuccinFrappe), Theme::catppuccin_frappe());
+        assert_eq!(Theme::from_name(ThemeName::CatppuccinMacchiato), Theme::catppuccin_macchiato());
         assert_eq!(Theme::from_name(ThemeName::CatppuccinMocha), Theme::catppuccin_mocha());
         assert_eq!(Theme::from_name(ThemeName::SolarizedDark), Theme::solarized_dark());
         assert_eq!(Theme::from_name(ThemeName::Vesper), Theme::vesper());
@@ -369,6 +447,70 @@ mod tests {
         assert_eq!(theme.background, Color::Rgb(0x28, 0x28, 0x28));
         assert_eq!(theme.foreground, Color::Rgb(0xEB, 0xDB, 0xB2));
         assert_eq!(theme.warning, Color::Rgb(0xFA, 0xBD, 0x2F));
+    }
+
+    #[test]
+    fn catppuccin_latte_matches_the_canonical_hexes_and_is_the_only_light_built_in() {
+        let theme = Theme::catppuccin_latte();
+        assert_eq!(theme.background, Color::Rgb(0xEF, 0xF1, 0xF5));
+        assert_eq!(theme.foreground, Color::Rgb(0x4C, 0x4F, 0x69));
+        assert_eq!(theme.highlight, Color::Rgb(0x1E, 0x66, 0xF5));
+        assert_eq!(theme.notice, Color::Rgb(0x88, 0x39, 0xEF));
+        // Latte is the light flavor: unlike every other built-in, its
+        // background is brighter than its foreground.
+        let luma = |color| match color {
+            Color::Rgb(r, g, b) => Some(u32::from(r) * 299 + u32::from(g) * 587 + u32::from(b) * 114),
+            _ => None,
+        };
+        assert!(luma(theme.background) > luma(theme.foreground));
+        for name in ThemeName::ALL {
+            if name == ThemeName::CatppuccinLatte || name == ThemeName::Ansi {
+                continue;
+            }
+            let other = Theme::from_name(name);
+            assert!(
+                luma(other.background) < luma(other.foreground),
+                "{name:?} should be a dark theme, with a background darker than its foreground"
+            );
+        }
+    }
+
+    #[test]
+    fn catppuccin_frappe_matches_the_canonical_hexes() {
+        let theme = Theme::catppuccin_frappe();
+        assert_eq!(theme.background, Color::Rgb(0x30, 0x34, 0x46));
+        assert_eq!(theme.foreground, Color::Rgb(0xC6, 0xD0, 0xF5));
+        assert_eq!(theme.highlight, Color::Rgb(0x8C, 0xAA, 0xEE));
+        assert_eq!(theme.notice, Color::Rgb(0xCA, 0x9E, 0xE6));
+    }
+
+    #[test]
+    fn catppuccin_macchiato_matches_the_canonical_hexes() {
+        let theme = Theme::catppuccin_macchiato();
+        assert_eq!(theme.background, Color::Rgb(0x24, 0x27, 0x3A));
+        assert_eq!(theme.foreground, Color::Rgb(0xCA, 0xD3, 0xF5));
+        assert_eq!(theme.highlight, Color::Rgb(0x8A, 0xAD, 0xF4));
+        assert_eq!(theme.notice, Color::Rgb(0xC6, 0xA0, 0xF6));
+    }
+
+    #[test]
+    fn the_four_catppuccin_flavors_darken_in_canonical_order() {
+        // Latte -> Frappe -> Macchiato -> Mocha is Catppuccin's own ordering,
+        // lightest to darkest. Guards against pasting one flavor's base into
+        // another's constructor.
+        let bases = [
+            Theme::catppuccin_latte().background,
+            Theme::catppuccin_frappe().background,
+            Theme::catppuccin_macchiato().background,
+            Theme::catppuccin_mocha().background,
+        ];
+        let luma = |color| match color {
+            Color::Rgb(r, g, b) => u32::from(r) * 299 + u32::from(g) * 587 + u32::from(b) * 114,
+            _ => unreachable!("Catppuccin flavors are all truecolor"),
+        };
+        for pair in bases.windows(2) {
+            assert!(luma(pair[0]) > luma(pair[1]), "each Catppuccin flavor should be darker than the last");
+        }
     }
 
     #[test]

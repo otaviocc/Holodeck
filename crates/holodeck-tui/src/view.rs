@@ -47,6 +47,12 @@ fn input_line<'a>(prefix: &'a str, field: &TextField, theme: &Theme) -> Line<'a>
 }
 
 pub fn render(frame: &mut Frame, state: &AppState, theme: &Theme) {
+    // Wash the whole frame in the theme's background before anything else, so
+    // every later style layers over it instead of over whatever the terminal
+    // happens to be. `ansi` uses `Color::Reset` here, so it keeps inheriting
+    // the terminal's own background.
+    frame.render_widget(Block::default().style(theme.base()), frame.area());
+
     // Always render the main simulator list first, then overlay the active modal on top.
     render_main(frame, state, theme);
 

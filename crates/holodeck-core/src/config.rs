@@ -137,4 +137,16 @@ mod tests {
         let overridden = ConfigLoader::new(&resolver).load().unwrap();
         assert_eq!(overridden.theme, ThemeName::Ansi);
     }
+
+    #[test]
+    fn every_theme_name_loads_from_config_under_its_raw_value() {
+        for name in ThemeName::ALL {
+            let dir = tempfile::tempdir().unwrap();
+            let resolver = ConfigResolver::mock(dir.path());
+            let json = format!(r#"{{"theme":"{}"}}"#, name.raw_value());
+            std::fs::write(dir.path().join(CONFIG_FILE_NAME), &json).unwrap();
+            let loaded = ConfigLoader::new(&resolver).load().unwrap();
+            assert_eq!(loaded.theme, name, "{json} should load as {name:?}");
+        }
+    }
 }
