@@ -3,8 +3,8 @@
 //!
 //! The shipped default is [`Theme::default_plus`] — the
 //! [Default+](https://github.com/otaviocc/default-plus) colorscheme, ported
-//! from its canonical `palette.yaml` (base colors + the 6 "hero" accents
-//! reused across every other Default+ port). [`Theme::ansi`] inherits the
+//! from its canonical `palette.yaml` (the `base`, `status` and `syntax`
+//! tables), so the same values every other Default+ port uses. [`Theme::ansi`] inherits the
 //! reader's own terminal scheme instead of asserting truecolor. Also built
 //! in: [`Theme::tokyo_night`], [`Theme::nord`], [`Theme::dracula`],
 //! [`Theme::gruvbox`], all four Catppuccin flavors
@@ -64,22 +64,38 @@ impl Theme {
     }
 
     /// The [Default+](https://github.com/otaviocc/default-plus) colorscheme,
-    /// values taken verbatim from that repo's `palette.yaml` (`base` +
-    /// `accent`).
+    /// values taken verbatim from that repo's `palette.yaml`.
+    ///
+    /// Default+ originates as an Xcode Font & Color Theme rather than a
+    /// terminal palette, so two mappings are worth naming.
+    ///
+    /// The three diagnostics come from the palette's `status` table — Xcode's
+    /// own scrollbar-marker and debugger-prompt colours — not from the syntax
+    /// hues that happen to be red/green/yellow. Those syntax colours mean
+    /// something else in Default+: green is the *comment* colour and red is
+    /// the *string* colour, so reusing them here would make a booted
+    /// simulator and a code comment the same green for no reason.
+    ///
+    /// `accent` is `syntax.declaration` and `chrome` is
+    /// `syntax.project_identifier`. Default+ declares no single accent the way
+    /// Catppuccin parameterizes one; `declaration` is the choice made across
+    /// every Default+ port (lazygit's active border, yazi's cwd, tmux's
+    /// current window, hunk's accent), and keeping `chrome` on the teal leaves
+    /// header text distinguishable from popup borders.
     pub fn default_plus() -> Self {
         Self {
-            background: rgb(0x1E, 0x1E, 0x1E),
+            background: rgb(0x17, 0x17, 0x17),
             foreground: rgb(0xFF, 0xFF, 0xFF),
-            muted: rgb(0x4D, 0x4D, 0x4D),
+            muted: rgb(0x4C, 0x4C, 0x4C),
             muted_text: rgb(0x8E, 0x8E, 0x8E),
-            selection_background: rgb(0x54, 0x55, 0x4A),
+            selection_background: rgb(0x51, 0x5B, 0x70),
             selection_foreground: rgb(0xFF, 0xFF, 0xFF),
-            error: rgb(0xFC, 0x46, 0x51),
-            success: rgb(0x2E, 0xA8, 0x5B),
-            warning: rgb(0xFF, 0xE7, 0x6D),
-            accent: rgb(0x56, 0xD0, 0xB3),
+            error: rgb(0xF7, 0x4A, 0x4A),
+            success: rgb(0x41, 0xB6, 0x45),
+            warning: rgb(0xEF, 0xB7, 0x59),
+            accent: rgb(0x35, 0xB0, 0xD8),
             chrome: rgb(0x56, 0xD0, 0xB3),
-            highlight: rgb(0x35, 0xB0, 0xD8),
+            highlight: rgb(0x4F, 0xA5, 0xFF),
             notice: rgb(0xF2, 0x24, 0x8C),
         }
     }
@@ -608,10 +624,23 @@ mod tests {
     #[test]
     fn default_plus_matches_the_canonical_palette_hexes() {
         let theme = Theme::default_plus();
-        assert_eq!(theme.background, Color::Rgb(0x1E, 0x1E, 0x1E));
-        assert_eq!(theme.selection_background, Color::Rgb(0x54, 0x55, 0x4A));
-        assert_eq!(theme.success, Color::Rgb(0x2E, 0xA8, 0x5B));
-        assert_eq!(theme.error, Color::Rgb(0xFC, 0x46, 0x51));
+        assert_eq!(theme.background, Color::Rgb(0x17, 0x17, 0x17));
+        assert_eq!(theme.selection_background, Color::Rgb(0x51, 0x5B, 0x70));
+        assert_eq!(theme.success, Color::Rgb(0x41, 0xB6, 0x45));
+        assert_eq!(theme.error, Color::Rgb(0xF7, 0x4A, 0x4A));
+        assert_eq!(theme.accent, Color::Rgb(0x35, 0xB0, 0xD8));
+    }
+
+    #[test]
+    fn default_plus_diagnostics_come_from_status_not_syntax() {
+        // In Default+, green is the comment colour (#2EA85B) and red is the
+        // string colour (#FC4651). The diagnostics must come from the
+        // palette's `status` table instead, or a booted simulator would be
+        // the same green as a code comment in every other Default+ port.
+        let theme = Theme::default_plus();
+        assert_ne!(theme.success, Color::Rgb(0x2E, 0xA8, 0x5B), "success should not be syntax.comment");
+        assert_ne!(theme.error, Color::Rgb(0xFC, 0x46, 0x51), "error should not be syntax.string");
+        assert_ne!(theme.warning, Color::Rgb(0xFF, 0xE7, 0x6D), "warning should not be syntax.number");
     }
 
     #[test]
