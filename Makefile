@@ -1,6 +1,6 @@
 BINARY := holodeck
 
-.PHONY: build run test clean fmt
+.PHONY: build run test clean fmt install uninstall
 
 build:
 	cargo build --release
@@ -16,3 +16,9 @@ clean:
 
 fmt:
 	cargo fmt
+
+install:
+	cargo install --path crates/holodeck-cli --locked --force
+
+uninstall:
+	cargo uninstall holodeck-simctl
